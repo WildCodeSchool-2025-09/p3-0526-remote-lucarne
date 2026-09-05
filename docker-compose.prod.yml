@@ -6,7 +6,7 @@ services:
     container_name: ${PROJECT_NAME:-project}-web
     env_file:
       - ../envs/.env-${GITHUB_REPOSITORY_NAME}
-    command: sh -c "npm run build && npm run start"
+    command: sh -c "npm run db:migrate && npm run build && npm run start"
     environment:
       APP_PORT: 3310
       APP_SECRET: ${APP_SECRET:-123456789}
@@ -16,7 +16,6 @@ services:
       DB_PASSWORD: ${USER_PASSWORD}
       DB_NAME: ${DB_NAME}
       VITE_API_URL: ""
-      PROJECT_NAME_SPECIFIC_SAMPLE: ${PROJECT_NAME_SPECIFIC_SAMPLE}
     networks:
       - proxy
     labels:

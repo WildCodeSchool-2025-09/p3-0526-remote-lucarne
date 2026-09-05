@@ -1,0 +1,10 @@
+{
+  "extends": "@lucarne/typescript-config/base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "target": "ES2020"
+  },
+  "include": ["src"]
+}

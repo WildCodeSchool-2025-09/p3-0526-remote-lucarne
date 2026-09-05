@@ -1,0 +1,3 @@
+{
+  "extends": "@lucarne/typescript-config/node.json"
+}
