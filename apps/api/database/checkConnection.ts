@@ -1,9 +1,10 @@
+import { environment } from "../src/config/environment";
 import client from "./client";
 
 client
   .getConnection()
   .then((connection) => {
-    console.info(`Using database ${process.env.DB_NAME}`);
+    console.info(`Using database ${environment.database.name}`);
     connection.release();
   })
   .catch((error: Error) => {

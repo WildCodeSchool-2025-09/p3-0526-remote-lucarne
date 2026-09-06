@@ -15,7 +15,8 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "helmet": "^8.3.0",
-    "mysql2": "^3.14.0"
+    "mysql2": "^3.14.0",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@lucarne/typescript-config": "0.0.1",

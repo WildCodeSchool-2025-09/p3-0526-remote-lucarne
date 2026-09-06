@@ -1,22 +1,47 @@
-const DEFAULT_PORT = 3310;
+import { z } from "zod";
 
-const parsePort = (value: string | undefined): number => {
-  if (value == null) {
-    return DEFAULT_PORT;
-  }
+const optionalUrlSchema = z.preprocess(
+  (value) => value === "" ? undefined : value,
+  z.url().optional(),
+);
 
-  const port = Number(value);
+const environmentSchema = z.object({
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
 
-  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
-    throw new Error("APP_PORT must be an integer between 1 and 65535");
-  }
+  APP_PORT: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(65_535)
+    .default(3310),
 
-  return port;
-};
+  APP_SECRET: z.string().min(32),
+
+  CLIENT_URL: optionalUrlSchema,
+
+  DB_HOST: z.string().min(1),
+  DB_PORT: z.coerce.number().int().min(1).max(65_535).default(3306),
+  DB_USER: z.string().min(1),
+  DB_PASSWORD: z.string().min(1),
+  DB_NAME: z.string().regex(/^[a-zA-Z0-9_]+$/),
+});
+
+const parsedEnvironment = environmentSchema.parse(process.env);
 
 const environment = Object.freeze({
-  clientUrl: process.env.CLIENT_URL,
-  port: parsePort(process.env.APP_PORT),
+  nodeEnv: parsedEnvironment.NODE_ENV,
+  port: parsedEnvironment.APP_PORT,
+  appSecret: parsedEnvironment.APP_SECRET,
+  clientUrl: parsedEnvironment.CLIENT_URL,
+  database: {
+    host: parsedEnvironment.DB_HOST,
+    port: parsedEnvironment.DB_PORT,
+    user: parsedEnvironment.DB_USER,
+    password: parsedEnvironment.DB_PASSWORD,
+    name: parsedEnvironment.DB_NAME,
+  },
 });
 
 export { environment };

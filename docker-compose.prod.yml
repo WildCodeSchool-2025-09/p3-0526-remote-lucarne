@@ -1,5 +1,3 @@
-version: "3.4"
-
 services:
   web:
     build: .
@@ -8,8 +6,9 @@ services:
       - ../envs/.env-${GITHUB_REPOSITORY_NAME}
     command: sh -c "npm run db:migrate && npm run build && npm run start"
     environment:
+      NODE_ENV: production
       APP_PORT: 3310
-      APP_SECRET: ${APP_SECRET:-123456789}
+      APP_SECRET: "${APP_SECRET:?APP_SECRET is required}"
       DB_HOST: ${DATABASE_SUBDOMAIN_NAME}-db
       DB_PORT: 3306
       DB_USER: ${USER_NAME}
