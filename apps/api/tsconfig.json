@@ -1,3 +1,3 @@
 {
-  "extends": "@lucarne/typescript-config/node.json"
+  "extends": "@lucarne/typescript-config/node.json",
 }

@@ -99,11 +99,55 @@ docker compose down
 ```text
 apps/
 ├── api/                       API Express, MySQL, migrations et seeds
+│   └── src/
+│       ├── config/            Configuration de l'application
+│       ├── errors/            Erreurs applicatives
+│       ├── features/          Fonctionnalités regroupées par domaine
+│       ├── middlewares/       Middlewares Express transversaux
+│       ├── types/             Types propres à l'API
+│       ├── app.ts             Création et configuration d'Express
+│       ├── router.ts          Point d'entrée des routes versionnées
+│       └── server.ts          Démarrage du serveur HTTP
 └── web/                       Application React et Vite
 packages/
 ├── eslint-config/             Configuration ESLint partagée
 ├── shared/                    Types et utilitaires communs
 └── typescript-config/         Configurations TypeScript partagées
+```
+
+### Architecture de l'API
+
+La création de l'application Express est séparée du démarrage du serveur HTTP.
+Le fichier `apps/api/src/app.ts` configure les middlewares et les routes, puis
+exporte l'application sans ouvrir de port. Le fichier `apps/api/src/server.ts`
+charge l'environnement, vérifie la connexion à la base de données et démarre
+le serveur. Cette séparation permet notamment d'importer l'application dans les
+tests sans lancer de serveur HTTP.
+
+Les routes de l'API utilisent le préfixe `/api/v1`. Une route de santé permet de
+vérifier son fonctionnement :
+
+```http
+GET /api/v1/health
+```
+
+Elle renvoie une réponse `200 OK` :
+
+```json
+{
+  "status": "ok"
+}
+```
+
+Les routes inconnues et les erreurs applicatives utilisent le format commun :
+
+```json
+{
+  "error": {
+    "code": "RESOURCE_NOT_FOUND",
+    "message": "Resource not found"
+  }
+}
 ```
 
 Le manifeste racine déclare les workspaces `apps/*` et `packages/*`. Les
