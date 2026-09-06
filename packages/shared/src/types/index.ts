@@ -1,2 +1,2 @@
-// Les contrats partages entre les applications seront exportes depuis ce module.
-export {};
+export * from "./api.types";
+export * from "./pagination.types";

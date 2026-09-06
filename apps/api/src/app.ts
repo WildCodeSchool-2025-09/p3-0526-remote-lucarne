@@ -5,6 +5,8 @@ import { environment } from "./config/environment";
 import { errorHandler } from "./middlewares/errorHandler";
 import { notFoundHandler } from "./middlewares/notFoundHandler";
 import router from "./router";
+import { API_V1_PATH } from "@lucarne/shared";
+
 
 const app = express();
 
@@ -15,7 +17,7 @@ if (environment.clientUrl != null) {
 }
 
 app.use(express.json());
-app.use("/api/v1", router, notFoundHandler);
+app.use(API_V1_PATH, router, notFoundHandler);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

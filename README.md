@@ -150,10 +150,42 @@ Les routes inconnues et les erreurs applicatives utilisent le format commun :
 }
 ```
 
+### Package partagé
+
+Le workspace `@lucarne/shared` centralise les contrats utilisés par le web et
+l'API. Il contient les constantes communes, les schémas de validation Zod et
+les types TypeScript associés :
+
+```text
+packages/shared/src/
+├── constants/                Chemins API et valeurs de pagination
+├── schemas/                  Schémas de validation Zod
+├── types/                    Contrats API et types de pagination
+├── utils/                    Futurs utilitaires purs
+└── index.ts                  Point d'entrée principal
+```
+
+Les premiers exports comprennent le préfixe `/api/v1`, les valeurs de
+pagination, le schéma `paginationQuerySchema`, les réponses d'erreur API et les
+réponses paginées génériques. Ils sont accessibles depuis la racine ou depuis
+des points d'entrée spécialisés :
+
+```ts
+import { API_V1_PATH } from "@lucarne/shared";
+import { DEFAULT_LIMIT } from "@lucarne/shared/constants";
+import { paginationQuerySchema } from "@lucarne/shared/schemas";
+import type { ApiErrorResponse } from "@lucarne/shared/types";
+```
+
+Un schéma partagé doit rester indépendant du web et de l'API afin que les deux
+applications appliquent les mêmes règles de validation. Son type TypeScript est
+dérivé avec `z.infer` lorsqu'il représente les données validées par ce schéma.
+
 Le manifeste racine déclare les workspaces `apps/*` et `packages/*`. Les
 applications sont nommées `@lucarne/web` et `@lucarne/api`. Elles dépendent
 toutes les deux de `@lucarne/shared`, dont les exports initiaux sont disponibles
-depuis la racine du package, `@lucarne/shared/types` et
+depuis la racine du package, `@lucarne/shared/constants`,
+`@lucarne/shared/schemas`, `@lucarne/shared/types` et
 `@lucarne/shared/utils`.
 
 Toutes les commandes npm doivent être exécutées depuis la racine. Le dépôt

@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler } from "express";
 import { AppError } from "../errors/AppError";
+import type { ApiErrorResponse } from "@lucarne/shared";
 
 const errorHandler: ErrorRequestHandler = (error, request, response, next) => {
   void next;
@@ -8,12 +9,14 @@ const errorHandler: ErrorRequestHandler = (error, request, response, next) => {
   console.error("on request:", request.method, request.path);
 
   if (error instanceof AppError) {
-    response.status(error.statusCode).json({
+    const payload: ApiErrorResponse = {
       error: {
         code: error.code,
         message: error.message,
       },
-    });
+    };
+
+    response.status(error.statusCode).json(payload);
     return;
   }
 
