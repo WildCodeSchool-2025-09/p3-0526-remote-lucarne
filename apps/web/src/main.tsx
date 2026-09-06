@@ -1,12 +1,11 @@
-import { createRoot } from "react-dom/client";
 import { StrictMode } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import queryClient from "./lib/queryClient";
+import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
+import "./config/environment";
+import queryClient from "./lib/queryClient";
 import router from "./router";
 import "./styles/global.css";
-
-
 
 const rootElement = document.getElementById("root");
 

@@ -61,6 +61,10 @@ docker compose down
    CLIENT_URL=http://localhost:3000
    ```
 
+   Vérifier également que `VITE_API_URL` dans `apps/web/.env` contient une URL
+   absolue valide (ou une chaîne vide pour utiliser une URL relative). Cette
+   variable est validée au démarrage de l'application web.
+
 4. Initialiser la base, charger éventuellement les données de développement,
    puis démarrer le projet :
 
@@ -125,5 +129,5 @@ npm run lint:fix
 Les noms de branches doivent rester compatibles avec Git. Par exemple :
 
 ```bash
-git switch -c init-001-initialization-github
+git switch -c INIT-001/initialize-github
 ```
