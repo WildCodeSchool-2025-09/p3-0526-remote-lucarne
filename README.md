@@ -111,11 +111,56 @@ depuis la racine du package, `@lucarne/shared/types` et
 Toutes les commandes npm doivent être exécutées depuis la racine. Le dépôt
 conserve un unique `package-lock.json` à cet emplacement.
 
+## Configuration TypeScript
+
+Les règles TypeScript communes sont regroupées dans
+`@lucarne/typescript-config`. Le mode strict est activé pour tous les
+workspaces contenant du TypeScript.
+
+| Configuration | Utilisation |
+| --- | --- |
+| `base.json` | Règles strictes communes et cohérence de la casse |
+| `node.json` | API Node.js avec des modules CommonJS |
+| `react-vite.json` | Application React, API du navigateur et build Vite |
+| `vite-node.json` | Fichier de configuration de Vite exécuté par Node.js |
+
+L'API étend `node.json`, l'application web étend `react-vite.json` et le
+package `@lucarne/shared` étend directement `base.json`.
+
+Dans un `tsconfig.json`, `target` indique la version de JavaScript ciblée,
+tandis que `module` définit le format des imports et des exports. L'application
+web utilise ainsi une cible `ES2020` avec des modules `ESNext`, laissés à Vite
+pour la construction du bundle.
+
+La configuration complète peut être vérifiée depuis la racine :
+
+```bash
+npm run check-types
+```
+
+## Qualité du code
+
 ESLint assure le lint, les règles de style du code source, les contrôles
 TypeScript sémantiques et les règles propres à React.
 
-Les noms de branches doivent rester compatibles avec Git. Par exemple :
+Les contrôles ESLint et TypeScript peuvent être exécutés ensemble avec :
 
 ```bash
-git switch -c init-001-initialization-github
+npm run check
+```
+
+## Conventions Git
+
+Les branches et les commits suivent le format défini dans `AGENTS.md` :
+
+```text
+Branche : XXXX-000/initialize-branch
+Commit  : XXXX-000/initialize-commit-work
+```
+
+Par exemple, pour l'initialisation TypeScript :
+
+```bash
+git switch -c INIT-003/initialize-typescript-config
+git commit -m "INIT-003/initialize-shared-typescript-config"
 ```
