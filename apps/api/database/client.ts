@@ -1,19 +1,15 @@
-import mysql from "mysql2/promise";
-import type { Pool, ResultSetHeader, RowDataPacket } from "mysql2/promise";
+import { Pool } from "pg";
+import type { QueryResult, QueryResultRow } from "pg";
 import { environment } from "../src/config/environment";
 
-const client = mysql.createPool({
-  host: environment.database.host,
-  port: environment.database.port,
-  user: environment.database.user,
-  password: environment.database.password,
-  database: environment.database.name,
+const client = new Pool({
+  connectionString: environment.database.connectionString,
 });
 
-export default client;
-
 type DatabaseClient = Pool;
-type Result = ResultSetHeader;
-type Rows = RowDataPacket[];
+type Result<Row extends QueryResultRow = QueryResultRow> = QueryResult<Row>;
+type Rows<Row extends QueryResultRow = QueryResultRow> = Row[];
+
+export default client;
 
 export type { DatabaseClient, Result, Rows };

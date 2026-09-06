@@ -1,14 +1,14 @@
 # Lucarne
 
 Lucarne est une application web organisée en monorepo npm et TypeScript. Elle
-regroupe une application React/Vite, une API Express, une base MySQL et des
+regroupe une application React/Vite, une API Express, une base PostgreSQL et des
 packages partagés, pilotés depuis la racine du dépôt.
 
 ## Prérequis
 
 - Node.js 20 ou une version ultérieure ;
 - npm ;
-- Docker Desktop avec Docker Compose (méthode recommandée), ou MySQL 8 pour
+- Docker Desktop avec Docker Compose (méthode recommandée), ou PostgreSQL 17 pour
   une installation entièrement locale.
 
 ## Initialisation avec Docker
@@ -16,21 +16,47 @@ packages partagés, pilotés depuis la racine du dépôt.
 ```bash
 git clone <url-du-depot>
 cd lucarne
+cp .env.example .env
 docker compose up -d --build
 docker compose exec web npm run db:migrate
 ```
 
-Docker lance MySQL, l'application web et l'API. La commande de migration crée
+Le fichier `.env` permet de configurer `DB_NAME`, `DB_USER`, `DB_PASSWORD` et
+`POSTGRES_PORT` pour l'environnement local. Docker lance PostgreSQL,
+l'application web et l'API. La commande de migration crée
 la base et applique son schéma. L'application est ensuite accessible aux
 adresses suivantes :
 
 - application web : <http://localhost:3000> ;
 - API : <http://localhost:3310>.
 
-Pour arrêter les services :
+## Gestion de l'environnement Docker
+
+Pour démarrer uniquement PostgreSQL, vérifier son état, puis démarrer ou
+reconstruire l'ensemble des services :
+
+```bash
+docker compose up -d db
+docker compose ps
+docker compose up -d --build
+```
+
+Pour arrêter les services sans supprimer les données PostgreSQL :
 
 ```bash
 docker compose down
+```
+
+Pour réinitialiser complètement l'environnement et la base de données, supprimer
+le volume, redémarrer les services puis appliquer le schéma :
+
+> **Attention :** `docker compose down -v` supprime définitivement toutes les
+> données PostgreSQL stockées dans le volume local.
+
+```bash
+docker compose down -v
+docker compose up -d --build
+docker compose exec web npm run db:migrate
 ```
 
 ## Initialisation locale
@@ -44,20 +70,17 @@ docker compose down
 2. Créer les fichiers d'environnement à partir des modèles :
 
    ```bash
-   cp apps/api/.env.sample apps/api/.env
+   cp apps/api/.env.example apps/api/.env
    cp apps/web/.env.sample apps/web/.env
    ```
 
-3. Renseigner dans `apps/api/.env` un compte MySQL autorisé à créer une base,
-   ainsi que le nom de la base à initialiser :
+3. Renseigner dans `apps/api/.env` les URL PostgreSQL de développement et de
+   test :
 
    ```env
    APP_PORT=3310
-   DB_HOST=localhost
-   DB_PORT=3306
-   DB_USER=<utilisateur>
-   DB_PASSWORD=<mot-de-passe>
-   DB_NAME=<nom-de-la-base>
+   DATABASE_URL=postgresql://user:password@localhost:5435/lucarne
+   TEST_DATABASE_URL=postgresql://test_user:test_password@localhost:5436/lucarne_test
    CLIENT_URL=http://localhost:3000
    ```
 
@@ -76,6 +99,59 @@ docker compose down
 
    Le seed n'exécute des requêtes que si `apps/api/database/seed.sql` contient
    des instructions SQL.
+
+## Base de données de test
+
+Le profil Compose `test` démarre une instance PostgreSQL séparée nommée
+`db_test`. Elle utilise la base `lucarne_test`, le port local `5436` et le volume
+nommé `postgres_test_data`. Les tests ne peuvent donc pas modifier les données
+de développement stockées par le service `db`.
+
+Pour démarrer et contrôler la base de test :
+
+```bash
+docker compose --profile test up -d db_test
+docker compose --profile test ps db_test
+```
+
+Dans PowerShell, appliquer le schéma à la base de test puis exécuter les tests :
+
+```powershell
+$env:NODE_ENV = "test"
+npm run db:migrate
+npm test
+Remove-Item Env:NODE_ENV
+```
+
+Lorsque les tests sont terminés, arrêter l'instance dédiée sans supprimer son
+volume :
+
+```bash
+docker compose --profile test stop db_test
+```
+
+## Tests de l'API
+
+Les tests de l'API utilisent Jest, `ts-jest` et Supertest. Le fichier
+`apps/api/jest.setup.ts` charge automatiquement l'environnement de test avant
+l'import de l'application, notamment `NODE_ENV=test` et l'URL de la base
+PostgreSQL dédiée.
+
+Les tests HTTP actuels vérifient la route de santé et le format commun des
+erreurs `404` sans démarrer de serveur ni accéder à la base de données :
+
+```bash
+npm test --workspace=@lucarne/api
+```
+
+La commande suivante exécute les tests de tous les workspaces qui en déclarent :
+
+```bash
+npm test
+```
+
+L'instance `db_test` et l'application préalable du schéma sont requises pour les
+tests qui accèdent à PostgreSQL.
 
 ## Commandes utiles
 
@@ -98,13 +174,14 @@ docker compose down
 
 ```text
 apps/
-├── api/                       API Express, MySQL, migrations et seeds
+├── api/                       API Express, PostgreSQL, migrations et seeds
 │   └── src/
 │       ├── config/            Configuration de l'application
 │       ├── errors/            Erreurs applicatives
 │       ├── features/          Fonctionnalités regroupées par domaine
 │       ├── middlewares/       Middlewares Express transversaux
 │       ├── types/             Types propres à l'API
+│       ├── app.test.ts        Tests HTTP de l'application avec Supertest
 │       ├── app.ts             Création et configuration d'Express
 │       ├── router.ts          Point d'entrée des routes versionnées
 │       └── server.ts          Démarrage du serveur HTTP

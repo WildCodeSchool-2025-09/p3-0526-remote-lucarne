@@ -3,8 +3,8 @@
   "extends": "./base.json",
   "compilerOptions": {
     "esModuleInterop": true,
-    "module": "CommonJS",
-    "moduleResolution": "Node",
+    "module": "Preserve",
+    "moduleResolution": "Bundler",
     "target": "ESNext"
   }
 }

@@ -9,14 +9,14 @@ services:
       NODE_ENV: production
       APP_PORT: 3310
       APP_SECRET: "${APP_SECRET:?APP_SECRET is required}"
-      DB_HOST: ${DATABASE_SUBDOMAIN_NAME}-db
-      DB_PORT: 3306
-      DB_USER: ${USER_NAME}
-      DB_PASSWORD: ${USER_PASSWORD}
-      DB_NAME: ${DB_NAME}
+      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
       VITE_API_URL: ""
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - proxy
+      - backend
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
@@ -24,6 +24,32 @@ services:
       - "traefik.http.routers.${PROJECT_NAME:-project}-secure.rule=Host(`${PROJECT_NAME:-project}.${HOST:-localhost}`)"
       - "traefik.http.services.${PROJECT_NAME:-project}.loadbalancer.server.port=3310"
 
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${USER_NAME}
+      POSTGRES_PASSWORD: ${USER_PASSWORD}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
 networks:
   proxy:
     external: true
+  backend:
+    internal: true
+
+volumes:
+  postgres_data:

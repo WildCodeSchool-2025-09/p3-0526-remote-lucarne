@@ -5,6 +5,13 @@ const optionalUrlSchema = z.preprocess(
   z.url().optional(),
 );
 
+const databaseUrlSchema = z.url().refine((value) => {
+  const url = new URL(value);
+
+  return ["postgres:", "postgresql:"].includes(url.protocol)
+    && url.pathname.length > 1;
+}, "Must be a PostgreSQL URL containing a database name");
+
 const environmentSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
@@ -21,14 +28,15 @@ const environmentSchema = z.object({
 
   CLIENT_URL: optionalUrlSchema,
 
-  DB_HOST: z.string().min(1),
-  DB_PORT: z.coerce.number().int().min(1).max(65_535).default(3306),
-  DB_USER: z.string().min(1),
-  DB_PASSWORD: z.string().min(1),
-  DB_NAME: z.string().regex(/^[a-zA-Z0-9_]+$/),
+  DATABASE_URL: databaseUrlSchema,
+  TEST_DATABASE_URL: databaseUrlSchema.optional(),
 });
 
 const parsedEnvironment = environmentSchema.parse(process.env);
+const databaseUrl = parsedEnvironment.NODE_ENV === "test"
+  ? (parsedEnvironment.TEST_DATABASE_URL ?? parsedEnvironment.DATABASE_URL)
+  : parsedEnvironment.DATABASE_URL;
+const databaseName = decodeURIComponent(new URL(databaseUrl).pathname.slice(1));
 
 const environment = Object.freeze({
   nodeEnv: parsedEnvironment.NODE_ENV,
@@ -36,11 +44,8 @@ const environment = Object.freeze({
   appSecret: parsedEnvironment.APP_SECRET,
   clientUrl: parsedEnvironment.CLIENT_URL,
   database: {
-    host: parsedEnvironment.DB_HOST,
-    port: parsedEnvironment.DB_PORT,
-    user: parsedEnvironment.DB_USER,
-    password: parsedEnvironment.DB_PASSWORD,
-    name: parsedEnvironment.DB_NAME,
+    connectionString: databaseUrl,
+    name: databaseName,
   },
 });
 
