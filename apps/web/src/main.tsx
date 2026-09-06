@@ -1,14 +1,12 @@
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { RouterProvider, createBrowserRouter } from "react-router";
-import App from "./App";
+import { StrictMode } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import queryClient from "./lib/queryClient";
+import { RouterProvider } from "react-router";
+import router from "./router";
+import "./styles/global.css";
 
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <App />,
-  },
-]);
+
 
 const rootElement = document.getElementById("root");
 
@@ -18,6 +16,8 @@ if (rootElement == null) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   </StrictMode>,
 );

@@ -112,7 +112,15 @@ Toutes les commandes npm doivent être exécutées depuis la racine. Le dépôt
 conserve un unique `package-lock.json` à cet emplacement.
 
 ESLint assure le lint, les règles de style du code source, les contrôles
-TypeScript sémantiques et les règles propres à React.
+TypeScript sémantiques et les règles propres à React. Le plugin ESLint
+`@stylistic` contrôle notamment l'indentation, les guillemets, les espaces, les
+points-virgules et les virgules finales. Aucun formateur séparé n'est utilisé.
+
+Les corrections de style automatisables peuvent être appliquées avec :
+
+```bash
+npm run lint:fix
+```
 
 Les noms de branches doivent rester compatibles avec Git. Par exemple :
 

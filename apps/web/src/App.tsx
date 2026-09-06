@@ -1,5 +1,14 @@
+import { Outlet } from "react-router";
+
 function App() {
-  return <h1>Lucarne</h1>;
+  return (
+    <>
+      <header>Lucarne</header>
+      <main>
+        <Outlet />
+      </main>
+    </>
+  );
 }
 
 export default App;
