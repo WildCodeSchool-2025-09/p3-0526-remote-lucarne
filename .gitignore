@@ -5,3 +5,8 @@ node_modules
 .vscode
 .env
 AGENTS.md
+/.agents/
+/.claude/
+/.windsurf/
+/skills-lock.json
+/output/

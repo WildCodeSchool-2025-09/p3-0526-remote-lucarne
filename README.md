@@ -23,9 +23,9 @@ docker compose exec web npm run db:migrate
 
 Le fichier `.env` permet de configurer `DB_NAME`, `DB_USER`, `DB_PASSWORD` et
 `POSTGRES_PORT` pour l'environnement local. Docker lance PostgreSQL,
-l'application web et l'API. La commande de migration crée
-la base et applique son schéma. L'application est ensuite accessible aux
-adresses suivantes :
+l'application web et l'API. La commande de migration applique les migrations
+Prisma qui n'ont pas encore été exécutées. L'application est ensuite accessible
+aux adresses suivantes :
 
 - application web : <http://localhost:3000> ;
 - API : <http://localhost:3310>.
@@ -88,10 +88,11 @@ docker compose exec web npm run db:migrate
    absolue valide (ou une chaîne vide pour utiliser une URL relative). Cette
    variable est validée au démarrage de l'application web.
 
-4. Initialiser la base, charger éventuellement les données de développement,
-   puis démarrer le projet :
+4. Générer Prisma Client, appliquer les migrations, charger éventuellement les
+   données de développement, puis démarrer le projet :
 
    ```bash
+   npm run prisma:generate
    npm run db:migrate
    npm run db:seed
    npm run dev
@@ -99,6 +100,52 @@ docker compose exec web npm run db:migrate
 
    Le seed n'exécute des requêtes que si `apps/api/database/seed.sql` contient
    des instructions SQL.
+
+## Prisma et migrations
+
+Le schéma Prisma se trouve dans `apps/api/prisma/schema.prisma` et sa
+configuration dans `apps/api/prisma7.config.ts`. Les modèles Prisma suivent le
+`PascalCase` et leurs propriétés le `camelCase`. Les attributs `@@map` et `@map`
+conservent les tables et colonnes PostgreSQL en `snake_case`.
+
+L'instance partagée de `PrismaClient` est exportée par
+`apps/api/database/prisma.ts`. Les fonctionnalités de l'API doivent importer ce
+module au lieu de créer une nouvelle instance à chaque utilisation.
+
+La migration `apps/api/prisma/migrations/0_init/migration.sql` constitue la
+baseline de la base. Elle contient également les extensions PostgreSQL, les
+contraintes `CHECK`, les index partiels et les triggers qui ne sont pas tous
+représentables dans le schéma Prisma. Une migration déjà appliquée ne doit pas
+être modifiée.
+
+Pour faire évoluer la base en développement :
+
+1. Modifier `apps/api/prisma/schema.prisma`.
+2. Valider le schéma et créer une migration nommée.
+3. Vérifier le fichier `migration.sql` généré et y ajouter, si nécessaire, le
+   SQL des contraintes ou triggers non pris en charge par Prisma.
+4. Régénérer Prisma Client.
+
+```bash
+npm run prisma:validate
+npm exec --workspace=@lucarne/api -- prisma migrate dev --name <nom-migration>
+npm run prisma:generate
+```
+
+Sur un environnement déployé, `npm run db:migrate` applique uniquement les
+migrations versionnées qui sont encore en attente. Le client généré dans
+`apps/api/src/generated/prisma` est reproductible avec
+`npm run prisma:generate` et n'est pas versionné.
+
+Pour une base créée avec l'ancien script SQL avant l'ajout de Prisma Migrate,
+enregistrer une seule fois la baseline sans réexécuter son SQL :
+
+```bash
+npm exec --workspace=@lucarne/api -- prisma migrate resolve --applied 0_init
+```
+
+Cette commande ne doit être utilisée que si les tables de la migration
+`0_init` existent déjà dans la base ciblée.
 
 ## Base de données de test
 
@@ -114,13 +161,14 @@ docker compose --profile test up -d db_test
 docker compose --profile test ps db_test
 ```
 
-Dans PowerShell, appliquer le schéma à la base de test puis exécuter les tests :
+Dans PowerShell, appliquer les migrations Prisma à la base de test puis exécuter
+les tests :
 
 ```powershell
-$env:NODE_ENV = "test"
+$env:DATABASE_URL = "postgresql://test_user:test_password@localhost:5436/lucarne_test"
 npm run db:migrate
 npm test
-Remove-Item Env:NODE_ENV
+Remove-Item Env:DATABASE_URL
 ```
 
 Lorsque les tests sont terminés, arrêter l'instance dédiée sans supprimer son
@@ -160,8 +208,13 @@ tests qui accèdent à PostgreSQL.
 | `npm run dev` | Lance `@lucarne/web` et `@lucarne/api` en développement |
 | `npm run dev:web` | Lance uniquement l'application web |
 | `npm run dev:api` | Lance uniquement l'API |
-| `npm run db:migrate` | Applique le schéma SQL |
+| `npm run db:migrate` | Déploie les migrations Prisma en attente |
 | `npm run db:seed` | Exécute le seed SQL de l'API |
+| `npm run prisma:generate` | Génère Prisma Client à partir du schéma |
+| `npm run prisma:validate` | Valide le schéma Prisma |
+| `npm run prisma:migrate` | Crée et applique une migration en développement |
+| `npm run prisma:deploy` | Déploie les migrations Prisma en attente |
+| `npm run prisma:studio` | Ouvre Prisma Studio |
 | `npm run check` | Exécute ESLint et la vérification TypeScript |
 | `npm run check:fix` | Corrige les erreurs ESLint automatisables |
 | `npm run check-types` | Vérifie les types de tous les workspaces concernés |
@@ -174,11 +227,20 @@ tests qui accèdent à PostgreSQL.
 
 ```text
 apps/
-├── api/                       API Express, PostgreSQL, migrations et seeds
+├── api/                       API Express et accès PostgreSQL avec Prisma
+│   ├── database/
+│   │   ├── client.ts          Pool PostgreSQL partagé
+│   │   ├── prisma.ts          Instance Prisma Client centralisée
+│   │   └── seed.sql           Données de seed SQL
+│   ├── prisma/
+│   │   ├── migrations/        Historique versionné des migrations
+│   │   └── schema.prisma      Modèles et relations Prisma
+│   ├── prisma7.config.ts      Configuration de Prisma CLI
 │   └── src/
 │       ├── config/            Configuration de l'application
 │       ├── errors/            Erreurs applicatives
 │       ├── features/          Fonctionnalités regroupées par domaine
+│       ├── generated/prisma/  Prisma Client généré et ignoré par Git
 │       ├── middlewares/       Middlewares Express transversaux
 │       ├── types/             Types propres à l'API
 │       ├── app.test.ts        Tests HTTP de l'application avec Supertest

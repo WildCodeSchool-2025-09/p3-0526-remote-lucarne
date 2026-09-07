@@ -21,7 +21,12 @@
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix --max-warnings=0",
     "start": "npm run start --workspace=@lucarne/api",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "prisma:generate": "npm run prisma:generate --workspace=@lucarne/api",
+    "prisma:validate": "npm run prisma:validate --workspace=@lucarne/api",
+    "prisma:migrate": "npm run prisma:migrate --workspace=@lucarne/api",
+    "prisma:deploy": "npm run prisma:deploy --workspace=@lucarne/api",
+    "prisma:studio": "npm run prisma:studio --workspace=@lucarne/api"
   },
   "keywords": [],
   "license": "MIT",

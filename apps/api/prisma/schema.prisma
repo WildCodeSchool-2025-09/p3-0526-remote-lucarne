@@ -1,0 +1,198 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model AppUser {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roleId       String    @map("role_id") @db.Uuid
+  email        String    @unique @db.Citext
+  passwordHash String    @map("password_hash")
+  firstName    String    @map("first_name") @db.VarChar(100)
+  lastName     String    @map("last_name") @db.VarChar(100)
+  avatarUrl    String?   @map("avatar_url")
+  status       String    @default("PENDING_VERIFICATION") @db.VarChar(30)
+  lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  role         Role      @relation(fields: [roleId], references: [id], onUpdate: NoAction, map: "fk_user_role")
+
+  @@index([roleId], map: "idx_user_role")
+  @@map("app_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model GameMatch {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  matchdayId  String       @map("matchday_id") @db.Uuid
+  homeTeamId  String       @map("home_team_id") @db.Uuid
+  awayTeamId  String       @map("away_team_id") @db.Uuid
+  matchDate   DateTime     @map("match_date") @db.Date
+  startTime   DateTime     @map("start_time") @db.Time(6)
+  stadium     String?      @db.VarChar(150)
+  homeScore   Int?         @map("home_score")
+  awayScore   Int?         @map("away_score")
+  status      String       @default("SCHEDULED") @db.VarChar(30)
+  isActive    Boolean      @default(true) @map("is_active")
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  awayTeam    Team         @relation("AwayTeamMatches", fields: [awayTeamId], references: [id], onUpdate: NoAction, map: "fk_match_away_team")
+  homeTeam    Team         @relation("HomeTeamMatches", fields: [homeTeamId], references: [id], onUpdate: NoAction, map: "fk_match_home_team")
+  matchday    Matchday     @relation(fields: [matchdayId], references: [id], onUpdate: NoAction, map: "fk_match_matchday")
+  matchEvents MatchEvent[]
+
+  @@index([awayTeamId], map: "idx_match_away_team")
+  @@index([matchDate], map: "idx_match_date")
+  @@index([homeTeamId], map: "idx_match_home_team")
+  @@index([matchdayId], map: "idx_match_matchday")
+  @@index([status], map: "idx_match_status")
+  @@map("game_match")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model League {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String   @db.VarChar(150)
+  country   String   @db.VarChar(100)
+  logoUrl   String?  @map("logo_url")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  seasons   Season[]
+
+  @@unique([name, country], map: "uq_league_name_country")
+  @@map("league")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model MatchEvent {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  matchId   String    @map("match_id") @db.Uuid
+  playerId  String    @map("player_id") @db.Uuid
+  eventType String    @default("GOAL") @map("event_type") @db.VarChar(50)
+  minute    Int
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  gameMatch GameMatch @relation(fields: [matchId], references: [id], onUpdate: NoAction, map: "fk_event_match")
+  player    Player    @relation(fields: [playerId], references: [id], onUpdate: NoAction, map: "fk_event_player")
+
+  @@index([matchId], map: "idx_event_match")
+  @@index([playerId], map: "idx_event_player")
+  @@map("match_event")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model Matchday {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  seasonId    String      @map("season_id") @db.Uuid
+  number      Int
+  name        String?     @db.VarChar(100)
+  startDate   DateTime?   @map("start_date") @db.Date
+  endDate     DateTime?   @map("end_date") @db.Date
+  isActive    Boolean     @default(true) @map("is_active")
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  gameMatches GameMatch[]
+  season      Season      @relation(fields: [seasonId], references: [id], onUpdate: NoAction, map: "fk_matchday_season")
+
+  @@unique([seasonId, number], map: "uq_matchday_season_number")
+  @@index([seasonId], map: "idx_matchday_season")
+  @@map("matchday")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model Participation {
+  teamId         String   @map("team_id") @db.Uuid
+  seasonId       String   @map("season_id") @db.Uuid
+  registrationAt DateTime @default(now()) @map("registration_at") @db.Timestamptz(6)
+  points         Int      @default(0)
+  rank           Int?
+  status         String   @default("REGISTERED") @db.VarChar(30)
+  season         Season   @relation(fields: [seasonId], references: [id], onUpdate: NoAction, map: "fk_participation_season")
+  team           Team     @relation(fields: [teamId], references: [id], onUpdate: NoAction, map: "fk_participation_team")
+
+  @@id([teamId, seasonId], map: "pk_participation")
+  @@index([seasonId], map: "idx_participation_season")
+  @@index([seasonId, status], map: "idx_participation_season_status")
+  @@map("participation")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model Player {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teamId      String       @map("team_id") @db.Uuid
+  firstName   String       @map("first_name") @db.VarChar(100)
+  lastName    String       @map("last_name") @db.VarChar(100)
+  nationality String?      @db.VarChar(100)
+  position    String?      @db.VarChar(50)
+  pictureUrl  String?      @map("picture_url")
+  isActive    Boolean      @default(true) @map("is_active")
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  matchEvents MatchEvent[]
+  team        Team         @relation(fields: [teamId], references: [id], onUpdate: NoAction, map: "fk_player_team")
+
+  @@index([teamId], map: "idx_player_team")
+  @@map("player")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model Role {
+  id    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name  String    @unique @db.VarChar(50)
+  users AppUser[]
+
+  @@map("role")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model Season {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leagueId       String          @unique(map: "uq_active_season_per_league", where: raw("(is_active = true)")) @map("league_id") @db.Uuid
+  name           String          @db.VarChar(100)
+  startDate      DateTime        @map("start_date") @db.Date
+  endDate        DateTime        @map("end_date") @db.Date
+  isActive       Boolean         @default(false) @map("is_active")
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  matchdays      Matchday[]
+  participations Participation[]
+  league         League          @relation(fields: [leagueId], references: [id], onUpdate: NoAction, map: "fk_season_league")
+
+  @@unique([leagueId, name], map: "uq_season_league_name")
+  @@index([leagueId], map: "idx_season_league")
+  @@map("season")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model StaffMember {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teamId      String   @map("team_id") @db.Uuid
+  firstName   String   @map("first_name") @db.VarChar(100)
+  lastName    String   @map("last_name") @db.VarChar(100)
+  nationality String?  @db.VarChar(100)
+  jobTitle    String   @map("job_title") @db.VarChar(100)
+  pictureUrl  String?  @map("picture_url")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  team        Team     @relation(fields: [teamId], references: [id], onUpdate: NoAction, map: "fk_staff_team")
+
+  @@index([teamId], map: "idx_staff_team")
+  @@map("staff_member")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model Team {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String          @db.VarChar(150)
+  logoUrl        String?         @map("logo_url")
+  stadium        String?         @db.VarChar(150)
+  isActive       Boolean         @default(true) @map("is_active")
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  awayMatches    GameMatch[]     @relation("AwayTeamMatches")
+  homeMatches    GameMatch[]     @relation("HomeTeamMatches")
+  participations Participation[]
+  players        Player[]
+  staffMembers   StaffMember[]
+
+  @@map("team")
+}
