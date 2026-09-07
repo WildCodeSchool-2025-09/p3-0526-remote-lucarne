@@ -101,6 +101,64 @@ docker compose exec web npm run db:migrate
    Le seed n'exécute des requêtes que si `apps/api/database/seed.sql` contient
    des instructions SQL.
 
+## Communication entre le front-end et l'API
+
+Le front-end lit l'URL de l'API depuis `VITE_API_URL`. En développement local,
+`apps/web/.env` doit contenir :
+
+```env
+VITE_API_URL=http://localhost:3310
+```
+
+L'API lit l'origine autorisée par CORS depuis `CLIENT_URL`. Pour autoriser le
+front-end local, `apps/api/.env` doit contenir :
+
+```env
+CLIENT_URL=http://localhost:3000
+```
+
+Seules les variables préfixées par `VITE_` sont intégrées au code exécuté dans
+le navigateur. Les secrets serveur, notamment `APP_SECRET` et `DATABASE_URL`,
+ne doivent jamais être ajoutés à l'environnement Vite ni importés par le
+front-end.
+
+Le module `apps/web/src/lib/httpClient.ts` centralise les appels HTTP. Il
+combine automatiquement `VITE_API_URL`, le préfixe partagé `/api/v1` et le
+chemin de la ressource. Les composants utilisent donc uniquement un chemin
+relatif à l'API versionnée :
+
+```ts
+import type { HealthResponse } from "@lucarne/shared";
+import { httpClient } from "./lib/httpClient";
+
+const health = await httpClient.get<HealthResponse>("/health");
+```
+
+En local, cet appel cible
+`http://localhost:3310/api/v1/health`. Le client prend également en charge les
+corps JSON, les paramètres de requête, les réponses sans contenu et le format
+d'erreur commun de l'API via `HttpError`.
+
+La page d'accueil temporaire exécute cet appel avec React Query et affiche un
+état distinct pendant le chargement, lorsque l'API répond et lorsqu'elle est
+indisponible. Les options communes de React Query se trouvent dans
+`apps/web/src/lib/queryClient.ts`.
+
+Pour vérifier manuellement la communication, démarrer les deux applications :
+
+```bash
+npm run dev
+```
+
+Ouvrir ensuite <http://localhost:3000>. La page doit afficher
+`État de l'API : ok`. La route peut aussi être contrôlée directement :
+
+```bash
+curl http://localhost:3310/api/v1/health
+```
+
+La réponse attendue est `{"status":"ok"}`.
+
 ## Prisma et migrations
 
 Le schéma Prisma se trouve dans `apps/api/prisma/schema.prisma` et sa
@@ -248,6 +306,10 @@ apps/
 │       ├── router.ts          Point d'entrée des routes versionnées
 │       └── server.ts          Démarrage du serveur HTTP
 └── web/                       Application React et Vite
+    └── src/
+        ├── config/            Validation de l'environnement Vite
+        ├── lib/               Client HTTP et configuration React Query
+        └── pages/             Pages de l'application
 packages/
 ├── eslint-config/             Configuration ESLint partagée
 ├── shared/                    Types et utilitaires communs
@@ -305,15 +367,15 @@ packages/shared/src/
 ```
 
 Les premiers exports comprennent le préfixe `/api/v1`, les valeurs de
-pagination, le schéma `paginationQuerySchema`, les réponses d'erreur API et les
-réponses paginées génériques. Ils sont accessibles depuis la racine ou depuis
-des points d'entrée spécialisés :
+pagination, le schéma `paginationQuerySchema`, `HealthResponse`, les réponses
+d'erreur API et les réponses paginées génériques. Ils sont accessibles depuis
+la racine ou depuis des points d'entrée spécialisés :
 
 ```ts
 import { API_V1_PATH } from "@lucarne/shared";
 import { DEFAULT_LIMIT } from "@lucarne/shared/constants";
 import { paginationQuerySchema } from "@lucarne/shared/schemas";
-import type { ApiErrorResponse } from "@lucarne/shared/types";
+import type { ApiErrorResponse, HealthResponse } from "@lucarne/shared/types";
 ```
 
 Un schéma partagé doit rester indépendant du web et de l'API afin que les deux
