@@ -1,4 +1,5 @@
 import request from "supertest";
+import { describe, expect, it, vi } from "vitest";
 import app from "./app";
 
 describe("app", () => {
@@ -10,7 +11,7 @@ describe("app", () => {
   });
 
   it("returns the common error format for an unknown route", async () => {
-    const consoleError = jest
+    const consoleError = vi
       .spyOn(console, "error")
       .mockImplementation(() => undefined);
 

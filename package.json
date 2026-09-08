@@ -2,6 +2,10 @@
   "name": "lucarne",
   "version": "0.0.1",
   "private": true,
+  "engines": {
+    "node": "^24.0.0",
+    "npm": ">=10"
+  },
   "description": "",
   "workspaces": [
     "apps/*",
@@ -22,6 +26,12 @@
     "lint:fix": "eslint . --fix --max-warnings=0",
     "start": "npm run start --workspace=@lucarne/api",
     "test": "npm run test --workspaces --if-present",
+    "test:web": "npm run test --workspace=@lucarne/web",
+    "test:web:coverage": "npm run test --workspace=@lucarne/web -- --coverage",
+    "test:api": "npm run test --workspace=@lucarne/api",
+    "test:api:watch": "npm run test:watch --workspace=@lucarne/api",
+    "test:api:coverage": "npm run test --workspace=@lucarne/api -- --coverage",
+    "test:api:integration": "npm run test:integration --workspace=@lucarne/api",
     "prisma:generate": "npm run prisma:generate --workspace=@lucarne/api",
     "prisma:validate": "npm run prisma:validate --workspace=@lucarne/api",
     "prisma:migrate": "npm run prisma:migrate --workspace=@lucarne/api",

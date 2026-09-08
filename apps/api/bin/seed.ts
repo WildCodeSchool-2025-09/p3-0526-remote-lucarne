@@ -1,37 +1,34 @@
 import "dotenv/config";
-import fs from "node:fs";
-import path from "node:path";
-import { Client } from "pg";
+import client from "../database/client";
+import prisma from "../database/prisma";
+import { runSeeders } from "../database/seeders";
 import { environment } from "../src/config/environment";
 
-const seedFile = path.resolve(__dirname, "../database/seed.sql");
-
-const seed = async () => {
-  let database: Client | undefined;
-
+const seed = async (): Promise<void> => {
   try {
-    const sql = fs.readFileSync(seedFile, "utf8");
-
-    database = new Client({
-      connectionString: environment.database.connectionString,
-    });
-
-    await database.connect();
-
-    if (sql.trim().length > 0) {
-      await database.query(sql);
+    if (environment.nodeEnv === "production") {
+      throw new Error(
+        "Database seeding is forbidden in production",
+      );
     }
 
+    await prisma.$transaction(async (database) => {
+      await runSeeders(database);
+    });
+
     console.info(
-      `${environment.database.name} filled from '${path.normalize(seedFile)}'`,
+      `Database '${environment.database.name}' seeded successfully`,
     );
   } catch (error) {
-    const { message, stack } = error as Error;
+    const message = error instanceof Error
+      ? error.message
+      : "Unknown seeding error";
 
-    console.error("Error filling the database:", message, stack);
+    console.error("Unable to seed the database:", message);
     process.exitCode = 1;
   } finally {
-    await database?.end();
+    await prisma.$disconnect();
+    await client.end();
   }
 };
 

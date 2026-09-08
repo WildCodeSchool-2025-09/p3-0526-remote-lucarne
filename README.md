@@ -6,8 +6,8 @@ packages partagés, pilotés depuis la racine du dépôt.
 
 ## Prérequis
 
-- Node.js 20 ou une version ultérieure ;
-- npm ;
+- Node.js 24 (version commune à `.nvmrc`, Docker et la CI) ;
+- npm 10 ou une version ultérieure ;
 - Docker Desktop avec Docker Compose (méthode recommandée), ou PostgreSQL 17 pour
   une installation entièrement locale.
 
@@ -64,7 +64,7 @@ docker compose exec web npm run db:migrate
 1. Installer les dépendances à la racine :
 
    ```bash
-   npm install
+   npm ci
    ```
 
 2. Créer les fichiers d'environnement à partir des modèles :
@@ -76,6 +76,9 @@ docker compose exec web npm run db:migrate
 
 3. Renseigner dans `apps/api/.env` les URL PostgreSQL de développement et de
    test :
+
+   Remplacer également `APP_SECRET` du modèle par un secret local d'au moins
+   32 caractères. Ne jamais commiter le fichier `.env`.
 
    ```env
    APP_PORT=3310
@@ -98,8 +101,19 @@ docker compose exec web npm run db:migrate
    npm run dev
    ```
 
-   Le seed n'exécute des requêtes que si `apps/api/database/seed.sql` contient
-   des instructions SQL.
+   Le seed utilise Prisma et Faker. Il crée une ligue, une saison active,
+   deux équipes, deux participations, 24 joueuses (12 par équipe) et deux
+   entraîneurs (un par équipe).
+
+   Les UUID stables et la graine Faker rendent les données reproductibles
+   et évitent les doublons. Chaque exécution remet toutefois les données de
+   démonstration à leurs valeurs initiales, notamment les points, les rangs
+   et les statuts des participations. Réserver cette commande aux bases de
+   développement ou de test : elle refuse `NODE_ENV=production`.
+
+   L'orchestrateur `apps/api/bin/seed.ts` appelle les modules de
+   `apps/api/database/seeders/` dans une transaction unique. Le fichier
+   `database/seed.sql` n'est plus utilisé.
 
 ## Communication entre le front-end et l'API
 
@@ -209,8 +223,9 @@ Cette commande ne doit être utilisée que si les tables de la migration
 
 Le profil Compose `test` démarre une instance PostgreSQL séparée nommée
 `db_test`. Elle utilise la base `lucarne_test`, le port local `5436` et le volume
-nommé `postgres_test_data`. Les tests ne peuvent donc pas modifier les données
-de développement stockées par le service `db`.
+nommé `postgres_test_data`. Utiliser exclusivement cette base dédiée pour
+les tests d'intégration : leur préparation vide les tables applicatives,
+tout en conservant `_prisma_migrations`.
 
 Pour démarrer et contrôler la base de test :
 
@@ -223,11 +238,26 @@ Dans PowerShell, appliquer les migrations Prisma à la base de test puis exécut
 les tests :
 
 ```powershell
-$env:DATABASE_URL = "postgresql://test_user:test_password@localhost:5436/lucarne_test"
-npm run db:migrate
-npm test
-Remove-Item Env:DATABASE_URL
+$previousDatabaseUrl = $env:DATABASE_URL
+try {
+  $env:DATABASE_URL = "postgresql://test_user:test_password@localhost:5436/lucarne_test"
+  npm run db:migrate
+  if ($LASTEXITCODE -ne 0) { throw "Test database migration failed" }
+} finally {
+  if ($null -eq $previousDatabaseUrl) {
+    Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue
+  } else {
+    $env:DATABASE_URL = $previousDatabaseUrl
+  }
+}
+npm run test:api:integration
 ```
+
+Prisma CLI utilise `DATABASE_URL` pour les migrations. Les tests utilisent
+`TEST_DATABASE_URL`, définie par défaut dans `apps/api/vitest.setup.ts`.
+Ces deux URL doivent être distinctes lors de l'exécution des tests. Si les
+identifiants ou le port Docker sont personnalisés, adapter l'URL de migration
+et `TEST_DATABASE_URL` avant de lancer les tests.
 
 Lorsque les tests sont terminés, arrêter l'instance dédiée sans supprimer son
 volume :
@@ -238,26 +268,35 @@ docker compose --profile test stop db_test
 
 ## Tests de l'API
 
-Les tests de l'API utilisent Jest, `ts-jest` et Supertest. Le fichier
-`apps/api/jest.setup.ts` charge automatiquement l'environnement de test avant
+Les tests de l'API utilisent Vitest et Supertest. Le fichier
+`apps/api/vitest.setup.ts` charge automatiquement l'environnement de test avant
 l'import de l'application, notamment `NODE_ENV=test` et l'URL de la base
 PostgreSQL dédiée.
 
 Les tests HTTP actuels vérifient la route de santé et le format commun des
-erreurs `404` sans démarrer de serveur ni accéder à la base de données :
+erreurs `404` sans exécuter `server.ts` ni accéder à la base de données.
+Supertest utilise l'application Express importée et peut ouvrir un port
+éphémère pendant une requête :
 
 ```bash
-npm test --workspace=@lucarne/api
+npm run test:api
+npm run test:api:coverage
 ```
 
-La commande suivante exécute les tests de tous les workspaces qui en déclarent :
+La commande suivante exécute les tests classiques de tous les workspaces ;
+elle exclut les tests d'intégration PostgreSQL :
 
 ```bash
 npm test
 ```
 
 L'instance `db_test` et l'application préalable du schéma sont requises pour les
-tests qui accèdent à PostgreSQL.
+tests qui accèdent à PostgreSQL. Ces tests sont isolés dans les fichiers
+`*.integration.test.ts` et se lancent avec :
+
+```bash
+npm run test:api:integration
+```
 
 ## Commandes utiles
 
@@ -267,7 +306,7 @@ tests qui accèdent à PostgreSQL.
 | `npm run dev:web` | Lance uniquement l'application web |
 | `npm run dev:api` | Lance uniquement l'API |
 | `npm run db:migrate` | Déploie les migrations Prisma en attente |
-| `npm run db:seed` | Exécute le seed SQL de l'API |
+| `npm run db:seed` | Génère les données de démonstration avec Prisma et Faker |
 | `npm run prisma:generate` | Génère Prisma Client à partir du schéma |
 | `npm run prisma:validate` | Valide le schéma Prisma |
 | `npm run prisma:migrate` | Crée et applique une migration en développement |
@@ -278,6 +317,10 @@ tests qui accèdent à PostgreSQL.
 | `npm run check-types` | Vérifie les types de tous les workspaces concernés |
 | `npm run lint` | Vérifie le code avec ESLint |
 | `npm test` | Exécute les tests |
+| `npm run test:api` | Exécute les tests unitaires et HTTP de l'API |
+| `npm run test:api:watch` | Relance les tests API à chaque modification |
+| `npm run test:api:coverage` | Exécute les tests API avec la couverture |
+| `npm run test:api:integration` | Exécute les tests API avec PostgreSQL |
 | `npm run build` | Vérifie l'API et construit l'application Vite |
 | `npm start` | Démarre l'API |
 
@@ -289,7 +332,7 @@ apps/
 │   ├── database/
 │   │   ├── client.ts          Pool PostgreSQL partagé
 │   │   ├── prisma.ts          Instance Prisma Client centralisée
-│   │   └── seed.sql           Données de seed SQL
+│   │   └── seeders/           Seeders Prisma et données Faker
 │   ├── prisma/
 │   │   ├── migrations/        Historique versionné des migrations
 │   │   └── schema.prisma      Modèles et relations Prisma
@@ -317,6 +360,21 @@ packages/
 ```
 
 ### Architecture de l'API
+
+En production, Express sert aussi les fichiers de `apps/web/dist` et renvoie
+`index.html` pour les routes du portail. Les routes `/api` et les fichiers
+inexistants conservent leurs réponses d'erreur. Le Compose de production
+applique les migrations et construit le front-end avant de démarrer l'API.
+Il dépend d'un réseau Traefik `proxy` et du fichier d'environnement externe
+indiqué dans `docker-compose.prod.yml` ; leur configuration sur le VPS est
+un prérequis au déploiement.
+
+L'image Docker installe les dépendances depuis le lockfile et génère Prisma
+Client. En développement Docker, cette génération est répétée au démarrage
+car le montage du dépôt remplace les sources de l'image.
+
+La CI vérifie lint, types, build, tests web/API et intégration PostgreSQL
+pour les PR ciblant `dev`, `develop` ou `main`.
 
 La création de l'application Express est séparée du démarrage du serveur HTTP.
 Le fichier `apps/api/src/app.ts` configure les middlewares et les routes, puis

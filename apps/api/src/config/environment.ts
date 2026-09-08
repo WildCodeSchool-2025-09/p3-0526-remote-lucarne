@@ -33,10 +33,45 @@ const environmentSchema = z.object({
 });
 
 const parsedEnvironment = environmentSchema.parse(process.env);
-const databaseUrl = parsedEnvironment.NODE_ENV === "test"
-  ? (parsedEnvironment.TEST_DATABASE_URL ?? parsedEnvironment.DATABASE_URL)
-  : parsedEnvironment.DATABASE_URL;
-const databaseName = decodeURIComponent(new URL(databaseUrl).pathname.slice(1));
+
+let databaseUrl = parsedEnvironment.DATABASE_URL;
+
+if (parsedEnvironment.NODE_ENV === "test") {
+  const testDatabaseUrl = parsedEnvironment.TEST_DATABASE_URL;
+
+  if (testDatabaseUrl == null) {
+    throw new Error(
+      "TEST_DATABASE_URL is required when NODE_ENV=test",
+    );
+  }
+
+  const normalizedTestDatabaseUrl = new URL(testDatabaseUrl).href;
+  const normalizedDatabaseUrl = new URL(
+    parsedEnvironment.DATABASE_URL,
+  ).href;
+
+  if (normalizedTestDatabaseUrl === normalizedDatabaseUrl) {
+    throw new Error(
+      "TEST_DATABASE_URL must be different from DATABASE_URL",
+    );
+  }
+
+  const testDatabaseName = decodeURIComponent(
+    new URL(testDatabaseUrl).pathname.slice(1),
+  );
+
+  if (!testDatabaseName.toLowerCase().includes("test")) {
+    throw new Error(
+      "The test database name must contain 'test'",
+    );
+  }
+
+  databaseUrl = testDatabaseUrl;
+}
+
+const databaseName = decodeURIComponent(
+  new URL(databaseUrl).pathname.slice(1),
+);
 
 const environment = Object.freeze({
   nodeEnv: parsedEnvironment.NODE_ENV,
