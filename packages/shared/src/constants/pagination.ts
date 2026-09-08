@@ -1,0 +1,5 @@
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 25;
+const MAX_LIMIT = 100;
+
+export { DEFAULT_LIMIT, DEFAULT_PAGE, MAX_LIMIT };

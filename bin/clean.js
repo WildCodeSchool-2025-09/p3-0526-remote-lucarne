@@ -3,8 +3,11 @@ const path = require("node:path");
 
 for (const nodeModules of [
   path.join(__dirname, "..", "node_modules"),
-  path.join(__dirname, "..", "client", "node_modules"),
-  path.join(__dirname, "..", "server", "node_modules"),
+  path.join(__dirname, "..", "apps", "web", "node_modules"),
+  path.join(__dirname, "..", "apps", "api", "node_modules"),
+  path.join(__dirname, "..", "packages", "shared", "node_modules"),
+  path.join(__dirname, "..", "packages", "typescript-config", "node_modules"),
+  path.join(__dirname, "..", "packages", "eslint-config", "node_modules"),
 ]) {
   fs.rm(nodeModules, { recursive: true, force: true });
 }

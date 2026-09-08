@@ -3,3 +3,10 @@ node_modules
 .DS_Store
 .idea
 .vscode
+.env
+AGENTS.md
+/.agents/
+/.claude/
+/.windsurf/
+/skills-lock.json
+/output/

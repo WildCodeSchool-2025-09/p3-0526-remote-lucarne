@@ -1,24 +1,23 @@
-version: "3.4"
-
 services:
   web:
     build: .
     container_name: ${PROJECT_NAME:-project}-web
     env_file:
       - ../envs/.env-${GITHUB_REPOSITORY_NAME}
-    command: sh -c "npm run build && npm run start"
+    command: sh -c "npm run db:migrate && npm run build && npm run start"
     environment:
+      NODE_ENV: production
       APP_PORT: 3310
-      APP_SECRET: ${APP_SECRET:-123456789}
-      DB_HOST: ${DATABASE_SUBDOMAIN_NAME}-db
-      DB_PORT: 3306
-      DB_USER: ${USER_NAME}
-      DB_PASSWORD: ${USER_PASSWORD}
-      DB_NAME: ${DB_NAME}
+      APP_SECRET: "${APP_SECRET:?APP_SECRET is required}"
+      CLIENT_URL: ""
+      DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
       VITE_API_URL: ""
-      PROJECT_NAME_SPECIFIC_SAMPLE: ${PROJECT_NAME_SPECIFIC_SAMPLE}
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - proxy
+      - backend
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
@@ -26,6 +25,32 @@ services:
       - "traefik.http.routers.${PROJECT_NAME:-project}-secure.rule=Host(`${PROJECT_NAME:-project}.${HOST:-localhost}`)"
       - "traefik.http.services.${PROJECT_NAME:-project}.loadbalancer.server.port=3310"
 
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${USER_NAME}
+      POSTGRES_PASSWORD: ${USER_PASSWORD}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+
 networks:
   proxy:
     external: true
+  backend:
+    internal: true
+
+volumes:
+  postgres_data:
