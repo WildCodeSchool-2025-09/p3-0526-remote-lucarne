@@ -27,8 +27,10 @@ describe("createLeagueBodySchema", () => {
   });
 
   it.each([
+    [{ country: "France" }, "name"],
     [{ name: "", country: "France" }, "name"],
     [{ name: "Division 1", country: "" }, "country"],
+    [{ name: "Division 1" }, "country"],
     [{ name: "a".repeat(151), country: "France" }, "name"],
     [{ name: "Division 1", country: "a".repeat(101) }, "country"],
     [{ name: "Division 1", country: "France", logoUrl: "not-a-url" }, "logoUrl"],
