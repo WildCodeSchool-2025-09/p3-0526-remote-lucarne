@@ -11,6 +11,7 @@ services:
       NODE_ENV: development
       APP_PORT: 3310
       APP_SECRET: "development-only-secret-at-least-32-characters"
+      JWT_ACCESS_TOKEN_TTL_SECONDS: 900
       CLIENT_URL: "http://localhost:3000"
       DATABASE_URL: "postgresql://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-lucarne}"
       VITE_API_URL: "http://localhost:3310"

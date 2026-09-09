@@ -1,6 +1,7 @@
 import { PLAYERS_PER_TEAM, SEED_IDS } from "../../database/seeders/ids";
 import { runSeeders } from "../../database/seeders";
 import prisma from "../../database/prisma";
+import { APP_ROLES } from "../auth/appRole";
 import { cleanTestDatabase } from "./cleanTestDatabase";
 import { describe, expect, it } from "vitest";
 
@@ -31,6 +32,7 @@ describe("database seeders", () => {
     await seedDatabase();
 
     const [
+      roles,
       leagueCount,
       seasonCount,
       teamCount,
@@ -38,6 +40,10 @@ describe("database seeders", () => {
       playerCount,
       staffCount,
     ] = await Promise.all([
+      prisma.role.findMany({
+        orderBy: { name: "asc" },
+        select: { name: true },
+      }),
       prisma.league.count({ where: { id: SEED_IDS.league } }),
       prisma.season.count({ where: { id: SEED_IDS.season } }),
       prisma.team.count({ where: { id: { in: [...SEED_IDS.teams] } } }),
@@ -56,6 +62,7 @@ describe("database seeders", () => {
     ]);
 
     expect({
+      roleNames: roles.map(({ name }) => name),
       leagueCount,
       seasonCount,
       teamCount,
@@ -63,6 +70,7 @@ describe("database seeders", () => {
       playerCount,
       staffCount,
     }).toEqual({
+      roleNames: Object.values(APP_ROLES).sort(),
       leagueCount: 1,
       seasonCount: 1,
       teamCount: 2,
@@ -95,18 +103,28 @@ describe("database seeders", () => {
   it("is idempotent and deterministic", async () => {
     await seedDatabase();
 
-    const initialPlayers = await prisma.player.findMany({
-      where: { id: { in: [...SEED_IDS.players] } },
-      orderBy: { id: "asc" },
-    });
+    const [initialRoles, initialPlayers] = await Promise.all([
+      prisma.role.findMany({ orderBy: { name: "asc" } }),
+      prisma.player.findMany({
+        where: { id: { in: [...SEED_IDS.players] } },
+        orderBy: { id: "asc" },
+      }),
+    ]);
 
     await seedDatabase();
 
-    const playersAfterSecondRun = await prisma.player.findMany({
-      where: { id: { in: [...SEED_IDS.players] } },
-      orderBy: { id: "asc" },
-    });
+    const [rolesAfterSecondRun, playersAfterSecondRun] = await Promise.all([
+      prisma.role.findMany({ orderBy: { name: "asc" } }),
+      prisma.player.findMany({
+        where: { id: { in: [...SEED_IDS.players] } },
+        orderBy: { id: "asc" },
+      }),
+    ]);
 
+    expect(rolesAfterSecondRun).toEqual(initialRoles);
+    expect(rolesAfterSecondRun).toHaveLength(
+      Object.values(APP_ROLES).length,
+    );
     expect(playersAfterSecondRun).toEqual(initialPlayers);
     await expect(prisma.player.count({
       where: { id: { in: [...SEED_IDS.players] } },
