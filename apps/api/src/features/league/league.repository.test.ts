@@ -10,6 +10,8 @@ vi.mock("../../../database/prisma", () => ({
   },
 }));
 
+// The mocked delegate is intentionally extracted for readable assertions.
+// eslint-disable-next-line @typescript-eslint/unbound-method
 const create = vi.mocked(prisma.league.create);
 
 describe("createLeague", () => {

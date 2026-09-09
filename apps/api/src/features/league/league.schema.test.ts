@@ -34,6 +34,7 @@ describe("createLeagueBodySchema", () => {
     [{ name: "Division 1", country: "France", logoUrl: "not-a-url" }, "logoUrl"],
     [{ name: "Division 1", country: "France", isActive: "true" }, "isActive"],
   ])("rejects an invalid %s payload", (payload, _field) => {
+    void _field;
     expect(createLeagueBodySchema.safeParse(payload).success).toBe(false);
   });
 
