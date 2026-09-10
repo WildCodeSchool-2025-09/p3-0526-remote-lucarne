@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { CreateLeagueInput } from "@lucarne/shared";
 
 const createLeagueBodySchema = z.object({
   name: z.string().trim().min(1).max(150),
@@ -6,8 +7,6 @@ const createLeagueBodySchema = z.object({
   logoUrl: z.string().trim().pipe(z.url()).optional(),
   isActive: z.boolean().optional(),
 }).strict();
-
-type CreateLeagueInput = z.infer<typeof createLeagueBodySchema>;
 
 export { createLeagueBodySchema };
 export type { CreateLeagueInput };

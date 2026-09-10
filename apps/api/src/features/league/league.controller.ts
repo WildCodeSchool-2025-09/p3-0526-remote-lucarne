@@ -1,12 +1,12 @@
 import type { RequestHandler } from "express";
+import type { League } from "@lucarne/shared";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { createLeagueService } from "./league.service";
 import type { CreateLeagueInput } from "./league.schema";
-import type { LeagueResponse } from "./league.types";
 
 const createLeague: RequestHandler<
   Record<string, never>,
-  LeagueResponse,
+  League,
   CreateLeagueInput
 > = asyncHandler(async (request, response) => {
   const league = await createLeagueService(request.body);

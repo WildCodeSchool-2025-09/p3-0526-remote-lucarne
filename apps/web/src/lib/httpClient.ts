@@ -1,5 +1,6 @@
 import { API_V1_PATH, type ApiErrorResponse } from "@lucarne/shared";
 import { apiUrl } from "../config/environment";
+import { getAccessToken } from "./authToken";
 
 type QueryValue = boolean | number | string | null | undefined;
 type QueryParameters = Record<string, QueryValue | QueryValue[]>;
@@ -103,6 +104,12 @@ async function request<T>(
 
   const headers = new Headers(initialHeaders);
   headers.set("accept", "application/json");
+
+  const accessToken = getAccessToken();
+
+  if (accessToken !== null && !headers.has("authorization")) {
+    headers.set("authorization", `Bearer ${accessToken}`);
+  }
 
   if (json !== undefined && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
