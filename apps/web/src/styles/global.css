@@ -1,1 +1,309 @@
 @import "tailwindcss";
+
+:root {
+  --color-action-primary: #00e65c;
+  --color-action-primary-hover: #00c94f;
+  --color-text-on-primary: #03120a;
+  --color-text-primary: #09131c;
+  --color-text-secondary: #526472;
+  --color-text-muted: #93a2ad;
+  --color-bg-page: #f7f9f9;
+  --color-bg-surface: #ffffff;
+  --color-bg-subtle: #edf2f3;
+  --color-border-default: #dfe6e9;
+  --color-action-disabled: #c6d0d6;
+  --color-status-success: #00c94f;
+  --color-status-danger: #dc3545;
+  --color-focus-ring: rgb(0 230 92 / 22%);
+  --radius-md: 6px;
+  --radius-button: 8px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.lucarne-button {
+  align-items: center;
+  border: 0;
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 15px;
+  font-weight: 600;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 20px;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.lucarne-button:focus-visible,
+.lucarne-input:focus-visible,
+.lucarne-checkbox:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.lucarne-button:disabled {
+  background: var(--color-action-disabled);
+  border-color: var(--color-action-disabled);
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
+.lucarne-button--primary {
+  background: var(--color-action-primary);
+  color: var(--color-text-on-primary);
+}
+
+.lucarne-button--primary:hover:not(:disabled) {
+  background: var(--color-action-primary-hover);
+}
+
+.lucarne-button--dark {
+  background: var(--color-text-primary);
+  color: var(--color-bg-surface);
+}
+
+.lucarne-button--dark:hover:not(:disabled) {
+  background: var(--color-text-secondary);
+}
+
+.lucarne-button--outline {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-primary);
+}
+
+.lucarne-button--outline:hover:not(:disabled) {
+  background: var(--color-bg-subtle);
+}
+
+.lucarne-button--ghost {
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+.lucarne-button--ghost:hover:not(:disabled) {
+  background: var(--color-bg-subtle);
+}
+
+.lucarne-button--danger {
+  background: var(--color-status-danger);
+  color: var(--color-bg-surface);
+}
+
+.lucarne-button--danger:hover:not(:disabled) {
+  filter: brightness(0.9);
+}
+
+.lucarne-input {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  min-height: 44px;
+  padding: 0 12px;
+  width: 100%;
+}
+
+.lucarne-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.lucarne-input:focus {
+  border-color: var(--color-action-primary);
+  outline: 0;
+}
+
+.lucarne-input[aria-invalid="true"] {
+  border-color: var(--color-status-danger);
+}
+
+.lucarne-input:disabled {
+  background: var(--color-bg-subtle);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.lucarne-checkbox {
+  accent-color: var(--color-action-primary);
+  height: 18px;
+  width: 18px;
+}
+
+.lucarne-checkbox:disabled {
+  accent-color: var(--color-action-disabled);
+  cursor: not-allowed;
+}
+
+.lucarne-form-field {
+  display: grid;
+  gap: 8px;
+}
+
+.lucarne-form-field__label {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.lucarne-form-field__error,
+.lucarne-form-error {
+  color: var(--color-status-danger);
+  font-size: 13px;
+  margin: 0;
+}
+
+.create-league-form {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: 12px;
+  display: grid;
+  gap: 24px;
+  max-width: 560px;
+  padding: 24px;
+  width: 100%;
+}
+
+.create-league-form__header {
+  display: grid;
+  gap: 8px;
+}
+
+.create-league-form__title {
+  font-size: 24px;
+  margin: 0;
+}
+
+.create-league-form__description {
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.create-league-form__fields {
+  display: grid;
+  gap: 20px;
+}
+
+.create-league-form__checkbox {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.create-league-form__checkbox-label {
+  color: var(--color-text-primary);
+  font-size: 14px;
+}
+
+.create-league-form__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 600px) {
+  .create-league-form {
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+    padding: 20px 16px;
+  }
+
+  .create-league-form__actions,
+  .create-league-form__actions .lucarne-button {
+    width: 100%;
+  }
+}
+
+.ui-demo-page {
+  display: grid;
+  gap: 32px;
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 48px 24px;
+}
+
+.ui-demo-page__header {
+  display: grid;
+  gap: 8px;
+}
+
+.ui-demo-page__header h1,
+.ui-demo-page__header p {
+  margin: 0;
+}
+
+.ui-demo-page__header p:last-child {
+  color: var(--color-text-secondary);
+}
+
+.ui-demo-page__eyebrow {
+  color: var(--color-status-success);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ui-demo-page__section {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-default);
+  border-radius: 12px;
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+}
+
+.ui-demo-page__section h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.ui-demo-page__row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ui-demo-page__fields {
+  display: grid;
+  gap: 20px;
+  max-width: 560px;
+}
+
+.ui-demo-page__checkbox {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+@media (max-width: 600px) {
+  .ui-demo-page {
+    padding: 32px 16px;
+  }
+
+  .ui-demo-page__section {
+    padding: 20px 16px;
+  }
+
+  .ui-demo-page__row .lucarne-button {
+    flex: 1 1 calc(50% - 12px);
+  }
+}

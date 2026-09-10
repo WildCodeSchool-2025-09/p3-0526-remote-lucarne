@@ -3,6 +3,7 @@ import App from "./App";
 import HomePage from "./pages/HomePage";
 import NotFoundPage from "./pages/NotFoundPage";
 import RouteErrorPage from "./pages/RouteErrorPage";
+import UiDemoPage from "./pages/UiDemoPage";
 
 const router = createBrowserRouter([
   {
@@ -12,6 +13,10 @@ const router = createBrowserRouter([
       {
         index: true,
         Component: HomePage,
+      },
+      {
+        path: "ui-demo",
+        Component: UiDemoPage,
       },
       {
         path: "*",
