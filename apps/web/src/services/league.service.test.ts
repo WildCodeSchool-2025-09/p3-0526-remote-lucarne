@@ -1,3 +1,4 @@
+import type { CreateLeagueInput } from "@lucarne/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { HttpError, httpClient } from "../lib/httpClient";
 import { createLeague } from "./league.service";
@@ -27,6 +28,31 @@ describe("league service", () => {
     await expect(createLeague(input)).resolves.toEqual(response);
 
     expect(post).toHaveBeenCalledWith("/leagues", { json: input });
+  });
+
+  it("does not send fields outside the creation contract", async () => {
+    const input = {
+      country: "France",
+      createdAt: "2026-09-10T10:00:00.000Z",
+      id: "unexpected-id",
+      isActive: true,
+      name: "Première Ligue",
+      seasons: [],
+      teams: [],
+      user: { id: "unexpected-user" },
+    } as CreateLeagueInput & Record<string, unknown>;
+    const post = vi.spyOn(httpClient, "post").mockResolvedValue({});
+
+    await createLeague(input);
+
+    expect(post).toHaveBeenCalledWith("/leagues", {
+      json: {
+        country: "France",
+        isActive: true,
+        logoUrl: undefined,
+        name: "Première Ligue",
+      },
+    });
   });
 
   it("propagates HttpError without transforming it", async () => {
