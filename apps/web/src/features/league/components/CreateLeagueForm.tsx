@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { League } from "@lucarne/shared";
 import { useForm } from "react-hook-form";
 import type { CreateLeagueFormData, CreateLeagueFormValues } from "../../../schemas/league.schema";
 import {
@@ -6,10 +7,15 @@ import {
   createLeagueFormSchema,
   toCreateLeagueInput,
 } from "../../../schemas/league.schema";
+import { getCreateLeagueErrorMessage } from "../utils/createLeagueError";
 import { useCreateLeague } from "../../../hooks/useCreateLeague";
-import { Button, Checkbox, FormField, Input } from "../../../ui";
+import { Alert, Button, Checkbox, FormField, Input } from "../../../ui";
 
-function CreateLeagueForm() {
+interface CreateLeagueFormProps {
+  onSuccess?: (league: League) => void;
+}
+
+function CreateLeagueForm({ onSuccess }: CreateLeagueFormProps) {
   const createLeagueMutation = useCreateLeague();
   const {
     formState: { errors },
@@ -21,17 +27,25 @@ function CreateLeagueForm() {
   });
 
   const onSubmit = (values: CreateLeagueFormData) => {
-    createLeagueMutation.mutate(toCreateLeagueInput(values));
+    const input = toCreateLeagueInput(values);
+
+    if (onSuccess == null) {
+      createLeagueMutation.mutate(input);
+      return;
+    }
+
+    createLeagueMutation.mutate(input, { onSuccess });
   };
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    createLeagueMutation.reset();
     void handleSubmit(onSubmit)(event);
   };
 
   return (
     <form className="create-league-form" noValidate onSubmit={handleFormSubmit}>
       <header className="create-league-form__header">
-        <h1 className="create-league-form__title">Créer une ligue</h1>
+        <h2 className="create-league-form__title">Informations de la ligue</h2>
         <p className="create-league-form__description">
           Ajoutez une nouvelle ligue à votre espace.
         </p>
@@ -78,9 +92,9 @@ function CreateLeagueForm() {
       </div>
 
       {createLeagueMutation.isError ? (
-        <p className="lucarne-form-error" role="alert">
-          Impossible de créer la ligue pour le moment.
-        </p>
+        <Alert variant="danger">
+          {getCreateLeagueErrorMessage(createLeagueMutation.error)}
+        </Alert>
       ) : null}
 
       <div className="create-league-form__actions">
@@ -93,3 +107,4 @@ function CreateLeagueForm() {
 }
 
 export { CreateLeagueForm };
+export type { CreateLeagueFormProps };

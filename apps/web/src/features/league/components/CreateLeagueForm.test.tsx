@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { HttpError } from "../../../lib/httpClient";
 import { CreateLeagueForm } from "./CreateLeagueForm";
 
 const { useCreateLeagueMock } = vi.hoisted(() => ({
@@ -13,13 +14,16 @@ vi.mock("../../../hooks/useCreateLeague", () => ({
 
 describe("CreateLeagueForm", () => {
   const mutate = vi.fn();
+  const reset = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     useCreateLeagueMock.mockReturnValue({
+      error: null,
       isError: false,
       isPending: false,
       mutate,
+      reset,
     });
   });
 
@@ -74,9 +78,11 @@ describe("CreateLeagueForm", () => {
 
   it("disables the submit button while creating", () => {
     useCreateLeagueMock.mockReturnValue({
+      error: null,
       isError: false,
       isPending: true,
       mutate,
+      reset,
     });
     render(<CreateLeagueForm />);
 
@@ -84,15 +90,32 @@ describe("CreateLeagueForm", () => {
   });
 
   it("shows a general mutation error without replacing the hook error", () => {
+    const error = new HttpError(
+      new Response(null, { status: 409 }),
+      { error: { code: "RESOURCE_ALREADY_EXISTS", message: "P2002 Prisma" } },
+    );
     useCreateLeagueMock.mockReturnValue({
+      error,
       isError: true,
       isPending: false,
       mutate,
+      reset,
     });
     render(<CreateLeagueForm />);
 
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "Impossible de créer la ligue pour le moment.",
-    );
+    const alert = screen.getByRole("alert");
+
+    expect(alert).toHaveTextContent("Une ligue avec ce nom existe déjà pour ce pays.");
+    expect(alert).not.toHaveTextContent("P2002");
+    expect(alert).not.toHaveTextContent("Prisma");
+  });
+
+  it("resets a previous API error when a new submission starts", async () => {
+    const user = userEvent.setup();
+    render(<CreateLeagueForm />);
+
+    await user.click(screen.getByRole("button", { name: "Créer la ligue" }));
+
+    expect(reset).toHaveBeenCalled();
   });
 });
