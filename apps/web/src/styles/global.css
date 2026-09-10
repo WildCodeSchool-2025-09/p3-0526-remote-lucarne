@@ -271,9 +271,35 @@ input {
   max-width: 640px;
 }
 
+.auth-state-page {
+  min-height: calc(100vh - 56px);
+  padding: 48px 24px;
+}
+
+.auth-state-page__container {
+  display: grid;
+  gap: 24px;
+  margin: 0 auto;
+  max-width: 560px;
+}
+
+.auth-state-page__container h1 {
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.auth-state-page__container .lucarne-button {
+  justify-self: start;
+}
+
 @media (max-width: 600px) {
   .create-league-page {
     padding: 24px 16px 32px;
+  }
+
+  .auth-state-page {
+    padding: 32px 16px;
   }
 
   .create-league-form {

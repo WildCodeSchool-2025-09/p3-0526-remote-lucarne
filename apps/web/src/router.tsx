@@ -1,5 +1,7 @@
 import { createBrowserRouter } from "react-router";
 import App from "./App";
+import { CREATE_LEAGUE_ROLES } from "./auth/authRole";
+import { RequireRole } from "./auth/RequireRole";
 import CreateLeaguePage from "./features/league/pages/CreateLeaguePage";
 import HomePage from "./pages/HomePage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -21,7 +23,11 @@ const router = createBrowserRouter([
       },
       {
         path: "dashboard/leagues/new",
-        Component: CreateLeaguePage,
+        element: (
+          <RequireRole allowedRoles={CREATE_LEAGUE_ROLES}>
+            <CreateLeaguePage />
+          </RequireRole>
+        ),
       },
       {
         path: "*",
