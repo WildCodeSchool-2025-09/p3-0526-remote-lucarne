@@ -14,6 +14,7 @@ const createdLeague: League = {
   country: "France",
   logoUrl: null,
   isActive: true,
+  version: 0,
   createdAt: new Date("2026-09-09T00:00:00.000Z"),
 };
 

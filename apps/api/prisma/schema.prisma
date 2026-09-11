@@ -60,6 +60,7 @@ model League {
   country   String   @db.VarChar(100)
   logoUrl   String?  @map("logo_url")
   isActive  Boolean  @default(false) @map("is_active")
+  version   Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   seasons   Season[]
 

@@ -33,6 +33,7 @@ describe("createLeague controller", () => {
       country: "France",
       logoUrl: null,
       isActive: true,
+      version: 0,
       createdAt: new Date("2026-09-09T12:00:00.000Z"),
     });
 
@@ -47,6 +48,7 @@ describe("createLeague controller", () => {
       country: "France",
       logoUrl: null,
       isActive: true,
+      version: 0,
       createdAt: "2026-09-09T12:00:00.000Z",
     });
     expect(create).toHaveBeenCalledWith({

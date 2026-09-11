@@ -21,6 +21,7 @@ describe("league service", () => {
       country: "France",
       logoUrl: "https://example.com/logo.png",
       isActive: true,
+      version: 0,
       createdAt: "2026-09-10T10:00:00.000Z",
     };
     const post = vi.spyOn(httpClient, "post").mockResolvedValue(response);

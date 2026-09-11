@@ -17,6 +17,7 @@ const toLeagueResponse = (league: {
   country: string;
   logoUrl: string | null;
   isActive: boolean;
+  version: number;
   createdAt: Date;
 }): League => ({
   id: league.id,
@@ -25,6 +26,7 @@ const toLeagueResponse = (league: {
   logoUrl: league.logoUrl,
   status: league.isActive ? "ACTIVE" : "INACTIVE",
   isActive: league.isActive,
+  version: league.version,
   createdAt: league.createdAt.toISOString(),
 });
 
@@ -34,6 +36,7 @@ const toCreatedLeagueResponse = (league: {
   country: string;
   logoUrl: string | null;
   isActive: boolean;
+  version: number;
   createdAt: Date;
 }) => ({
   id: league.id,
@@ -41,6 +44,7 @@ const toCreatedLeagueResponse = (league: {
   country: league.country,
   logoUrl: league.logoUrl,
   isActive: league.isActive,
+  version: league.version,
   createdAt: league.createdAt.toISOString(),
 });
 

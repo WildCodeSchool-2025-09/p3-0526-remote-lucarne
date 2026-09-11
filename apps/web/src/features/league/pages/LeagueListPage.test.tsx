@@ -24,6 +24,7 @@ const leagues: League[] = [
     country: "France",
     logoUrl: null,
     status: "ACTIVE",
+    version: 0,
     createdAt: "2026-09-11T10:30:00.000Z",
   },
   {
@@ -32,6 +33,7 @@ const leagues: League[] = [
     country: "Espagne",
     logoUrl: "https://example.com/logo.png",
     status: "INACTIVE",
+    version: 0,
     createdAt: "2026-01-02T10:30:00.000Z",
   },
 ];

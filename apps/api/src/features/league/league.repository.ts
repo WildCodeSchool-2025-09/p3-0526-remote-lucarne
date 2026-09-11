@@ -8,10 +8,44 @@ interface LeagueListResult {
   totalItems: number;
 }
 
+interface UpdateLeagueOptimisticInput {
+  leagueId: string;
+  expectedVersion: number;
+  name: string;
+  country: string;
+  logoUrl: string | null;
+  isActive: boolean;
+}
+
 const createLeague = (input: CreateLeagueInput): Promise<League> =>
   prisma.league.create({
     data: input,
   });
+
+const updateLeagueOptimistic = async ({
+  leagueId,
+  expectedVersion,
+  name,
+  country,
+  logoUrl,
+  isActive,
+}: UpdateLeagueOptimisticInput): Promise<number> => {
+  const result = await prisma.league.updateMany({
+    where: {
+      id: leagueId,
+      version: expectedVersion,
+    },
+    data: {
+      name,
+      country,
+      logoUrl,
+      isActive,
+      version: { increment: 1 },
+    },
+  });
+
+  return result.count;
+};
 
 const listLeagues = async (params: ListLeaguesParams): Promise<LeagueListResult> => {
   const where = {
@@ -79,5 +113,6 @@ export {
   listLeagueCountries,
   listLeagues,
   permanentlyDeleteLeague,
+  updateLeagueOptimistic,
 };
-export type { LeagueListResult };
+export type { LeagueListResult, UpdateLeagueOptimisticInput };

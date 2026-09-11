@@ -17,6 +17,7 @@ interface League {
   status?: LeagueStatus;
   /** @deprecated Creation still exposes the persistence field until that endpoint is migrated. */
   isActive?: boolean;
+  version: number;
   createdAt: string;
 }
 

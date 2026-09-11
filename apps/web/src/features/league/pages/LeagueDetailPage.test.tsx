@@ -15,6 +15,7 @@ const league: League = {
   country: "France",
   logoUrl: null,
   status: "ACTIVE",
+  version: 0,
   createdAt: "2026-09-11T10:30:00.000Z",
 };
 
