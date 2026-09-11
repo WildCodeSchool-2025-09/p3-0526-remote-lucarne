@@ -1,8 +1,47 @@
 import type { RequestHandler } from "express";
-import type { League } from "@lucarne/shared";
+import type { League, PaginatedLeaguesResponse } from "@lucarne/shared";
 import { asyncHandler } from "../../utils/asyncHandler";
+import { APP_ROLES } from "../../auth/appRole";
 import { createLeagueService } from "./league.service";
-import type { CreateLeagueInput } from "./league.schema";
+import {
+  deleteLeagueService,
+  getLeaguePermissions,
+  listLeaguesService,
+} from "./league.service";
+import type { CreateLeagueInput, ListLeaguesParams } from "./league.schema";
+
+const toLeagueResponse = (league: {
+  id: string;
+  name: string;
+  country: string;
+  logoUrl: string | null;
+  isActive: boolean;
+  createdAt: Date;
+}): League => ({
+  id: league.id,
+  name: league.name,
+  country: league.country,
+  logoUrl: league.logoUrl,
+  status: league.isActive ? "ACTIVE" : "INACTIVE",
+  isActive: league.isActive,
+  createdAt: league.createdAt.toISOString(),
+});
+
+const toCreatedLeagueResponse = (league: {
+  id: string;
+  name: string;
+  country: string;
+  logoUrl: string | null;
+  isActive: boolean;
+  createdAt: Date;
+}) => ({
+  id: league.id,
+  name: league.name,
+  country: league.country,
+  logoUrl: league.logoUrl,
+  isActive: league.isActive,
+  createdAt: league.createdAt.toISOString(),
+});
 
 const createLeague: RequestHandler<
   Record<string, never>,
@@ -11,14 +50,45 @@ const createLeague: RequestHandler<
 > = asyncHandler(async (request, response) => {
   const league = await createLeagueService(request.body);
 
-  response.status(201).json({
-    id: league.id,
-    name: league.name,
-    country: league.country,
-    logoUrl: league.logoUrl,
-    isActive: league.isActive,
-    createdAt: league.createdAt.toISOString(),
+  response.status(201).json(toCreatedLeagueResponse(league));
+});
+
+const listLeagues: RequestHandler<
+  Record<string, never>,
+  PaginatedLeaguesResponse,
+  Record<string, never>,
+  ListLeaguesParams
+> = asyncHandler(async (request, response) => {
+  const result = await listLeaguesService(request.query);
+  const page = request.query.page ?? 1;
+  const pageSize = request.query.pageSize ?? 20;
+
+  response.json({
+    data: result.data.map(toLeagueResponse),
+    pagination: {
+      page,
+      pageSize,
+      totalItems: result.totalItems,
+      totalPages: Math.ceil(result.totalItems / pageSize),
+    },
   });
 });
 
-export { createLeague };
+const deleteLeague: RequestHandler<{ leagueId: string }> = asyncHandler(async (request, response) => {
+  const permissions = getLeaguePermissions(request.user?.role ?? APP_ROLES.USER);
+
+  if (!permissions.canDelete) {
+    response.status(403).json({
+      error: {
+        code: "INSUFFICIENT_ROLE",
+        message: "User role is not authorized for this resource",
+      },
+    });
+    return;
+  }
+
+  await deleteLeagueService(request.params.leagueId);
+  response.sendStatus(204);
+});
+
+export { createLeague, deleteLeague, listLeagues, toLeagueResponse };
