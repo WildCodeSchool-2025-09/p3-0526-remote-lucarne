@@ -1,7 +1,7 @@
 import type { CreateLeagueInput } from "@lucarne/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { HttpError, httpClient } from "../lib/httpClient";
-import { createLeague } from "./league.service";
+import { activateLeague, createLeague, listLeagueCountries } from "./league.service";
 
 describe("league service", () => {
   afterEach(() => {
@@ -67,5 +67,19 @@ describe("league service", () => {
       country: "France",
       isActive: true,
     })).rejects.toBe(error);
+  });
+
+  it("lists registered league countries", async () => {
+    const get = vi.spyOn(httpClient, "get").mockResolvedValue(["Espagne", "France"]);
+
+    await expect(listLeagueCountries()).resolves.toEqual(["Espagne", "France"]);
+    expect(get).toHaveBeenCalledWith("/leagues/countries");
+  });
+
+  it("activates a league through the API", async () => {
+    const patch = vi.spyOn(httpClient, "patch").mockResolvedValue({});
+
+    await activateLeague("league-id");
+    expect(patch).toHaveBeenCalledWith("/leagues/league-id/activate");
   });
 });

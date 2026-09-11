@@ -1,8 +1,10 @@
 import type { League } from "../../generated/prisma/client";
 import { createLeague } from "./league.repository";
 import {
+  activateLeague,
   deactivateLeague,
   findLeagueById,
+  listLeagueCountries,
   listLeagues,
   permanentlyDeleteLeague,
 } from "./league.repository";
@@ -30,6 +32,8 @@ const createLeagueService = (input: CreateLeagueInput): Promise<League> =>
 
 const listLeaguesService = (params: ListLeaguesParams) => listLeagues(params);
 
+const listLeagueCountriesService = (): Promise<string[]> => listLeagueCountries();
+
 const getLeagueService = async (id: string): Promise<League> => {
   const league = await findLeagueById(id);
 
@@ -48,10 +52,20 @@ const deleteLeagueService = async (id: string): Promise<League> => {
     : permanentlyDeleteLeague(id);
 };
 
+const activateLeagueService = async (id: string): Promise<League> => {
+  const league = await getLeagueService(id);
+
+  if (league.isActive) return league;
+
+  return activateLeague(id);
+};
+
 export {
+  activateLeagueService,
   createLeagueService,
   deleteLeagueService,
   getLeagueService,
   getLeaguePermissions,
+  listLeagueCountriesService,
   listLeaguesService,
 };

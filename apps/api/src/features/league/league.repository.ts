@@ -16,10 +16,7 @@ const createLeague = (input: CreateLeagueInput): Promise<League> =>
 const listLeagues = async (params: ListLeaguesParams): Promise<LeagueListResult> => {
   const where = {
     ...(params.search == null ? {} : {
-      OR: [
-        { name: { contains: params.search, mode: "insensitive" as const } },
-        { country: { contains: params.search, mode: "insensitive" as const } },
-      ],
+      name: { contains: params.search, mode: "insensitive" as const },
     }),
     ...(params.countries == null || params.countries.length === 0
       ? {}
@@ -34,7 +31,7 @@ const listLeagues = async (params: ListLeaguesParams): Promise<LeagueListResult>
     prisma.league.findMany({
       where,
       orderBy: [
-        { name: params.sortOrder ?? "asc" },
+        { [params.sortBy ?? "name"]: params.sortOrder ?? "asc" },
         { id: "asc" },
       ],
       skip,
@@ -49,19 +46,37 @@ const listLeagues = async (params: ListLeaguesParams): Promise<LeagueListResult>
 const findLeagueById = (id: string): Promise<League | null> =>
   prisma.league.findUnique({ where: { id } });
 
+const listLeagueCountries = async (): Promise<string[]> => {
+  const countries = await prisma.league.findMany({
+    distinct: ["country"],
+    orderBy: { country: "asc" },
+    select: { country: true },
+  });
+
+  return countries.map(({ country }) => country);
+};
+
 const deactivateLeague = (id: string): Promise<League> =>
   prisma.league.update({
     where: { id },
     data: { isActive: false },
   });
 
+const activateLeague = (id: string): Promise<League> =>
+  prisma.league.update({
+    where: { id },
+    data: { isActive: true },
+  });
+
 const permanentlyDeleteLeague = (id: string): Promise<League> =>
   prisma.league.delete({ where: { id } });
 
 export {
+  activateLeague,
   createLeague,
   deactivateLeague,
   findLeagueById,
+  listLeagueCountries,
   listLeagues,
   permanentlyDeleteLeague,
 };

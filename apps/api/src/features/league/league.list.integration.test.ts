@@ -130,6 +130,28 @@ describe("GET /api/v1/leagues", () => {
   });
 });
 
+describe("GET /api/v1/leagues/countries", () => {
+  it("returns distinct registered countries for authorized viewers", async () => {
+    const user = await createAdmin();
+    await Promise.all([
+      createLeague("League France", "France", true),
+      createLeague("League France 2", "France", false),
+      createLeague("League Spain", "Espagne", true),
+    ]);
+
+    const response = await request(app)
+      .get("/api/v1/leagues/countries")
+      .set("Authorization", `Bearer ${user.accessToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual(["Espagne", "France"]);
+  });
+
+  it("rejects unauthorized country lookup", async () => {
+    await request(app).get("/api/v1/leagues/countries").expect(401);
+  });
+});
+
 describe("DELETE /api/v1/leagues/:leagueId", () => {
   beforeEach(() => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);

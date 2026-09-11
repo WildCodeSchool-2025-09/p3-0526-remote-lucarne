@@ -34,7 +34,7 @@ const leagueListQuerySchema = z.object({
   ),
   countries: countriesQuerySchema,
   status: leagueStatusFilterSchema.default("ALL"),
-  sortBy: z.literal("name").default("name"),
+  sortBy: z.enum(["name", "createdAt"]).default("name"),
   sortOrder: z.enum(["asc", "desc"]).default("asc"),
 }).strict();
 

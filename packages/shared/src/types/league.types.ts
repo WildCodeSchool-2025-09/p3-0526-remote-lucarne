@@ -21,7 +21,7 @@ interface League {
 }
 
 type LeagueStatusFilter = "ALL" | LeagueStatus;
-type LeagueSortField = "name";
+type LeagueSortField = "name" | "createdAt";
 type SortDirection = "asc" | "desc";
 
 interface LeagueSearchParams {

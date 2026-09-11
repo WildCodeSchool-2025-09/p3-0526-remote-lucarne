@@ -32,6 +32,13 @@ describe("leagueListQuerySchema", () => {
     });
   });
 
+  it("accepts creation date sorting in both directions", () => {
+    expect(leagueListQuerySchema.parse({
+      sortBy: "createdAt",
+      sortOrder: "desc",
+    })).toMatchObject({ sortBy: "createdAt", sortOrder: "desc" });
+  });
+
   it("treats an empty search as absent", () => {
     expect(leagueListQuerySchema.parse({ search: "   " }).search).toBeUndefined();
   });
@@ -40,7 +47,7 @@ describe("leagueListQuerySchema", () => {
     { page: "0" },
     { pageSize: "10" },
     { status: "PENDING" },
-    { sortBy: "createdAt" },
+    { sortBy: "country" },
     { sortOrder: "up" },
   ])("rejects invalid consultation parameters: %o", (query) => {
     expect(leagueListQuerySchema.safeParse(query).success).toBe(false);

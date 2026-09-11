@@ -99,4 +99,43 @@ describe("League access security", () => {
     await expect(prisma.league.findUnique({ where: { id: inactive.id } }))
       .resolves.toBeNull();
   });
+
+  it("allows ADMIN to reactivate an inactive league", async () => {
+    const admin = await createAdmin();
+    const league = await createLeague(false);
+
+    const response = await request(app)
+      .patch(`/api/v1/leagues/${league.id}/activate`)
+      .set("Authorization", `Bearer ${admin.accessToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ id: league.id, status: "ACTIVE" });
+    await expect(prisma.league.findUnique({ where: { id: league.id } }))
+      .resolves.toMatchObject({ isActive: true });
+  });
+
+  it.each([
+    ["anonymous", undefined, 401],
+    ["MODERATOR", createModerator, 403],
+    ["EDITOR", createEditor, 403],
+  ] as const)("rejects activation for %s", async (_role, createUserForTest, expectedStatus) => {
+    const league = await createLeague(false);
+    const user = createUserForTest == null ? null : await createUserForTest();
+    const requestBuilder = request(app).patch(`/api/v1/leagues/${league.id}/activate`);
+
+    if (user != null) requestBuilder.set("Authorization", `Bearer ${user.accessToken}`);
+
+    await requestBuilder.expect(expectedStatus);
+    await expect(prisma.league.findUnique({ where: { id: league.id } }))
+      .resolves.toMatchObject({ isActive: false });
+  });
+
+  it("returns 404 when activating a missing league", async () => {
+    const admin = await createAdmin();
+
+    await request(app)
+      .patch("/api/v1/leagues/00000000-0000-0000-0000-000000000000/activate")
+      .set("Authorization", `Bearer ${admin.accessToken}`)
+      .expect(404);
+  });
 });

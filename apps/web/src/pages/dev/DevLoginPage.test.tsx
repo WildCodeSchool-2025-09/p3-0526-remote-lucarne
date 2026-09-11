@@ -1,4 +1,4 @@
-import { MemoryRouter } from "react-router";
+import { MemoryRouter, useLocation } from "react-router";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -34,6 +34,10 @@ function renderPage() {
       <DevLoginPage />
     </MemoryRouter>,
   );
+}
+
+function CurrentPath() {
+  return <span data-testid="current-path">{useLocation().pathname}</span>;
 }
 
 describe("DevLoginPage", () => {
@@ -78,7 +82,7 @@ describe("DevLoginPage", () => {
 
       expect(await screen.findByRole("alert")).toHaveTextContent(`rôle : ${role}`);
       expect(getAccessToken()).toBe(token);
-      expect(screen.getByRole("button", { name: "Tester la création de ligue" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Ligue" })).toBeInTheDocument();
     },
   );
 
@@ -89,6 +93,22 @@ describe("DevLoginPage", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent("rôle : EDITOR");
     expect(screen.queryByRole("button", { name: "Se connecter" })).not.toBeInTheDocument();
+  });
+
+  it("redirects to the league dashboard from the login action", async () => {
+    const user = userEvent.setup();
+    setAccessToken(createToken(APP_ROLES.ADMIN));
+
+    render(
+      <MemoryRouter initialEntries={["/dev/login"]}>
+        <DevLoginPage />
+        <CurrentPath />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Ligue" }));
+
+    expect(screen.getByTestId("current-path")).toHaveTextContent("/dashboard/league");
   });
 
   it("shows an invalid session without crashing", () => {

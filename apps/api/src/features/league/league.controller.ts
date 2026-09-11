@@ -2,7 +2,7 @@ import type { RequestHandler } from "express";
 import type { League, PaginatedLeaguesResponse } from "@lucarne/shared";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { APP_ROLES } from "../../auth/appRole";
-import { createLeagueService } from "./league.service";
+import { activateLeagueService, createLeagueService, listLeagueCountriesService } from "./league.service";
 import {
   deleteLeagueService,
   getLeagueService,
@@ -75,6 +75,10 @@ const listLeagues: RequestHandler<
   });
 });
 
+const listLeagueCountries: RequestHandler = asyncHandler(async (_request, response) => {
+  response.json(await listLeagueCountriesService());
+});
+
 const getLeague: RequestHandler<{ leagueId: string }, League> = asyncHandler(async (request, response) => {
   const league = await getLeagueService(request.params.leagueId);
 
@@ -98,4 +102,21 @@ const deleteLeague: RequestHandler<{ leagueId: string }> = asyncHandler(async (r
   response.sendStatus(204);
 });
 
-export { createLeague, deleteLeague, getLeague, listLeagues, toLeagueResponse };
+const activateLeague: RequestHandler<{ leagueId: string }> = asyncHandler(async (request, response) => {
+  const permissions = getLeaguePermissions(request.user?.role ?? APP_ROLES.USER);
+
+  if (!permissions.canDelete) {
+    response.status(403).json({
+      error: {
+        code: "INSUFFICIENT_ROLE",
+        message: "User role is not authorized for this resource",
+      },
+    });
+    return;
+  }
+
+  const league = await activateLeagueService(request.params.leagueId);
+  response.json(toLeagueResponse(league));
+});
+
+export { activateLeague, createLeague, deleteLeague, getLeague, listLeagueCountries, listLeagues, toLeagueResponse };

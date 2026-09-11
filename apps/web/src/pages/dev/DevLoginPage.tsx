@@ -105,11 +105,11 @@ function DevLoginPage() {
           <div className="dev-login-card__actions">
             <Button
               onClick={() => {
-                void navigate("/dashboard/leagues/new");
+                void navigate("/dashboard/league");
               }}
               type="button"
             >
-              Tester la création de ligue
+              Ligue
             </Button>
             <Button onClick={handleLogout} type="button" variant="outline">
               Se déconnecter
