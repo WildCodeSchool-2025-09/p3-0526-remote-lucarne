@@ -123,7 +123,7 @@ describe("HTTP authentication and RBAC", () => {
       .set("Authorization", `Bearer ${user.accessToken}`);
 
     expect(response.status).toBe(
-      ["ADMIN", "MODERATOR"].includes(user.role) ? 204 : 403,
+      user.role === "ADMIN" ? 204 : 403,
     );
   });
 });

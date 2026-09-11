@@ -30,12 +30,18 @@ const createLeagueService = (input: CreateLeagueInput): Promise<League> =>
 
 const listLeaguesService = (params: ListLeaguesParams) => listLeagues(params);
 
-const deleteLeagueService = async (id: string): Promise<League> => {
+const getLeagueService = async (id: string): Promise<League> => {
   const league = await findLeagueById(id);
 
   if (league == null) {
     throw new AppError(404, "RESOURCE_NOT_FOUND", "League not found");
   }
+
+  return league;
+};
+
+const deleteLeagueService = async (id: string): Promise<League> => {
+  const league = await getLeagueService(id);
 
   return league.isActive
     ? deactivateLeague(id)
@@ -45,6 +51,7 @@ const deleteLeagueService = async (id: string): Promise<League> => {
 export {
   createLeagueService,
   deleteLeagueService,
+  getLeagueService,
   getLeaguePermissions,
   listLeaguesService,
 };

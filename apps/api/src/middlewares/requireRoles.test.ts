@@ -48,7 +48,7 @@ describe("requireRoles", () => {
 
   it.each([
     ["ADMIN", APP_ROLES.ADMIN, 204],
-    ["MODERATOR", APP_ROLES.MODERATOR, 204],
+    ["MODERATOR", APP_ROLES.MODERATOR, 403],
     ["EDITOR", APP_ROLES.EDITOR, 403],
     ["USER", APP_ROLES.USER, 403],
   ] as const)("applies DELETE_ROLES to %s", async (_role, role, status) => {

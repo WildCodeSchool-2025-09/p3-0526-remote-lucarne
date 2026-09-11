@@ -8,7 +8,7 @@ const WRITE_ROLES: AppRole[] = [
   APP_ROLES.MODERATOR,
   APP_ROLES.EDITOR,
 ];
-const DELETE_ROLES: AppRole[] = [APP_ROLES.ADMIN, APP_ROLES.MODERATOR];
+const DELETE_ROLES: AppRole[] = [APP_ROLES.ADMIN];
 
 const requireRoles = (...allowedRoles: AppRole[]): RequestHandler => (
   request,

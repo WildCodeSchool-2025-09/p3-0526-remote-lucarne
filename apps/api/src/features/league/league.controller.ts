@@ -5,6 +5,7 @@ import { APP_ROLES } from "../../auth/appRole";
 import { createLeagueService } from "./league.service";
 import {
   deleteLeagueService,
+  getLeagueService,
   getLeaguePermissions,
   listLeaguesService,
 } from "./league.service";
@@ -74,6 +75,12 @@ const listLeagues: RequestHandler<
   });
 });
 
+const getLeague: RequestHandler<{ leagueId: string }, League> = asyncHandler(async (request, response) => {
+  const league = await getLeagueService(request.params.leagueId);
+
+  response.json(toLeagueResponse(league));
+});
+
 const deleteLeague: RequestHandler<{ leagueId: string }> = asyncHandler(async (request, response) => {
   const permissions = getLeaguePermissions(request.user?.role ?? APP_ROLES.USER);
 
@@ -91,4 +98,4 @@ const deleteLeague: RequestHandler<{ leagueId: string }> = asyncHandler(async (r
   response.sendStatus(204);
 });
 
-export { createLeague, deleteLeague, listLeagues, toLeagueResponse };
+export { createLeague, deleteLeague, getLeague, listLeagues, toLeagueResponse };
