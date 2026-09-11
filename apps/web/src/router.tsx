@@ -1,6 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import App from "./App";
-import { CREATE_LEAGUE_ROLES, VIEW_LEAGUE_ROLES } from "./auth/authRole";
+import { CREATE_LEAGUE_ROLES, TEAM_CREATE_ROLES, VIEW_LEAGUE_ROLES } from "./auth/authRole";
 import { RequireRole } from "./auth/RequireRole";
 import CreateLeaguePage from "./features/league/pages/CreateLeaguePage";
 import DevLoginPage from "./pages/dev/DevLoginPage";
@@ -11,6 +11,7 @@ import UiDemoPage from "./pages/UiDemoPage";
 import LeagueDetailPage from "./features/league/pages/LeagueDetailPage";
 import LeagueListPage from "./features/league/pages/LeagueListPage";
 import EditLeaguePage from "./features/league/pages/EditLeaguePage";
+import CreateTeamPage from "./features/team/pages/CreateTeamPage";
 
 const router = createBrowserRouter([
   {
@@ -68,6 +69,14 @@ const router = createBrowserRouter([
         element: (
           <RequireRole allowedRoles={CREATE_LEAGUE_ROLES}>
             <CreateLeaguePage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/teams/new",
+        element: (
+          <RequireRole allowedRoles={TEAM_CREATE_ROLES}>
+            <CreateTeamPage />
           </RequireRole>
         ),
       },

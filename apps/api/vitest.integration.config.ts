@@ -4,10 +4,10 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    include: ["src/**/*.integration.test.ts"],
+    include: ["tests/integration/**/*.integration.test.ts"],
     setupFiles: [
       "./vitest.setup.ts",
-      "./src/test/integration.setup.ts",
+      "./tests/setup/integration.setup.ts",
     ],
     fileParallelism: false,
     sequence: {

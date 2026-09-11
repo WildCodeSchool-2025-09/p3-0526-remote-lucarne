@@ -10,6 +10,7 @@ const APP_ROLES = {
 type AppRole = (typeof APP_ROLES)[keyof typeof APP_ROLES];
 
 const CREATE_LEAGUE_ROLES = [APP_ROLES.ADMIN] as const;
+const TEAM_CREATE_ROLES = [APP_ROLES.ADMIN, APP_ROLES.MODERATOR, APP_ROLES.EDITOR] as const;
 const VIEW_LEAGUE_ROLES = [APP_ROLES.ADMIN, APP_ROLES.MODERATOR, APP_ROLES.EDITOR] as const;
 
 interface AccessTokenPayload {
@@ -98,6 +99,7 @@ function canDeleteLeague(role: AppRole | null): boolean {
 export {
   APP_ROLES,
   CREATE_LEAGUE_ROLES,
+  TEAM_CREATE_ROLES,
   VIEW_LEAGUE_ROLES,
   canDeleteLeague,
   canCreateLeague,
