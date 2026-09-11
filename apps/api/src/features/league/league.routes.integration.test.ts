@@ -87,7 +87,7 @@ describe("POST /api/v1/leagues", () => {
     expect(response.status).toBe(400);
   });
 
-  it("supports minimal creation and defaults isActive to true", async () => {
+  it("supports minimal creation and defaults isActive to false", async () => {
     const user = await createAdmin();
 
     const response = await request(app)
@@ -100,7 +100,7 @@ describe("POST /api/v1/leagues", () => {
       name: "Division 1",
       country: "France",
       logoUrl: null,
-      isActive: true,
+      isActive: false,
     });
   });
 

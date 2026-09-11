@@ -106,7 +106,7 @@ describe("League creation frontend integration", () => {
     expect(headers.get("authorization")).toMatch(/^Bearer /);
     expect(body).toEqual({
       country: "France",
-      isActive: true,
+      isActive: false,
       name: "Première Ligue",
     });
   });

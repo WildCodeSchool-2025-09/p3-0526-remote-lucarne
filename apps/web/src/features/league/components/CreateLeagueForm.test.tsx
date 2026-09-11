@@ -27,13 +27,13 @@ describe("CreateLeagueForm", () => {
     });
   });
 
-  it("renders all fields with an active league by default", () => {
+  it("renders all fields with an inactive league by default", () => {
     render(<CreateLeagueForm />);
 
     expect(screen.getByLabelText("Nom *")).toBeInTheDocument();
     expect(screen.getByLabelText("Pays *")).toBeInTheDocument();
     expect(screen.getByLabelText("URL du logo")).toBeInTheDocument();
-    expect(screen.getByRole("checkbox", { name: "Ligue active" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Ligue active" })).not.toBeChecked();
   });
 
   it("shows inline validation errors for required fields", async () => {
@@ -66,6 +66,23 @@ describe("CreateLeagueForm", () => {
 
     await user.type(screen.getByLabelText("Nom *"), "Première Ligue");
     await user.type(screen.getByLabelText("Pays *"), "France");
+    await user.click(screen.getByRole("button", { name: "Créer la ligue" }));
+
+    await waitFor(() => expect(mutate).toHaveBeenCalledWith({
+      name: "Première Ligue",
+      country: "France",
+      logoUrl: undefined,
+      isActive: false,
+    }));
+  });
+
+  it("submits an active league when the checkbox is checked", async () => {
+    const user = userEvent.setup();
+    render(<CreateLeagueForm />);
+
+    await user.type(screen.getByLabelText("Nom *"), "Première Ligue");
+    await user.type(screen.getByLabelText("Pays *"), "France");
+    await user.click(screen.getByRole("checkbox", { name: "Ligue active" }));
     await user.click(screen.getByRole("button", { name: "Créer la ligue" }));
 
     await waitFor(() => expect(mutate).toHaveBeenCalledWith({

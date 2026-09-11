@@ -3,6 +3,7 @@ import App from "./App";
 import { CREATE_LEAGUE_ROLES } from "./auth/authRole";
 import { RequireRole } from "./auth/RequireRole";
 import CreateLeaguePage from "./features/league/pages/CreateLeaguePage";
+import DevLoginPage from "./pages/dev/DevLoginPage";
 import HomePage from "./pages/HomePage";
 import NotFoundPage from "./pages/NotFoundPage";
 import RouteErrorPage from "./pages/RouteErrorPage";
@@ -21,6 +22,12 @@ const router = createBrowserRouter([
         path: "ui-demo",
         Component: UiDemoPage,
       },
+      ...(import.meta.env.DEV
+        ? [{
+          path: "dev/login",
+          Component: DevLoginPage,
+        }]
+        : []),
       {
         path: "dashboard/leagues/new",
         element: (

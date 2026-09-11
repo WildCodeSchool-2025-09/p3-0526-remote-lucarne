@@ -38,7 +38,7 @@ describe("createLeagueFormSchema", () => {
       name: "",
       country: "",
       logoUrl: "",
-      isActive: true,
+      isActive: false,
     });
   });
 

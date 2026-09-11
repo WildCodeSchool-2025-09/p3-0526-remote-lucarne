@@ -23,7 +23,7 @@ describe("createLeagueService", () => {
     create.mockResolvedValue(createdLeague);
   });
 
-  it("defaults isActive to true and returns the created League", async () => {
+  it("defaults isActive to false and returns the created League", async () => {
     await expect(createLeagueService({
       name: "Division 1",
       country: "France",
@@ -33,7 +33,7 @@ describe("createLeagueService", () => {
     expect(create).toHaveBeenCalledWith({
       name: "Division 1",
       country: "France",
-      isActive: true,
+      isActive: false,
     });
   });
 

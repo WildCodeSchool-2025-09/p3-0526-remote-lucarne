@@ -5,7 +5,7 @@ import type { CreateLeagueInput } from "./league.schema";
 const createLeagueService = (input: CreateLeagueInput): Promise<League> =>
   createLeague({
     ...input,
-    isActive: input.isActive ?? true,
+    isActive: input.isActive ?? false,
   });
 
 export { createLeagueService };
