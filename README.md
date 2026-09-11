@@ -440,6 +440,20 @@ Un schéma partagé doit rester indépendant du web et de l'API afin que les deu
 applications appliquent les mêmes règles de validation. Son type TypeScript est
 dérivé avec `z.infer` lorsqu'il représente les données validées par ce schéma.
 
+Pour une route de liste, `paginationQuerySchema` normalise `page`, `limit`,
+`search` et `sort`. Le tri utilise un nom de champ `camelCase`, préfixé par `-`
+pour l'ordre décroissant. Chaque feature étend ce schéma avec ses propres
+filtres et utilise `createSortQuerySchema` pour limiter les champs de tri
+autorisés avant de construire la requête Prisma.
+
+Dans l'API, `validateRequest` valide et remplace `body`, `params` et `query` par
+les valeurs parsées par Zod. Les contrôleurs asynchrones sont enveloppés avec
+`asyncHandler` afin que leurs rejets atteignent le middleware d'erreur sous
+Express 4. Le middleware central convertit les erreurs Zod et les principales
+erreurs Prisma vers le format d'erreur commun. Les erreurs de validation peuvent
+inclure une liste `details` contenant uniquement le chemin et le message des
+champs invalides, sans exposer les données reçues ni les détails internes.
+
 Le manifeste racine déclare les workspaces `apps/*` et `packages/*`. Les
 applications sont nommées `@lucarne/web` et `@lucarne/api`. Elles dépendent
 toutes les deux de `@lucarne/shared`, dont les exports initiaux sont disponibles

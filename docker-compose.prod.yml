@@ -9,6 +9,7 @@ services:
       NODE_ENV: production
       APP_PORT: 3310
       APP_SECRET: "${APP_SECRET:?APP_SECRET is required}"
+      JWT_ACCESS_TOKEN_TTL_SECONDS: "${JWT_ACCESS_TOKEN_TTL_SECONDS:-900}"
       CLIENT_URL: ""
       DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
       VITE_API_URL: ""

@@ -1,5 +1,5 @@
 import type { ErrorRequestHandler } from "express";
-import { AppError } from "../errors/AppError";
+import { mapErrorToAppError } from "../errors/mapErrorToAppError";
 import type { ApiErrorResponse } from "@lucarne/shared";
 
 const errorHandler: ErrorRequestHandler = (error, request, response, next) => {
@@ -8,15 +8,20 @@ const errorHandler: ErrorRequestHandler = (error, request, response, next) => {
   console.error(error);
   console.error("on request:", request.method, request.path);
 
-  if (error instanceof AppError) {
+  const appError = mapErrorToAppError(error);
+
+  if (appError != null) {
     const payload: ApiErrorResponse = {
       error: {
-        code: error.code,
-        message: error.message,
+        code: appError.code,
+        message: appError.message,
+        ...(appError.details == null
+          ? {}
+          : { details: appError.details }),
       },
     };
 
-    response.status(error.statusCode).json(payload);
+    response.status(appError.statusCode).json(payload);
     return;
   }
 

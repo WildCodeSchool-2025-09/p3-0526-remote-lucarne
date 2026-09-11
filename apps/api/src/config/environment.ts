@@ -26,6 +26,13 @@ const environmentSchema = z.object({
 
   APP_SECRET: z.string().min(32),
 
+  JWT_ACCESS_TOKEN_TTL_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(86_400)
+    .default(900),
+
   CLIENT_URL: optionalUrlSchema,
 
   DATABASE_URL: databaseUrlSchema,
@@ -77,6 +84,10 @@ const environment = Object.freeze({
   nodeEnv: parsedEnvironment.NODE_ENV,
   port: parsedEnvironment.APP_PORT,
   appSecret: parsedEnvironment.APP_SECRET,
+  jwt: {
+    accessTokenTtlSeconds:
+      parsedEnvironment.JWT_ACCESS_TOKEN_TTL_SECONDS,
+  },
   clientUrl: parsedEnvironment.CLIENT_URL,
   database: {
     connectionString: databaseUrl,

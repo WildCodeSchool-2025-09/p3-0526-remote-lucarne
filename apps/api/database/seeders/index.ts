@@ -2,6 +2,8 @@ import { faker } from "@faker-js/faker";
 import type { Prisma } from "../../src/generated/prisma/client";
 import { seedLeague } from "./league.seeder";
 import { seedPlayers } from "./player.seeder";
+import { seedRoles } from "./role.seeder";
+import { seedUsers } from "./user.seeder";
 import { seedStaff } from "./staff.seeder";
 import { seedTeams } from "./team.seeder";
 
@@ -12,6 +14,8 @@ const runSeeders = async (
 ): Promise<void> => {
   faker.seed(FAKER_SEED);
 
+  await seedRoles(database);
+  await seedUsers(database);
   await seedLeague(database);
   await seedTeams(database);
   await seedPlayers(database);

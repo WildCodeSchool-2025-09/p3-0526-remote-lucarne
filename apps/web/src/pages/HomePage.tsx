@@ -22,7 +22,7 @@ function HomePage() {
 
   return (
     <section>
-      <h1>Lucarne</h1>
+      <h1 className="w-full bg-amber-300">Lucarne</h1>
       <p>État de l’API : {healthQuery.data.status}</p>
     </section>
   );

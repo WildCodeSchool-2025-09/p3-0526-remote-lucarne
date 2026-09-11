@@ -1,5 +1,6 @@
-import { API_V1_PATH, type ApiErrorResponse } from "@lucarne/shared";
+import { API_V1_PATH, type ApiErrorDetail, type ApiErrorResponse } from "@lucarne/shared";
 import { apiUrl } from "../config/environment";
+import { getAccessToken } from "./authToken";
 
 type QueryValue = boolean | number | string | null | undefined;
 type QueryParameters = Record<string, QueryValue | QueryValue[]>;
@@ -12,6 +13,7 @@ interface HttpRequestOptions extends Omit<RequestInit, "body" | "method"> {
 
 class HttpError extends Error {
   readonly code?: string;
+  readonly details?: ApiErrorDetail[];
   readonly payload: unknown;
   readonly status: number;
 
@@ -21,6 +23,7 @@ class HttpError extends Error {
     super(apiError?.message ?? `HTTP ${response.status}: ${response.statusText}`);
     this.name = "HttpError";
     this.code = apiError?.code;
+    this.details = apiError?.details;
     this.payload = payload;
     this.status = response.status;
   }
@@ -46,7 +49,18 @@ function getApiError(payload: unknown): ApiErrorResponse["error"] | undefined {
     return undefined;
   }
 
-  return { code: error.code, message: error.message };
+  const isApiErrorDetail = (detail: unknown): detail is ApiErrorDetail =>
+    typeof detail === "object"
+    && detail != null
+    && "field" in detail
+    && typeof detail.field === "string"
+    && "message" in detail
+    && typeof detail.message === "string";
+  const details = "details" in error && Array.isArray(error.details)
+    ? error.details.filter(isApiErrorDetail)
+    : undefined;
+
+  return { code: error.code, message: error.message, details };
 }
 
 function createUrl(path: string, query?: QueryParameters): string {
@@ -103,6 +117,12 @@ async function request<T>(
 
   const headers = new Headers(initialHeaders);
   headers.set("accept", "application/json");
+
+  const accessToken = getAccessToken();
+
+  if (accessToken !== null && !headers.has("authorization")) {
+    headers.set("authorization", `Bearer ${accessToken}`);
+  }
 
   if (json !== undefined && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
