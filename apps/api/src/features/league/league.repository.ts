@@ -1,7 +1,7 @@
 import prisma from "../../../database/prisma";
-import type { League } from "../../generated/prisma/client";
+import type { League, Prisma } from "../../generated/prisma/client";
 import type { CreateLeagueInput } from "./league.schema";
-import type { ListLeaguesParams } from "@lucarne/shared";
+import type { LeagueUpdateFields, ListLeaguesParams } from "@lucarne/shared";
 
 interface LeagueListResult {
   data: League[];
@@ -11,11 +11,13 @@ interface LeagueListResult {
 interface UpdateLeagueOptimisticInput {
   leagueId: string;
   expectedVersion: number;
-  name: string;
-  country: string;
-  logoUrl: string | null;
-  isActive: boolean;
+  changes: LeagueUpdateFields;
 }
+
+type LeagueUpdateResult =
+  | { status: "UPDATED"; league: League }
+  | { status: "NOT_FOUND" }
+  | { status: "VERSION_CONFLICT" };
 
 const createLeague = (input: CreateLeagueInput): Promise<League> =>
   prisma.league.create({
@@ -25,26 +27,34 @@ const createLeague = (input: CreateLeagueInput): Promise<League> =>
 const updateLeagueOptimistic = async ({
   leagueId,
   expectedVersion,
-  name,
-  country,
-  logoUrl,
-  isActive,
-}: UpdateLeagueOptimisticInput): Promise<number> => {
-  const result = await prisma.league.updateMany({
+  changes,
+}: UpdateLeagueOptimisticInput): Promise<LeagueUpdateResult> => {
+  const data: Prisma.LeagueUpdateManyMutationInput = {
+    version: { increment: 1 },
+  };
+
+  if (changes.name !== undefined) data.name = changes.name;
+  if (changes.country !== undefined) data.country = changes.country;
+  if (changes.logoUrl !== undefined) data.logoUrl = changes.logoUrl;
+  if (changes.isActive !== undefined) data.isActive = changes.isActive;
+
+  const result = await prisma.league.updateManyAndReturn({
     where: {
       id: leagueId,
       version: expectedVersion,
     },
-    data: {
-      name,
-      country,
-      logoUrl,
-      isActive,
-      version: { increment: 1 },
-    },
+    data,
   });
 
-  return result.count;
+  if (result[0] != null) {
+    return { status: "UPDATED", league: result[0] };
+  }
+
+  const league = await findLeagueById(leagueId);
+
+  return league == null
+    ? { status: "NOT_FOUND" }
+    : { status: "VERSION_CONFLICT" };
 };
 
 const listLeagues = async (params: ListLeaguesParams): Promise<LeagueListResult> => {
@@ -115,4 +125,4 @@ export {
   permanentlyDeleteLeague,
   updateLeagueOptimistic,
 };
-export type { LeagueListResult, UpdateLeagueOptimisticInput };
+export type { LeagueListResult, LeagueUpdateResult, UpdateLeagueOptimisticInput };

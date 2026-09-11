@@ -7,7 +7,7 @@ import type {
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Alert, Button, Input } from "../../../ui";
-import { canCreateLeague, canDeleteLeague, getCurrentAppRole } from "../../../auth/authRole";
+import { canCreateLeague, canDeleteLeague, canViewLeague, getCurrentAppRole } from "../../../auth/authRole";
 import { HttpError } from "../../../lib/httpClient";
 import { useLeagueList } from "../hooks/useLeagueList";
 import { useLeagueCountries } from "../hooks/useLeagueCountries";
@@ -68,6 +68,7 @@ function LeagueListPage() {
   const role = getCurrentAppRole();
   const canDelete = canDeleteLeague(role);
   const canCreate = canCreateLeague(role);
+  const canEdit = canViewLeague(role);
 
   const countryOptions = useMemo(() => {
     const countries = new Set([...(params.countries ?? []), ...(countriesQuery.data ?? [])]);
@@ -285,6 +286,7 @@ function LeagueListPage() {
                       <td data-label="Statut"><span className={`league-list__status league-list__status--${status.toLowerCase()}`}>{status === "ACTIVE" ? "Active" : "Inactive"}</span></td>
                       <td data-label="Créée le">{formatDate(league.createdAt)}</td>
                       <td data-label="Actions">
+                        {canEdit ? <Link className="lucarne-button lucarne-button--outline" to={`/dashboard/leagues/${league.id}/edit`}>Modifier</Link> : null}
                         {canDelete ? (
                           <div className="league-list__actions">
                             <Button

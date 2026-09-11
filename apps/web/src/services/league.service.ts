@@ -3,6 +3,7 @@ import type {
   League,
   ListLeaguesParams,
   PaginatedLeaguesResponse,
+  UpdateLeagueInput,
 } from "@lucarne/shared";
 import { httpClient } from "../lib/httpClient";
 
@@ -38,4 +39,8 @@ async function activateLeague(id: string): Promise<League> {
   return httpClient.patch<League>(`/leagues/${id}/activate`);
 }
 
-export { activateLeague, createLeague, deleteLeague, getLeague, listLeagueCountries, listLeagues };
+async function updateLeague(id: string, input: UpdateLeagueInput): Promise<League> {
+  return httpClient.patch<League>(`/leagues/${id}`, { json: input });
+}
+
+export { activateLeague, createLeague, deleteLeague, getLeague, listLeagueCountries, listLeagues, updateLeague };

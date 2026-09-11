@@ -1,7 +1,7 @@
 import type { CreateLeagueInput } from "@lucarne/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { HttpError, httpClient } from "../lib/httpClient";
-import { activateLeague, createLeague, listLeagueCountries } from "./league.service";
+import { activateLeague, createLeague, listLeagueCountries, updateLeague } from "./league.service";
 
 describe("league service", () => {
   afterEach(() => {
@@ -82,5 +82,14 @@ describe("league service", () => {
 
     await activateLeague("league-id");
     expect(patch).toHaveBeenCalledWith("/leagues/league-id/activate");
+  });
+
+  it("updates a league with its current version", async () => {
+    const patch = vi.spyOn(httpClient, "patch").mockResolvedValue({});
+    const input = { name: "Updated League", version: 2 };
+
+    await updateLeague("league-id", input);
+
+    expect(patch).toHaveBeenCalledWith("/leagues/league-id", { json: input });
   });
 });

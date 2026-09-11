@@ -2,11 +2,12 @@ import { Router } from "express";
 import { authenticate } from "../../middlewares/authenticate";
 import { requireRoles } from "../../middlewares/requireRoles";
 import { validateRequest } from "../../middlewares/validateRequest";
-import { activateLeague, createLeague, deleteLeague, getLeague, listLeagueCountries, listLeagues } from "./league.controller";
+import { activateLeague, createLeague, deleteLeague, getLeague, listLeagueCountries, listLeagues, updateLeague } from "./league.controller";
 import {
   createLeagueBodySchema,
   leagueIdParamsSchema,
   listLeaguesQuerySchema,
+  updateLeagueBodySchema,
 } from "./league.schema";
 import {
   LEAGUE_DELETE_ROLES,
@@ -53,6 +54,14 @@ leagueRouter.delete(
   requireRoles(APP_ROLES.ADMIN),
   validateRequest({ params: leagueIdParamsSchema }),
   deleteLeague,
+);
+
+leagueRouter.patch(
+  "/:leagueId",
+  authenticate,
+  requireRoles(...LEAGUE_VIEW_ROLES),
+  validateRequest({ params: leagueIdParamsSchema, body: updateLeagueBodySchema }),
+  updateLeague,
 );
 
 leagueRouter.patch(

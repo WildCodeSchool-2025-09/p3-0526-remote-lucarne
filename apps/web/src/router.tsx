@@ -10,6 +10,7 @@ import RouteErrorPage from "./pages/RouteErrorPage";
 import UiDemoPage from "./pages/UiDemoPage";
 import LeagueDetailPage from "./features/league/pages/LeagueDetailPage";
 import LeagueListPage from "./features/league/pages/LeagueListPage";
+import EditLeaguePage from "./features/league/pages/EditLeaguePage";
 
 const router = createBrowserRouter([
   {
@@ -51,6 +52,14 @@ const router = createBrowserRouter([
         element: (
           <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}>
             <LeagueDetailPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/leagues/:leagueId/edit",
+        element: (
+          <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}>
+            <EditLeaguePage />
           </RequireRole>
         ),
       },

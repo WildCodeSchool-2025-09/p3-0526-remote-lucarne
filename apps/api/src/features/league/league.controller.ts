@@ -2,14 +2,14 @@ import type { RequestHandler } from "express";
 import type { League, PaginatedLeaguesResponse } from "@lucarne/shared";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { APP_ROLES } from "../../auth/appRole";
-import { activateLeagueService, createLeagueService, listLeagueCountriesService } from "./league.service";
+import { activateLeagueService, createLeagueService, listLeagueCountriesService, updateLeagueService } from "./league.service";
 import {
   deleteLeagueService,
   getLeagueService,
   getLeaguePermissions,
   listLeaguesService,
 } from "./league.service";
-import type { CreateLeagueInput, ListLeaguesParams } from "./league.schema";
+import type { CreateLeagueInput, ListLeaguesParams, UpdateLeagueInput } from "./league.schema";
 
 const toLeagueResponse = (league: {
   id: string;
@@ -89,6 +89,21 @@ const getLeague: RequestHandler<{ leagueId: string }, League> = asyncHandler(asy
   response.json(toLeagueResponse(league));
 });
 
+const updateLeague: RequestHandler<
+  { leagueId: string },
+  League,
+  UpdateLeagueInput
+> = asyncHandler(async (request, response) => {
+  const { version, ...changes } = request.body;
+  const league = await updateLeagueService({
+    leagueId: request.params.leagueId,
+    expectedVersion: version,
+    changes,
+  }, request.user!.role);
+
+  response.json(toLeagueResponse(league));
+});
+
 const deleteLeague: RequestHandler<{ leagueId: string }> = asyncHandler(async (request, response) => {
   const permissions = getLeaguePermissions(request.user?.role ?? APP_ROLES.USER);
 
@@ -123,4 +138,4 @@ const activateLeague: RequestHandler<{ leagueId: string }> = asyncHandler(async 
   response.json(toLeagueResponse(league));
 });
 
-export { activateLeague, createLeague, deleteLeague, getLeague, listLeagueCountries, listLeagues, toLeagueResponse };
+export { activateLeague, createLeague, deleteLeague, getLeague, listLeagueCountries, listLeagues, toLeagueResponse, updateLeague };

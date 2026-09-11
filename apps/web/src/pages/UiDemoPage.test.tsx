@@ -14,6 +14,9 @@ describe("UiDemoPage", () => {
     expect(screen.getByRole("button", { name: "Primary" })).toBeInTheDocument();
     expect(screen.getByLabelText("Champ standard")).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /Checkbox native/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Format League" })).toBeInTheDocument();
+    expect(screen.getByText("Ligue Nationale")).toBeInTheDocument();
+    expect(screen.getByText("Version").parentElement).toHaveTextContent("1");
     expect(screen.getByTestId("create-league-form")).toBeInTheDocument();
   });
 });

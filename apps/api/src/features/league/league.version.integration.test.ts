@@ -30,10 +30,12 @@ describe("League optimistic versioning", () => {
     const count = await updateLeagueOptimistic({
       leagueId: league.id,
       expectedVersion: 0,
-      name: "Updated League",
-      country: "Belgium",
-      logoUrl: "https://example.com/logo.png",
-      isActive: true,
+      changes: {
+        name: "Updated League",
+        country: "Belgium",
+        logoUrl: "https://example.com/logo.png",
+        isActive: true,
+      },
     });
     const updated = await prisma.league.findUnique({ where: { id: league.id } });
 
@@ -55,19 +57,23 @@ describe("League optimistic versioning", () => {
     expect(await updateLeagueOptimistic({
       leagueId: league.id,
       expectedVersion: 0,
-      name: "First Update",
-      country: "France",
-      logoUrl: null,
-      isActive: false,
+      changes: {
+        name: "First Update",
+        country: "France",
+        logoUrl: null,
+        isActive: false,
+      },
     })).toBe(1);
 
     const staleCount = await updateLeagueOptimistic({
       leagueId: league.id,
       expectedVersion: 0,
-      name: "Stale Update",
-      country: "France",
-      logoUrl: null,
-      isActive: true,
+      changes: {
+        name: "Stale Update",
+        country: "France",
+        logoUrl: null,
+        isActive: true,
+      },
     });
     const unchanged = await prisma.league.findUnique({ where: { id: league.id } });
 

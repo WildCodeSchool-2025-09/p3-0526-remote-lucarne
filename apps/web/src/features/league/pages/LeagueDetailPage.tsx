@@ -1,4 +1,5 @@
-import { useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
+import { canViewLeague, getCurrentAppRole } from "../../../auth/authRole";
 import { Alert, Button } from "../../../ui";
 import { HttpError } from "../../../lib/httpClient";
 import { useLeagueDetail } from "../hooks/useLeagueDetail";
@@ -14,6 +15,7 @@ function LeagueDetailPage() {
   const navigate = useNavigate();
   const { leagueId = "" } = useParams();
   const query = useLeagueDetail(leagueId);
+  const canEdit = canViewLeague(getCurrentAppRole());
 
   return (
     <section className="league-detail-page" aria-labelledby="league-detail-title">
@@ -37,6 +39,7 @@ function LeagueDetailPage() {
             <header>
               <p className="league-list-page__eyebrow">Détail d’une ligue</p>
               <h1 id="league-detail-title">{query.data.name}</h1>
+              {canEdit ? <Link className="lucarne-button lucarne-button--outline" to={`/dashboard/leagues/${query.data.id}/edit`}>Modifier</Link> : null}
             </header>
             <div className="league-detail-card__content">
               {query.data.logoUrl ? <img alt={`Logo de ${query.data.name}`} className="league-detail-card__logo" src={query.data.logoUrl} /> : <span aria-label={`Initiale de ${query.data.name}`} className="league-detail-card__logo league-detail-card__logo--placeholder">{query.data.name.charAt(0).toUpperCase()}</span>}
