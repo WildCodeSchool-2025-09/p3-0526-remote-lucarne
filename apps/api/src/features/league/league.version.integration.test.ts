@@ -27,7 +27,7 @@ describe("League optimistic versioning", () => {
   it("updates conditionally, increments version and preserves id and createdAt", async () => {
     const league = await createLeague("Versioned League", "France", false);
 
-    const count = await updateLeagueOptimistic({
+    const result = await updateLeagueOptimistic({
       leagueId: league.id,
       expectedVersion: 0,
       changes: {
@@ -39,7 +39,10 @@ describe("League optimistic versioning", () => {
     });
     const updated = await prisma.league.findUnique({ where: { id: league.id } });
 
-    expect(count).toBe(1);
+    expect(result).toMatchObject({
+      status: "UPDATED",
+      league: { id: league.id, version: 1 },
+    });
     expect(updated).toMatchObject({
       id: league.id,
       name: "Updated League",
@@ -63,9 +66,9 @@ describe("League optimistic versioning", () => {
         logoUrl: null,
         isActive: false,
       },
-    })).toBe(1);
+    })).toMatchObject({ status: "UPDATED", league: { id: league.id, version: 1 } });
 
-    const staleCount = await updateLeagueOptimistic({
+    const staleResult = await updateLeagueOptimistic({
       leagueId: league.id,
       expectedVersion: 0,
       changes: {
@@ -77,7 +80,7 @@ describe("League optimistic versioning", () => {
     });
     const unchanged = await prisma.league.findUnique({ where: { id: league.id } });
 
-    expect(staleCount).toBe(0);
+    expect(staleResult).toEqual({ status: "VERSION_CONFLICT" });
     expect(unchanged).toMatchObject({ name: "First Update", isActive: false, version: 1 });
   });
 
