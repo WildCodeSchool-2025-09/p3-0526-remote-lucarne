@@ -1,18 +1,6 @@
-import type { League } from "@lucarne/shared";
 import { useState } from "react";
 import { CreateLeagueForm } from "../features/league/components/CreateLeagueForm";
 import { Button, Checkbox, FormField, Input } from "../ui";
-
-const demoLeague: League = {
-  id: "demo-league-id",
-  name: "Ligue Nationale",
-  country: "France",
-  logoUrl: null,
-  status: "ACTIVE",
-  isActive: true,
-  version: 1,
-  createdAt: "2026-09-11T10:00:00.000Z",
-};
 
 function UiDemoPage() {
   const [isChecked, setIsChecked] = useState(true);
