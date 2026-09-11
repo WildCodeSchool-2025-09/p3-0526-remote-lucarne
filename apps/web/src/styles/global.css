@@ -822,6 +822,16 @@ input {
   gap: 12px;
 }
 
+.ui-demo-page__button-groups {
+  display: grid;
+  gap: 24px;
+}
+
+.ui-demo-page__button-groups h3 {
+  font-size: 14px;
+  margin: 0 0 12px;
+}
+
 .ui-demo-page__fields {
   display: grid;
   gap: 20px;

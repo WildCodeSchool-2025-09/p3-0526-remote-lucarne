@@ -74,6 +74,20 @@ describe("LeagueListPage", () => {
     mutationHook.mockReturnValue({ isPending: false, mutateAsync } as never);
   });
 
+  it.each(["ADMIN", "MODERATOR", "EDITOR"] as const)("shows edit actions for %s", (role) => {
+    setAccessToken(token(role));
+    renderPage();
+
+    expect(screen.getAllByRole("link", { name: "Modifier" })).toHaveLength(2);
+  });
+
+  it("hides edit actions for USER", () => {
+    setAccessToken(token("USER"));
+    renderPage();
+
+    expect(screen.queryByRole("link", { name: "Modifier" })).not.toBeInTheDocument();
+  });
+
   it("displays the five league fields and an initial when the logo is absent", () => {
     renderPage();
 

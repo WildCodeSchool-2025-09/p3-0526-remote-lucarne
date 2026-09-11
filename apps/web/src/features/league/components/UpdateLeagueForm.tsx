@@ -103,7 +103,16 @@ function UpdateLeagueForm({ league, canEditStatus, onCancel, onReload, onSuccess
       {isVersionConflict ? (
         <Alert variant="danger">
           Cette ligue a été modifiée par un autre utilisateur. Rechargez les données avant de réessayer.
-          <Button onClick={onReload} type="button" variant="outline">Recharger les données</Button>
+          <Button
+            onClick={() => {
+              mutation.reset();
+              onReload();
+            }}
+            type="button"
+            variant="outline"
+          >
+            Recharger les données
+          </Button>
         </Alert>
       ) : null}
       {mutation.isError && !isVersionConflict ? (

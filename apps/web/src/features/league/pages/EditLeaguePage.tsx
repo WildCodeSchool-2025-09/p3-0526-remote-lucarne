@@ -20,7 +20,8 @@ function EditLeaguePage() {
   }
 
   if (query.isError) {
-    const isNotFound = query.error instanceof HttpError && query.error.code === "RESOURCE_NOT_FOUND";
+    const isNotFound = query.error instanceof HttpError
+      && (query.error.code === "RESOURCE_NOT_FOUND" || query.error.status === 404);
 
     return (
       <section className="league-detail-page" aria-labelledby="edit-league-error-title">
@@ -40,7 +41,7 @@ function EditLeaguePage() {
   return (
     <section className="create-league-page edit-league-page" aria-labelledby="edit-league-title">
       <div className="create-league-page__container">
-        <Link className="lucarne-button lucarne-button--ghost create-league-page__back" to={`/dashboard/leagues/`}>
+        <Link className="lucarne-button lucarne-button--ghost create-league-page__back" to="/dashboard/leagues">
           ← Retour à la liste
         </Link>
         {savedLeague ? <Alert variant="success">La ligue a été modifiée avec succès.</Alert> : null}

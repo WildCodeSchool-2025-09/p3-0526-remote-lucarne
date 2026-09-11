@@ -29,13 +29,38 @@ function UiDemoPage() {
 
       <section className="ui-demo-page__section" aria-labelledby="buttons-title">
         <h2 id="buttons-title">Boutons</h2>
-        <div className="ui-demo-page__row">
-          <Button variant="primary">Primary</Button>
-          <Button variant="dark">Dark</Button>
-          <Button variant="outline">Outline</Button>
-          <Button variant="ghost">Ghost</Button>
-          <Button variant="danger">Danger</Button>
-          <Button disabled variant="primary">Disabled</Button>
+        <div className="ui-demo-page__button-groups">
+          <div>
+            <h3>Petite — sm</h3>
+            <div className="ui-demo-page__row">
+              <Button size="sm" variant="primary">Primary</Button>
+              <Button size="sm" variant="dark">Dark</Button>
+              <Button size="sm" variant="outline">Outline</Button>
+              <Button disabled size="sm" variant="primary">Disabled</Button>
+            </div>
+          </div>
+          <div>
+            <h3>Moyenne — m</h3>
+            <div className="ui-demo-page__row">
+              <Button size="m" variant="primary">Primary</Button>
+              <Button size="m" variant="ghost">Ghost</Button>
+              <Button size="m" variant="danger">Danger</Button>
+            </div>
+          </div>
+          <div>
+            <h3>Grande — l</h3>
+            <div className="ui-demo-page__row">
+              <Button size="l" variant="primary">Primary</Button>
+              <Button size="l" variant="outline">Outline</Button>
+            </div>
+          </div>
+          <div>
+            <h3>Très grande — xl</h3>
+            <div className="ui-demo-page__row">
+              <Button size="xl" variant="primary">Primary</Button>
+              <Button size="xl" variant="dark">Dark</Button>
+            </div>
+          </div>
         </div>
       </section>
 

@@ -11,7 +11,12 @@ describe("UiDemoPage", () => {
     render(<UiDemoPage />);
 
     expect(screen.getByRole("heading", { name: "Page de démonstration" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Primary" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Primary" })).toHaveLength(4);
+    expect(screen.getByRole("heading", { name: "Petite — sm" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Moyenne — m" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Grande — l" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Très grande — xl" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Disabled" })).toBeDisabled();
     expect(screen.getByLabelText("Champ standard")).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /Checkbox native/ })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Format League" })).toBeInTheDocument();
