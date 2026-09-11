@@ -3,6 +3,15 @@ import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_SEARCH_LENGTH } from "../constants
 
 const leagueStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
 const leagueStatusFilterSchema = z.enum(["ALL", "ACTIVE", "INACTIVE"]);
+const leagueNameSchema = z.string({ error: "Nom requis" })
+  .trim()
+  .min(1, { error: "Nom requis" })
+  .max(150, { error: "Le nom ne peut pas dépasser 150 caractères" });
+const leagueCountrySchema = z.string({ error: "Pays requis" })
+  .trim()
+  .min(1, { error: "Pays requis" })
+  .max(100, { error: "Le pays ne peut pas dépasser 100 caractères" });
+const leagueLogoUrlSchema = z.string().trim().pipe(z.url());
 
 const countriesQuerySchema = z.preprocess((value) => {
   if (typeof value === "string") {
@@ -39,17 +48,28 @@ const leagueListQuerySchema = z.object({
 }).strict();
 
 const createLeagueInputSchema = z.object({
-  name: z.string({ error: "Nom requis" })
-    .trim()
-    .min(1, { error: "Nom requis" })
-    .max(150, { error: "Le nom ne peut pas dépasser 150 caractères" }),
-  country: z.string({ error: "Pays requis" })
-    .trim()
-    .min(1, { error: "Pays requis" })
-    .max(100, { error: "Le pays ne peut pas dépasser 100 caractères" }),
-  logoUrl: z.string().trim().pipe(z.url()).optional(),
+  name: leagueNameSchema,
+  country: leagueCountrySchema,
+  logoUrl: leagueLogoUrlSchema.optional(),
   isActive: z.boolean().optional(),
 }).strict();
+
+const updateLeagueInputSchema = z.object({
+  name: leagueNameSchema.optional(),
+  country: leagueCountrySchema.optional(),
+  logoUrl: z.union([leagueLogoUrlSchema, z.null()]).optional(),
+  isActive: z.boolean().optional(),
+  version: z.number({ error: "Version requise" })
+    .int({ error: "La version doit être un entier" })
+    .min(0, { error: "La version doit être supérieure ou égale à 0" }),
+}).strict().refine(
+  ({ name, country, logoUrl, isActive }) =>
+    name !== undefined
+    || country !== undefined
+    || logoUrl !== undefined
+    || isActive !== undefined,
+  { message: "Au moins un champ métier doit être modifié", path: ["request"] },
+);
 
 export {
   createLeagueInputSchema,
@@ -57,4 +77,8 @@ export {
   leagueListQuerySchema,
   leagueStatusFilterSchema,
   leagueStatusSchema,
+  leagueCountrySchema,
+  leagueLogoUrlSchema,
+  leagueNameSchema,
+  updateLeagueInputSchema,
 };
