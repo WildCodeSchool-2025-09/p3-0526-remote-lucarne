@@ -96,22 +96,6 @@ function UiDemoPage() {
         </div>
       </section>
 
-      <section className="ui-demo-page__section" aria-labelledby="league-title">
-        <h2 id="league-title">Format League</h2>
-        <article aria-label={`Ligue ${demoLeague.name}`} className="ui-demo-page__league-card">
-          <header>
-            <p className="ui-demo-page__eyebrow">{demoLeague.status}</p>
-            <h3>{demoLeague.name}</h3>
-          </header>
-          <dl>
-            <div><dt>Pays</dt><dd>{demoLeague.country}</dd></div>
-            <div><dt>Statut</dt><dd>{demoLeague.isActive ? "Active" : "Inactive"}</dd></div>
-            <div><dt>Version</dt><dd>{demoLeague.version}</dd></div>
-            <div><dt>Identifiant</dt><dd>{demoLeague.id}</dd></div>
-          </dl>
-        </article>
-      </section>
-
       <section className="ui-demo-page__section" aria-labelledby="form-title">
         <h2 id="form-title">Formulaire métier</h2>
         <CreateLeagueForm />
