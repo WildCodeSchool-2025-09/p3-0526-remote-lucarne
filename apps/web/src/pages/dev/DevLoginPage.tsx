@@ -113,7 +113,7 @@ function DevLoginPage() {
             </Button>
             <Button
               onClick={() => {
-                void navigate("/dashboard/teams/new");
+                void navigate("/dashboard/teams");
               }}
               type="button"
             >
@@ -169,6 +169,7 @@ function DevLoginPage() {
           <Button disabled={isSubmitting} type="submit">
             {isSubmitting ? "Connexion..." : "Se connecter"}
           </Button>
+          <Link to="/dashboard/teams/new">Ajouter une équipe</Link>
         </form>
       </section>
     </main>
