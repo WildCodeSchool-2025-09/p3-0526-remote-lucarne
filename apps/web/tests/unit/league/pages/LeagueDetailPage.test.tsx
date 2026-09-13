@@ -2,13 +2,16 @@ import type { League } from "@lucarne/shared";
 import { MemoryRouter } from "react-router";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useLeagueDetail } from "../../../../src/features/league/hooks/useLeagueDetail";
+import { useLeagueMutation } from "../../../../src/features/league/hooks/useLeagueMutation";
 import LeagueDetailPage from "../../../../src/features/league/pages/LeagueDetailPage";
 
 vi.mock("../../../../src/features/league/hooks/useLeagueDetail", () => ({ useLeagueDetail: vi.fn() }));
+vi.mock("../../../../src/features/league/hooks/useLeagueMutation", () => ({ useLeagueMutation: vi.fn() }));
 
 const detailQuery = vi.mocked(useLeagueDetail);
+const leagueMutation = vi.mocked(useLeagueMutation);
 const league: League = {
   id: "league-1",
   name: "Ligue de France",
@@ -20,6 +23,9 @@ const league: League = {
 };
 
 describe("LeagueDetailPage", () => {
+  const mutation = { isError: false, isPending: false, mutateAsync: vi.fn(), reset: vi.fn() };
+
+  beforeEach(() => leagueMutation.mockReturnValue(mutation as never));
   it("displays the detail and supports returning to the previous list state", async () => {
     detailQuery.mockReturnValue({ data: league, isPending: false, isError: false, isSuccess: true } as never);
     const user = userEvent.setup();

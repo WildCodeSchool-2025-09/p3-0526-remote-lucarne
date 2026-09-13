@@ -26,7 +26,7 @@ export default function PlayerListPage() {
   const query = usePlayerList(params);
   const [openField, setOpenField] = useState<SuggestionField | null>(null);
   const setCriteria = (change: Partial<ListPlayersParams>) => setUrl((current) => { const next = new URLSearchParams(current); Object.entries({ ...change, page: change.page ?? 1 }).forEach(([key, value]) => { if (value == null || value === "" || value === "ALL") next.delete(key); else next.set(key, String(value)); }); return next; });
-  const players = query.data?.data ?? [];
+  const players = useMemo(() => query.data?.data ?? [], [query.data?.data]);
   const playerSuggestions = useMemo(() => uniqueSuggestions(players.map((player) => `${player.firstName} ${player.lastName}`), params.search ?? ""), [players, params.search]);
   const teamSuggestions = useMemo(() => uniqueSuggestions(players.flatMap((player) => player.activeTeam?.name ? [player.activeTeam.name] : []), params.teamName ?? ""), [players, params.teamName]);
   const positionSuggestions = useMemo(() => uniqueSuggestions(players.flatMap((player) => player.position ? [player.position] : []), params.position ?? ""), [players, params.position]);

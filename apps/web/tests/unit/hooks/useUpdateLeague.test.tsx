@@ -4,6 +4,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { updateLeague } from "../../../src/services/league.service";
 import { useUpdateLeague } from "../../../src/hooks/useUpdateLeague";
+import { leagueKeys } from "../../../src/features/league/leagueKeys";
 
 vi.mock("../../../src/services/league.service", () => ({ updateLeague: vi.fn() }));
 
@@ -35,9 +36,9 @@ describe("useUpdateLeague", () => {
     result.current.mutate({ name: "Updated League", version: 0 });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(queryClient.getQueryData(["league", "league-id"])).toEqual(updatedLeague);
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["league", "league-id"] });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["leagues"] });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: ["league-countries"] });
+    expect(queryClient.getQueryData(leagueKeys.detail("league-id"))).toEqual(updatedLeague);
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: leagueKeys.detail("league-id") });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: leagueKeys.lists() });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: leagueKeys.countries() });
   });
 });

@@ -1,7 +1,7 @@
 import type { CreateLeagueInput } from "@lucarne/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { HttpError, httpClient } from "../../../src/lib/httpClient";
-import { activateLeague, createLeague, listLeagueCountries, updateLeague } from "../../../src/services/league.service";
+import { activateLeague, createLeague, deactivateLeague, deleteLeague, listLeagueCountries, updateLeague } from "../../../src/services/league.service";
 
 describe("league service", () => {
   afterEach(() => {
@@ -82,6 +82,20 @@ describe("league service", () => {
 
     await activateLeague("league-id");
     expect(patch).toHaveBeenCalledWith("/leagues/league-id/activate");
+  });
+
+  it("deactivates through the explicit API action", async () => {
+    const patch = vi.spyOn(httpClient, "patch").mockResolvedValue({});
+
+    await deactivateLeague("league-id");
+    expect(patch).toHaveBeenCalledWith("/leagues/league-id/deactivate");
+  });
+
+  it("confirms permanent deletion in the API contract", async () => {
+    const remove = vi.spyOn(httpClient, "delete").mockResolvedValue(undefined);
+
+    await deleteLeague("league-id");
+    expect(remove).toHaveBeenCalledWith("/leagues/league-id", { json: { confirm: true } });
   });
 
   it("updates a league with its current version", async () => {

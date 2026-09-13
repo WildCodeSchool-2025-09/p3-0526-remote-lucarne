@@ -80,7 +80,7 @@ describe("database seeders", () => {
     });
 
     for (const teamId of SEED_IDS.teams) {
-      await expect(prisma.player.count({ where: { teamId } }))
+      await expect(prisma.teamPlayer.count({ where: { teamId, leftAt: null } }))
         .resolves.toBe(PLAYERS_PER_TEAM);
       await expect(prisma.staffMember.count({
         where: { teamId, jobTitle: "COACH" },

@@ -197,11 +197,12 @@ describe("LeagueListPage", () => {
     expect(mutateAsync).toHaveBeenCalledWith({ action: "delete", id: "league-2" });
   });
 
-  it.each(["MODERATOR", "EDITOR"])("does not show deletion actions for %s", (role) => {
+  it.each(["MODERATOR", "EDITOR"])("shows status actions but hides permanent deletion for %s", (role) => {
     setAccessToken(token(role));
     renderPage();
 
-    expect(screen.queryByRole("button", { name: /Désactiver|Supprimer/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Désactiver Ligue de France/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Supprimer/ })).not.toBeInTheDocument();
   });
 
   it("shows loading, empty and error states", () => {

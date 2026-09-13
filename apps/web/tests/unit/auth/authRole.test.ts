@@ -31,10 +31,10 @@ describe("auth role helpers", () => {
     expect(hasRole(role, [APP_ROLES.ADMIN, APP_ROLES.MODERATOR, APP_ROLES.EDITOR])).toBe(expected);
   });
 
-  it("allows league creation only for the role currently accepted by the API", () => {
+  it("allows league creation for every league manager role", () => {
     expect(canCreateLeague(APP_ROLES.ADMIN)).toBe(true);
-    expect(canCreateLeague(APP_ROLES.MODERATOR)).toBe(false);
-    expect(canCreateLeague(APP_ROLES.EDITOR)).toBe(false);
+    expect(canCreateLeague(APP_ROLES.MODERATOR)).toBe(true);
+    expect(canCreateLeague(APP_ROLES.EDITOR)).toBe(true);
     expect(canCreateLeague(APP_ROLES.USER)).toBe(false);
     expect(canCreateLeague(null)).toBe(false);
   });

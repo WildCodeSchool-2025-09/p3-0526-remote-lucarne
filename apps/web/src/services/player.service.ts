@@ -1,10 +1,10 @@
-import type { CreatePlayerInput, ListPlayersParams, PaginatedPlayersResponse, Player, UpdatePlayerInput } from "@lucarne/shared";
+import type { CreatePlayerInput, ListPlayersParams, PaginatedPlayersResponse, PlayerDetail, UpdatePlayerInput } from "@lucarne/shared";
 import { httpClient } from "../lib/httpClient";
-const createPlayer = (input: CreatePlayerInput) => httpClient.post<Player>("/players", { json: input });
+const createPlayer = (input: CreatePlayerInput) => httpClient.post<PlayerDetail>("/players", { json: input });
 const listPlayers = (params: ListPlayersParams) => httpClient.get<PaginatedPlayersResponse>("/players", { query: params });
-const getPlayer = (id: string) => httpClient.get<Player>(`/players/${id}`);
-const updatePlayer = (id: string, input: UpdatePlayerInput) => httpClient.patch<Player>(`/players/${id}`, { json: input });
-const activatePlayer = (id: string) => httpClient.post<Player>(`/players/${id}/activate`);
-const deactivatePlayer = (id: string) => httpClient.post<Player>(`/players/${id}/deactivate`);
+const getPlayer = (id: string) => httpClient.get<PlayerDetail>(`/players/${id}`);
+const updatePlayer = (id: string, input: UpdatePlayerInput) => httpClient.patch<PlayerDetail>(`/players/${id}`, { json: input });
+const activatePlayer = (id: string) => httpClient.post<PlayerDetail>(`/players/${id}/activate`);
+const deactivatePlayer = (id: string) => httpClient.post<PlayerDetail>(`/players/${id}/deactivate`);
 const deletePlayer = (id: string) => httpClient.delete<void>(`/players/${id}`, { json: { confirm: true } });
 export { activatePlayer, createPlayer, deactivatePlayer, deletePlayer, getPlayer, listPlayers, updatePlayer };

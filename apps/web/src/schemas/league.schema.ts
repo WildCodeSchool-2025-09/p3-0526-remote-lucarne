@@ -36,6 +36,9 @@ const updateLeagueFormSchema = z.object({
     .trim()
     .pipe(z.union([z.literal(""), z.url({ error: "L'URL du logo doit être une URL valide" })])),
   isActive: z.boolean({ error: "Le statut actif doit être un booléen" }),
+  // Kept in form state so a successful mutation can immediately supply the
+  // version required by the next mutation, without waiting for a rerender.
+  version: z.number().int().min(0),
 }).strict();
 
 type UpdateLeagueFormValues = z.input<typeof updateLeagueFormSchema>;
@@ -44,7 +47,6 @@ type UpdateLeagueFormData = z.infer<typeof updateLeagueFormSchema>;
 function toUpdateLeagueInput(
   values: UpdateLeagueFormData,
   dirtyFields: Partial<Record<keyof UpdateLeagueFormData, boolean>>,
-  version: number,
   canEditStatus: boolean,
 ): UpdateLeagueInput {
   const changes: Record<string, unknown> = {};
@@ -54,7 +56,7 @@ function toUpdateLeagueInput(
   if (dirtyFields.logoUrl) changes.logoUrl = values.logoUrl === "" ? null : values.logoUrl;
   if (canEditStatus && dirtyFields.isActive) changes.isActive = values.isActive;
 
-  return updateLeagueInputSchema.parse({ ...changes, version });
+  return updateLeagueInputSchema.parse({ ...changes, version: values.version });
 }
 
 function toCreateLeagueInput(

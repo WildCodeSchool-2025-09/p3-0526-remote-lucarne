@@ -57,17 +57,20 @@ jobs:
         env:
           DATABASE_URL: postgresql://user:password@localhost:5432/lucarne
 
-      - name: Run checks
-        run: npm run check
+      - name: Lint sources and tests
+        run: npm run lint
 
-      - name: Build applications
-        run: npm run build
+      - name: Check source and test types
+        run: npm run check-types
 
-      - name: Run test web
-        run: npm run test:web
+      - name: Run shared contract tests
+        run: npm run test --workspace=@lucarne/shared
 
       - name: Run API tests
         run: npm run test:api
+
+      - name: Run web tests
+        run: npm run test:web
 
       - name: Migrate test database
         run: npm run db:migrate
@@ -75,8 +78,11 @@ jobs:
           DATABASE_URL: postgresql://test_user:test_password@localhost:5436/lucarne_test
 
       - name: Run API integration tests
-        run: npm run test:api:integration
+        run: npm run test:integration
         env:
           APP_SECRET: test-secret-with-at-least-32-characters
           DATABASE_URL: postgresql://user:password@localhost:5435/lucarne
           TEST_DATABASE_URL: postgresql://test_user:test_password@localhost:5436/lucarne_test
+
+      - name: Build applications
+        run: npm run build

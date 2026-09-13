@@ -18,6 +18,10 @@ const SEED_IDS = Object.freeze({
     { length: PLAYERS_PER_TEAM * 2 },
     (_value, index) => createSeedUuid(201 + index),
   ),
+  teamPlayers: Array.from(
+    { length: PLAYERS_PER_TEAM * 2 },
+    (_value, index) => createSeedUuid(401 + index),
+  ),
 });
 
 export { PLAYERS_PER_TEAM, SEED_IDS };

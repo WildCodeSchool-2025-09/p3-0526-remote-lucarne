@@ -461,8 +461,60 @@ depuis la racine du package, `@lucarne/shared/constants`,
 `@lucarne/shared/schemas`, `@lucarne/shared/types` et
 `@lucarne/shared/utils`.
 
-Toutes les commandes npm doivent être exécutées depuis la racine. Le dépôt
-conserve un unique `package-lock.json` à cet emplacement.
+Les commandes d'orchestration npm s'exécutent depuis la racine. Chaque workspace
+peut également lancer ses propres scripts, notamment `npm test` depuis
+`packages/shared`. Le dépôt conserve un unique `package-lock.json` à la racine.
+
+### Chaîne de validation
+
+Utiliser Node.js 24 et npm >= 10. Sous PowerShell, utiliser `npm.cmd` si la
+politique d'exécution bloque `npm.ps1` ; les scripts npm restent portables
+entre Windows et Linux.
+
+Après installation des dépendances, génération de Prisma Client et préparation
+de la base de test décrite plus haut, exécuter :
+
+```powershell
+npm.cmd run validate
+```
+
+Cette commande arrête la validation au premier échec et exécute, dans l'ordre :
+lint, typecheck, tests shared, tests API unitaires/HTTP, tests web, intégration
+PostgreSQL, build API et build web. Les sources et les tests sont inclus dans
+les projets TypeScript ; le lint conserve `projectService` et zéro warning.
+
+Les périmètres peuvent aussi être exécutés séparément depuis la racine :
+
+| Commande | Périmètre |
+| --- | --- |
+| `npm run test:shared` | Contrats Zod de `@lucarne/shared` |
+| `npm run test:api` | Tests API unitaires et HTTP sans base |
+| `npm run test:web` | Tests web unitaires et intégration avec HTTP simulé |
+| `npm run test:integration` | Tests API avec PostgreSQL dédié |
+| `npm test` | Shared, API unitaires/HTTP puis web, sans PostgreSQL |
+| `npm run check-types` | Sources et tests de shared, API et web |
+| `npm run build` | API puis web |
+
+`test:api:integration` reste un alias compatible avec les anciennes commandes.
+La base de test doit être distincte de la base de développement ; `validate`
+n'applique pas de migration et ne démarre pas Docker automatiquement.
+
+Les scripts obligatoires nomment explicitement leurs workspaces, sans
+`--if-present`. Les packages de configuration ESLint/TypeScript n'ont pas de
+suite d'exécution ni de build propre et ne sont pas inclus comme applications.
+Vitest découvre `tests/**/*.test.ts` dans shared, `tests/**/*.test.{ts,tsx}`
+dans le web, et les répertoires unitaires/intégration dédiés dans l'API.
+Chaque configuration refuse zéro test découvert et les tests focalisés avec
+`only`. Ne pas utiliser `skip` ou `todo` pour contourner un échec.
+
+Le workflow `check` exécute les tests shared sur les PR vers `dev`, `develop`
+et `main`, avant les tests API/web, l'intégration PostgreSQL et les builds.
+Un échec de cette étape bloque le job ; aucune étape de validation ne tolère
+les erreurs. Cela ne remplace pas la configuration des checks requis dans les
+protections de branches GitHub.
+
+Les tests Player caractérisent le contrat actuel : le PATCH exige encore
+prénom et nom. Cette Phase 1 ne modifie pas les règles métier des schémas.
 
 ESLint assure le lint, les règles de style du code source, les contrôles
 TypeScript sémantiques et les règles propres à React. Le plugin ESLint

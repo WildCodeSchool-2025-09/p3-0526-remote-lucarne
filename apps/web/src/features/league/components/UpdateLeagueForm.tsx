@@ -20,6 +20,14 @@ interface UpdateLeagueFormProps {
 
 const fieldNames = ["name", "country", "logoUrl", "isActive"] as const;
 
+const valuesOf = (league: League): UpdateLeagueFormValues => ({
+  name: league.name,
+  country: league.country,
+  logoUrl: league.logoUrl ?? "",
+  isActive: league.isActive ?? league.status === "ACTIVE",
+  version: league.version,
+});
+
 function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message !== "" ? error.message : fallback;
 }
@@ -33,22 +41,12 @@ function UpdateLeagueForm({ league, canEditStatus, onCancel, onReload, onSuccess
     reset,
     setError,
   } = useForm<UpdateLeagueFormValues, undefined, UpdateLeagueFormData>({
-    defaultValues: {
-      name: league.name,
-      country: league.country,
-      logoUrl: league.logoUrl ?? "",
-      isActive: league.isActive ?? league.status === "ACTIVE",
-    },
+    defaultValues: valuesOf(league),
     resolver: zodResolver(updateLeagueFormSchema),
   });
 
   useEffect(() => {
-    reset({
-      name: league.name,
-      country: league.country,
-      logoUrl: league.logoUrl ?? "",
-      isActive: league.isActive ?? league.status === "ACTIVE",
-    });
+    reset(valuesOf(league));
   }, [league, reset]);
 
   useEffect(() => {
@@ -62,8 +60,13 @@ function UpdateLeagueForm({ league, canEditStatus, onCancel, onReload, onSuccess
   }, [mutation.error, setError]);
 
   const onSubmit = (values: UpdateLeagueFormData) => {
-    const input = toUpdateLeagueInput(values, dirtyFields, league.version, canEditStatus);
-    mutation.mutate(input, { onSuccess });
+    const input = toUpdateLeagueInput(values, dirtyFields, canEditStatus);
+    mutation.mutate(input, {
+      onSuccess: (updated) => {
+        reset(valuesOf(updated));
+        onSuccess(updated);
+      },
+    });
   };
 
   const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {

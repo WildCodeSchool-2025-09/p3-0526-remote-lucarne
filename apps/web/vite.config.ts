@@ -11,6 +11,9 @@ export default defineConfig({
     port: 3000,
   },
   test: {
+    include: ["tests/**/*.test.{ts,tsx}"],
+    passWithNoTests: false,
+    allowOnly: false,
     environment: "jsdom",
     globals: true,
     setupFiles: ["./tests/setup.ts"],

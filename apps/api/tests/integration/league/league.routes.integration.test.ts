@@ -16,8 +16,8 @@ const payload = {
 
 const authenticatedUsers = [
   ["ADMIN", createAdmin, 201],
-  ["MODERATOR", createModerator, 403],
-  ["EDITOR", createEditor, 403],
+  ["MODERATOR", createModerator, 201],
+  ["EDITOR", createEditor, 201],
   ["USER", createUser, 403],
 ] as const;
 

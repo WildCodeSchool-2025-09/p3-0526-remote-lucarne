@@ -1,15 +1,12 @@
 import type { RequestHandler } from "express";
 import type { League, PaginatedLeaguesResponse } from "@lucarne/shared";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { APP_ROLES } from "../../auth/appRole";
-import { activateLeagueService, createLeagueService, listLeagueCountriesService, updateLeagueService } from "./league.service";
+import { activateLeagueService, createLeagueService, deactivateLeagueService, listLeagueCountriesService, permanentlyDeleteLeagueService, updateLeagueService } from "./league.service";
 import {
-  deleteLeagueService,
   getLeagueService,
-  getLeaguePermissions,
   listLeaguesService,
 } from "./league.service";
-import type { CreateLeagueInput, ListLeaguesParams, UpdateLeagueInput } from "./league.schema";
+import type { CreateLeagueInput, DeleteLeagueInput, ListLeaguesParams, UpdateLeagueInput } from "./league.schema";
 
 const toLeagueResponse = (league: {
   id: string;
@@ -104,38 +101,19 @@ const updateLeague: RequestHandler<
   response.json(toLeagueResponse(league));
 });
 
-const deleteLeague: RequestHandler<{ leagueId: string }> = asyncHandler(async (request, response) => {
-  const permissions = getLeaguePermissions(request.user?.role ?? APP_ROLES.USER);
-
-  if (!permissions.canDelete) {
-    response.status(403).json({
-      error: {
-        code: "INSUFFICIENT_ROLE",
-        message: "User role is not authorized for this resource",
-      },
-    });
-    return;
-  }
-
-  await deleteLeagueService(request.params.leagueId);
+const deleteLeague: RequestHandler<{ leagueId: string }, void, DeleteLeagueInput> = asyncHandler(async (request, response) => {
+  await permanentlyDeleteLeagueService(request.params.leagueId);
   response.sendStatus(204);
 });
 
+const deactivateLeague: RequestHandler<{ leagueId: string }> = asyncHandler(async (request, response) => {
+  const league = await deactivateLeagueService(request.params.leagueId);
+  response.json(toLeagueResponse(league));
+});
+
 const activateLeague: RequestHandler<{ leagueId: string }> = asyncHandler(async (request, response) => {
-  const permissions = getLeaguePermissions(request.user?.role ?? APP_ROLES.USER);
-
-  if (!permissions.canDelete) {
-    response.status(403).json({
-      error: {
-        code: "INSUFFICIENT_ROLE",
-        message: "User role is not authorized for this resource",
-      },
-    });
-    return;
-  }
-
   const league = await activateLeagueService(request.params.leagueId);
   response.json(toLeagueResponse(league));
 });
 
-export { activateLeague, createLeague, deleteLeague, getLeague, listLeagueCountries, listLeagues, toLeagueResponse, updateLeague };
+export { activateLeague, createLeague, deactivateLeague, deleteLeague, getLeague, listLeagueCountries, listLeagues, toLeagueResponse, updateLeague };

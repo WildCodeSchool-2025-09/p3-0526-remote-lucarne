@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createTeamInputSchema } from "./team.schema";
+import { createTeamInputSchema } from "@lucarne/shared/schemas";
 
 describe("createTeamInputSchema", () => {
   it("accepts a team with only a name", () => {
@@ -45,6 +45,12 @@ describe("createTeamInputSchema", () => {
 
   it("accepts an absent logo URL", () => {
     expect(createTeamInputSchema.parse({ name: "Paris FC" })).not.toHaveProperty("logoUrl");
+  });
+
+  it("preserves explicit null optional fields", () => {
+    expect(createTeamInputSchema.parse({ name: "Paris FC", stadium: null, logoUrl: null }))
+      .toEqual({ name: "Paris FC", stadium: null, logoUrl: null });
+    expect(createTeamInputSchema.parse({ name: "Paris FC" })).not.toHaveProperty("stadium");
   });
 
   it.each(["", "   "])("normalizes an empty logo URL to null", (logoUrl) => {

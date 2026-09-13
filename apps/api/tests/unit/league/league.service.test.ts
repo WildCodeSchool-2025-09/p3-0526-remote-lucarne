@@ -79,14 +79,14 @@ describe("createLeagueService", () => {
     });
   });
 
-  it.each(["MODERATOR", "EDITOR"] as const)("rejects status changes for %s", async (role) => {
+  it.each(["ADMIN", "MODERATOR", "EDITOR"] as const)("allows status changes for %s", async (role) => {
     await expect(updateLeagueService({
       leagueId: "league-id",
       expectedVersion: 0,
       changes: { isActive: true },
-    }, role)).rejects.toMatchObject({ statusCode: 403, code: "INSUFFICIENT_ROLE" });
+    }, role)).resolves.toBe(createdLeague);
 
-    expect(update).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalled();
   });
 
   it("maps a stale version to the shared conflict error", async () => {

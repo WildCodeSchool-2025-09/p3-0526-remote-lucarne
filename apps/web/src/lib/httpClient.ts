@@ -1,6 +1,6 @@
 import { API_V1_PATH, type ApiErrorDetail, type ApiErrorResponse } from "@lucarne/shared";
 import { apiUrl } from "../config/environment";
-import { getAccessToken } from "./authToken";
+import { clearAccessToken, getAccessToken } from "./authToken";
 
 type QueryValue = boolean | number | string | null | undefined;
 type QueryParameters = Record<string, QueryValue | QueryValue[]>;
@@ -137,6 +137,10 @@ async function request<T>(
   const payload = await parseResponse(response);
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearAccessToken();
+      window.dispatchEvent(new Event("lucarne:session-expired"));
+    }
     throw new HttpError(response, payload);
   }
 

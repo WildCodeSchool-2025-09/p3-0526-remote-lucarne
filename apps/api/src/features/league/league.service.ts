@@ -5,6 +5,7 @@ import {
   activateLeague,
   deactivateLeague,
   findLeagueById,
+  getLeagueDeletionDependencies,
   listLeagueCountries,
   listLeagues,
   permanentlyDeleteLeague,
@@ -42,14 +43,7 @@ const updateLeagueService = async (
   input: ConditionalLeagueUpdateInput,
   role: AppRole,
 ): Promise<League> => {
-  if (input.changes.isActive !== undefined && role !== APP_ROLES.ADMIN) {
-    throw new AppError(
-      403,
-      "INSUFFICIENT_ROLE",
-      "User role is not authorized to change league status",
-    );
-  }
-
+  void role;
   try {
     const result = await updateLeagueOptimistic({
       leagueId: input.leagueId,
@@ -93,12 +87,51 @@ const getLeagueService = async (id: string): Promise<League> => {
   return league;
 };
 
-const deleteLeagueService = async (id: string): Promise<League> => {
+const deactivateLeagueService = async (id: string): Promise<League> => {
   const league = await getLeagueService(id);
 
-  return league.isActive
-    ? deactivateLeague(id)
-    : permanentlyDeleteLeague(id);
+  return league.isActive ? deactivateLeague(id) : league;
+};
+
+const permanentlyDeleteLeagueService = async (id: string): Promise<void> => {
+  await getLeagueService(id);
+  const dependencies = await getLeagueDeletionDependencies(id);
+
+  if (dependencies.seasons > 0) {
+    throw new AppError(
+      409,
+      "LEAGUE_DELETION_BLOCKED",
+      "League cannot be permanently deleted while it has seasons",
+      [{ field: "seasons", message: `${dependencies.seasons} season(s) block permanent deletion` }],
+    );
+  }
+
+  let result: Awaited<ReturnType<typeof permanentlyDeleteLeague>>;
+
+  try {
+    result = await permanentlyDeleteLeague(id);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      const currentDependencies = await getLeagueDeletionDependencies(id);
+      throw new AppError(
+        409,
+        "LEAGUE_DELETION_BLOCKED",
+        "League cannot be permanently deleted because a protected dependency was added",
+        [{ field: "seasons", message: `${currentDependencies.seasons} season(s) block permanent deletion` }],
+      );
+    }
+
+    throw error;
+  }
+
+  if (!result.deleted) {
+    throw new AppError(
+      409,
+      "LEAGUE_DELETION_BLOCKED",
+      "League cannot be permanently deleted while it has seasons",
+      [{ field: "seasons", message: `${result.seasons} season(s) block permanent deletion` }],
+    );
+  }
 };
 
 const activateLeagueService = async (id: string): Promise<League> => {
@@ -112,10 +145,11 @@ const activateLeagueService = async (id: string): Promise<League> => {
 export {
   activateLeagueService,
   createLeagueService,
-  deleteLeagueService,
+  deactivateLeagueService,
   getLeagueService,
   getLeaguePermissions,
   listLeagueCountriesService,
   listLeaguesService,
+  permanentlyDeleteLeagueService,
   updateLeagueService,
 };

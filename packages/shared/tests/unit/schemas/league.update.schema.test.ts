@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { updateLeagueInputSchema } from "./league.schema";
+import { updateLeagueInputSchema } from "@lucarne/shared/schemas";
 
 describe("updateLeagueInputSchema", () => {
   it.each([

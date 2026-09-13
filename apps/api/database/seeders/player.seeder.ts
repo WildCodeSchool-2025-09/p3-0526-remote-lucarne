@@ -27,7 +27,6 @@ const seedPlayers = async (
       const playerIndex = teamIndex * PLAYERS_PER_TEAM + teamPlayerIndex;
       const player = {
         id: SEED_IDS.players[playerIndex],
-        teamId,
         firstName: faker.person.firstName("female"),
         lastName: faker.person.lastName(),
         nationality: faker.location.country(),
@@ -43,6 +42,15 @@ const seedPlayers = async (
         update: player,
         create: player,
       });
+
+      // Never reopen or overwrite an existing assignment history when reseeding.
+      const assignment = await database.teamPlayer.findFirst({ where: { playerId: player.id } });
+      if (assignment == null) {
+        await database.teamPlayer.create({ data: {
+          id: SEED_IDS.teamPlayers[playerIndex], playerId: player.id, teamId,
+          joinedAt: new Date("2026-09-01T00:00:00.000Z"), shirtNumber: teamPlayerIndex + 1,
+        } });
+      }
     }
   }
 };

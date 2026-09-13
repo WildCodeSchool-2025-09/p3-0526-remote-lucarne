@@ -1,3 +1,5 @@
+import queryClient from "./queryClient";
+
 const accessTokenStorageKey = "lucarne.accessToken";
 
 function getAccessToken(): string | null {
@@ -10,6 +12,7 @@ function setAccessToken(accessToken: string): void {
 
 function clearAccessToken(): void {
   sessionStorage.removeItem(accessTokenStorageKey);
+  queryClient.clear();
 }
 
 export { clearAccessToken, getAccessToken, setAccessToken };

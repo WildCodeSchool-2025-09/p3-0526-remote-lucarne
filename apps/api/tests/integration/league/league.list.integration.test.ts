@@ -152,7 +152,7 @@ describe("GET /api/v1/leagues/countries", () => {
   });
 });
 
-describe("DELETE /api/v1/leagues/:leagueId", () => {
+describe("league deactivation and permanent deletion", () => {
   beforeEach(() => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
   });
@@ -161,24 +161,31 @@ describe("DELETE /api/v1/leagues/:leagueId", () => {
     vi.restoreAllMocks();
   });
 
-  it("deactivates an active league and permanently deletes an inactive one", async () => {
+  it("does not infer permanent deletion from a repeated deactivation", async () => {
     const user = await createAdmin();
     const active = await createLeague("Active League", "France", true);
     const inactive = await createLeague("Inactive League", "France", false);
 
     await request(app)
-      .delete(`/api/v1/leagues/${active.id}`)
+      .patch(`/api/v1/leagues/${active.id}/deactivate`)
       .set("Authorization", `Bearer ${user.accessToken}`)
-      .expect(204);
+      .expect(200);
+    await expect(prisma.league.findUnique({ where: { id: active.id } }))
+      .resolves.toMatchObject({ isActive: false });
+
+    await request(app)
+      .patch(`/api/v1/leagues/${active.id}/deactivate`)
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .expect(200);
     await expect(prisma.league.findUnique({ where: { id: active.id } }))
       .resolves.toMatchObject({ isActive: false });
 
     await request(app)
       .delete(`/api/v1/leagues/${inactive.id}`)
       .set("Authorization", `Bearer ${user.accessToken}`)
+      .send({ confirm: true })
       .expect(204);
-    await expect(prisma.league.findUnique({ where: { id: inactive.id } }))
-      .resolves.toBeNull();
+    await expect(prisma.league.findUnique({ where: { id: inactive.id } })).resolves.toBeNull();
   });
 
   it.each([
@@ -191,6 +198,7 @@ describe("DELETE /api/v1/leagues/:leagueId", () => {
     await request(app)
       .delete(`/api/v1/leagues/${league.id}`)
       .set("Authorization", `Bearer ${user.accessToken}`)
+      .send({ confirm: true })
       .expect(403);
     await expect(prisma.league.findUnique({ where: { id: league.id } }))
       .resolves.not.toBeNull();

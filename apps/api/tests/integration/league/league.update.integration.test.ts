@@ -60,24 +60,24 @@ describe("PATCH /api/v1/leagues/:leagueId", () => {
       .expect(200);
   });
 
-  it("allows only ADMIN to change isActive", async () => {
+  it("allows MODERATOR and ADMIN to change isActive", async () => {
     const moderator = await createModerator();
     const league = await createLeague();
 
-    const forbidden = await request(app)
+    const changedByModerator = await request(app)
       .patch(`/api/v1/leagues/${league.id}`)
       .set("Authorization", `Bearer ${moderator.accessToken}`)
       .send({ isActive: true, version: 0 });
 
-    expect(forbidden.status).toBe(403);
+    expect(changedByModerator.status).toBe(200);
     await expect(prisma.league.findUnique({ where: { id: league.id } }))
-      .resolves.toMatchObject({ isActive: false, version: 0 });
+      .resolves.toMatchObject({ isActive: true, version: 1 });
 
     const admin = await createAdmin();
     await request(app)
       .patch(`/api/v1/leagues/${league.id}`)
       .set("Authorization", `Bearer ${admin.accessToken}`)
-      .send({ isActive: true, version: 0 })
+      .send({ isActive: false, version: 1 })
       .expect(200);
   });
 

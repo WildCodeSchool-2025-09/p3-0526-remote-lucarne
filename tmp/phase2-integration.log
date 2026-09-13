@@ -1,0 +1,17 @@
+
+> lucarne@0.0.1 test:integration
+> npm run test:integration --workspace=@lucarne/api
+
+
+> test:integration
+> vitest run --config vitest.integration.config.ts
+
+
+ RUN  v5.0.0 D:/Formation/lucarne/app/apps/api
+
+
+ Test Files  12 passed (12)
+      Tests  114 passed (114)
+   Start at  13:04:09
+   Duration  42.94s (tests 92%, import 4%, setup 3%, transform 1%)
+

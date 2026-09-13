@@ -1,24 +1,30 @@
 import { createBrowserRouter } from "react-router";
 import App from "./App";
-import { CREATE_LEAGUE_ROLES, TEAM_CREATE_ROLES, TEAM_EDIT_ROLES, VIEW_LEAGUE_ROLES } from "./auth/authRole";
+import {
+  CREATE_LEAGUE_ROLES,
+  TEAM_CREATE_ROLES,
+  TEAM_EDIT_ROLES,
+  PLAYER_WRITE_ROLES,
+  VIEW_LEAGUE_ROLES,
+} from "./auth/authRole";
 import { RequireRole } from "./auth/RequireRole";
+import EditLeaguePage from "./features/league/pages/EditLeaguePage";
 import CreateLeaguePage from "./features/league/pages/CreateLeaguePage";
+import LeagueDetailPage from "./features/league/pages/LeagueDetailPage";
+import LeagueListPage from "./features/league/pages/LeagueListPage";
+import CreatePlayerPage from "./features/player/pages/CreatePlayerPage";
+import EditPlayerPage from "./features/player/pages/EditPlayerPage";
+import PlayerDetailPage from "./features/player/pages/PlayerDetailPage";
+import PlayerListPage from "./features/player/pages/PlayerListPage";
+import CreateTeamPage from "./features/team/pages/CreateTeamPage";
+import EditTeamPage from "./features/team/pages/EditTeamPage";
+import TeamDetailPage from "./features/team/pages/TeamDetailPage";
+import TeamListPage from "./features/team/pages/TeamListPage";
 import DevLoginPage from "./pages/dev/DevLoginPage";
 import HomePage from "./pages/HomePage";
 import NotFoundPage from "./pages/NotFoundPage";
 import RouteErrorPage from "./pages/RouteErrorPage";
 import UiDemoPage from "./pages/UiDemoPage";
-import LeagueDetailPage from "./features/league/pages/LeagueDetailPage";
-import LeagueListPage from "./features/league/pages/LeagueListPage";
-import EditLeaguePage from "./features/league/pages/EditLeaguePage";
-import CreateTeamPage from "./features/team/pages/CreateTeamPage";
-import TeamListPage from "./features/team/pages/TeamListPage";
-import TeamDetailPage from "./features/team/pages/TeamDetailPage";
-import EditTeamPage from "./features/team/pages/EditTeamPage";
-import PlayerListPage from "./features/player/pages/PlayerListPage";
-import CreatePlayerPage from "./features/player/pages/CreatePlayerPage";
-import PlayerDetailPage from "./features/player/pages/PlayerDetailPage";
-import EditPlayerPage from "./features/player/pages/EditPlayerPage";
 
 const router = createBrowserRouter([
   {
@@ -34,10 +40,12 @@ const router = createBrowserRouter([
         Component: UiDemoPage,
       },
       ...(import.meta.env.DEV
-        ? [{
-          path: "dev/login",
-          Component: DevLoginPage,
-        }]
+        ? [
+          {
+            path: "dev/login",
+            Component: DevLoginPage,
+          },
+        ]
         : []),
       {
         path: "dashboard/league",
@@ -87,13 +95,62 @@ const router = createBrowserRouter([
           </RequireRole>
         ),
       },
-      { path: "dashboard/teams", element: <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}><TeamListPage /></RequireRole> },
-      { path: "dashboard/teams/:teamId", element: <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}><TeamDetailPage /></RequireRole> },
-      { path: "dashboard/teams/:teamId/edit", element: <RequireRole allowedRoles={TEAM_EDIT_ROLES}><EditTeamPage /></RequireRole> },
-      { path: "dashboard/players", element: <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}><PlayerListPage /></RequireRole> },
-      { path: "dashboard/players/new", element: <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}><CreatePlayerPage /></RequireRole> },
-      { path: "dashboard/players/:playerId", element: <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}><PlayerDetailPage /></RequireRole> },
-      { path: "dashboard/players/:playerId/edit", element: <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}><EditPlayerPage /></RequireRole> },
+      {
+        path: "dashboard/teams",
+        element: (
+          <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}>
+            <TeamListPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/teams/:teamId",
+        element: (
+          <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}>
+            <TeamDetailPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/teams/:teamId/edit",
+        element: (
+          <RequireRole allowedRoles={TEAM_EDIT_ROLES}>
+            <EditTeamPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/players",
+        element: (
+          <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}>
+            <PlayerListPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/players/new",
+        element: (
+          <RequireRole allowedRoles={PLAYER_WRITE_ROLES}>
+            <CreatePlayerPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/players/:playerId",
+        element: (
+          <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}>
+            <PlayerDetailPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/players/:playerId/edit",
+        element: (
+          <RequireRole allowedRoles={PLAYER_WRITE_ROLES}>
+            <EditPlayerPage />
+          </RequireRole>
+        ),
+      },
       {
         path: "*",
         Component: NotFoundPage,

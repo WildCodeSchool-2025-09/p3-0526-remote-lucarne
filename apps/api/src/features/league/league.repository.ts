@@ -103,23 +103,37 @@ const listLeagueCountries = async (): Promise<string[]> => {
 const deactivateLeague = (id: string): Promise<League> =>
   prisma.league.update({
     where: { id },
-    data: { isActive: false },
+    data: { isActive: false, version: { increment: 1 } },
   });
 
 const activateLeague = (id: string): Promise<League> =>
   prisma.league.update({
     where: { id },
-    data: { isActive: true },
+    data: { isActive: true, version: { increment: 1 } },
   });
 
-const permanentlyDeleteLeague = (id: string): Promise<League> =>
-  prisma.league.delete({ where: { id } });
+const getLeagueDeletionDependencies = async (id: string) => {
+  const seasons = await prisma.season.count({ where: { leagueId: id } });
+
+  return { seasons };
+};
+
+const permanentlyDeleteLeague = async (id: string): Promise<{ deleted: boolean; seasons: number }> =>
+  prisma.$transaction(async (transaction) => {
+    const seasons = await transaction.season.count({ where: { leagueId: id } });
+
+    if (seasons > 0) return { deleted: false, seasons };
+
+    await transaction.league.delete({ where: { id } });
+    return { deleted: true, seasons: 0 };
+  });
 
 export {
   activateLeague,
   createLeague,
   deactivateLeague,
   findLeagueById,
+  getLeagueDeletionDependencies,
   listLeagueCountries,
   listLeagues,
   permanentlyDeleteLeague,

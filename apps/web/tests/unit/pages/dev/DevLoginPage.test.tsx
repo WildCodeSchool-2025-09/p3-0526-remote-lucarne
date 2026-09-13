@@ -52,10 +52,9 @@ describe("DevLoginPage", () => {
     expect(screen.getByRole("heading", { name: "Connexion de test" })).toBeInTheDocument();
     expect(screen.getByLabelText("Email *")).toHaveAttribute("type", "email");
     expect(screen.getByLabelText("Mot de passe *")).toHaveAttribute("type", "password");
-    expect(screen.getByRole("link", { name: "Ajouter une équipe" })).toHaveAttribute(
-      "href",
-      "/dashboard/teams/new",
-    );
+    expect(screen.getByRole("button", { name: "Se connecter" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "Équipe" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("validates email and password before calling the service", async () => {
@@ -86,8 +85,10 @@ describe("DevLoginPage", () => {
 
       expect(await screen.findByRole("alert")).toHaveTextContent(`rôle : ${role}`);
       expect(getAccessToken()).toBe(token);
-    expect(screen.getByRole("button", { name: "Ligue" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Équipe" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Ligue" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Équipe" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Joueur" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Se déconnecter" })).toBeInTheDocument();
     },
   );
 
@@ -98,6 +99,10 @@ describe("DevLoginPage", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent("rôle : EDITOR");
     expect(screen.queryByRole("button", { name: "Se connecter" })).not.toBeInTheDocument();
+    for (const name of ["Ligue", "Équipe", "Joueur", "Se déconnecter"]) {
+      expect(screen.getByRole("button", { name })).toBeEnabled();
+    }
+    expect(loginMock).not.toHaveBeenCalled();
   });
 
   it("redirects to the league dashboard from the login action", async () => {
@@ -116,7 +121,7 @@ describe("DevLoginPage", () => {
     expect(screen.getByTestId("current-path")).toHaveTextContent("/dashboard/league");
   });
 
-  it("redirects to the team creation page from the connected action", async () => {
+  it("redirects to the team list from the connected action", async () => {
     const user = userEvent.setup();
     setAccessToken(createToken(APP_ROLES.ADMIN));
 
@@ -129,7 +134,22 @@ describe("DevLoginPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Équipe" }));
 
-    expect(screen.getByTestId("current-path")).toHaveTextContent("/dashboard/teams/new");
+    expect(screen.getByTestId("current-path")).toHaveTextContent(/^\/dashboard\/teams$/);
+  });
+
+  it("redirects to the player list from the connected action", async () => {
+    const user = userEvent.setup();
+    setAccessToken(createToken(APP_ROLES.ADMIN));
+    render(
+      <MemoryRouter initialEntries={["/dev/login"]}>
+        <DevLoginPage />
+        <CurrentPath />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Joueur" }));
+
+    expect(screen.getByTestId("current-path")).toHaveTextContent(/^\/dashboard\/players$/);
   });
 
   it("shows an invalid session without crashing", () => {

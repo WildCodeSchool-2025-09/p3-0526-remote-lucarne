@@ -1,5 +1,6 @@
 import type {
   CreateLeagueInput,
+  DeleteLeagueInput,
   League,
   ListLeaguesParams,
   PaginatedLeaguesResponse,
@@ -32,15 +33,20 @@ async function getLeague(id: string): Promise<League> {
 }
 
 async function deleteLeague(id: string): Promise<void> {
-  await httpClient.delete<void>(`/leagues/${id}`);
+  const input: DeleteLeagueInput = { confirm: true };
+  await httpClient.delete<void>(`/leagues/${id}`, { json: input });
 }
 
 async function activateLeague(id: string): Promise<League> {
   return httpClient.patch<League>(`/leagues/${id}/activate`);
 }
 
+async function deactivateLeague(id: string): Promise<League> {
+  return httpClient.patch<League>(`/leagues/${id}/deactivate`);
+}
+
 async function updateLeague(id: string, input: UpdateLeagueInput): Promise<League> {
   return httpClient.patch<League>(`/leagues/${id}`, { json: input });
 }
 
-export { activateLeague, createLeague, deleteLeague, getLeague, listLeagueCountries, listLeagues, updateLeague };
+export { activateLeague, createLeague, deactivateLeague, deleteLeague, getLeague, listLeagueCountries, listLeagues, updateLeague };

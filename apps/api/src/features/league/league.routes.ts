@@ -2,15 +2,15 @@ import { Router } from "express";
 import { authenticate } from "../../middlewares/authenticate";
 import { requireRoles } from "../../middlewares/requireRoles";
 import { validateRequest } from "../../middlewares/validateRequest";
-import { activateLeague, createLeague, deleteLeague, getLeague, listLeagueCountries, listLeagues, updateLeague } from "./league.controller";
+import { activateLeague, createLeague, deactivateLeague, deleteLeague, getLeague, listLeagueCountries, listLeagues, updateLeague } from "./league.controller";
 import {
   createLeagueBodySchema,
+  deleteLeagueBodySchema,
   leagueIdParamsSchema,
   listLeaguesQuerySchema,
   updateLeagueBodySchema,
 } from "./league.schema";
 import {
-  LEAGUE_DELETE_ROLES,
   LEAGUE_VIEW_ROLES,
   APP_ROLES,
 } from "../../auth/appRole";
@@ -43,7 +43,7 @@ leagueRouter.get(
 leagueRouter.post(
   "/",
   authenticate,
-  requireRoles(...LEAGUE_DELETE_ROLES),
+  requireRoles(...LEAGUE_VIEW_ROLES),
   validateRequest({ body: createLeagueBodySchema }),
   createLeague,
 );
@@ -52,7 +52,7 @@ leagueRouter.delete(
   "/:leagueId",
   authenticate,
   requireRoles(APP_ROLES.ADMIN),
-  validateRequest({ params: leagueIdParamsSchema }),
+  validateRequest({ params: leagueIdParamsSchema, body: deleteLeagueBodySchema }),
   deleteLeague,
 );
 
@@ -67,9 +67,17 @@ leagueRouter.patch(
 leagueRouter.patch(
   "/:leagueId/activate",
   authenticate,
-  requireRoles(APP_ROLES.ADMIN),
+  requireRoles(...LEAGUE_VIEW_ROLES),
   validateRequest({ params: leagueIdParamsSchema }),
   activateLeague,
+);
+
+leagueRouter.patch(
+  "/:leagueId/deactivate",
+  authenticate,
+  requireRoles(...LEAGUE_VIEW_ROLES),
+  validateRequest({ params: leagueIdParamsSchema }),
+  deactivateLeague,
 );
 
 export default leagueRouter;

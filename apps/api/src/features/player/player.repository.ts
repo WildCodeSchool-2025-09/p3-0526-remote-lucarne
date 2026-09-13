@@ -1,36 +1,122 @@
 import prisma from "../../../database/prisma";
 import type { Prisma } from "../../generated/prisma/client";
 import type { CreatePlayerInput, ListPlayersParams, UpdatePlayerInput } from "@lucarne/shared";
+import { AppError } from "../../errors/AppError";
+import { currentAssignmentWhere, plannedAssignmentWhere, utcDate } from "./player.assignment";
 
-const playerInclude = { teamPlayers: { where: { leftAt: null }, include: { team: true }, take: 1 }, legacyTeam: true, matchEvents: { select: { id: true }, take: 1 } } satisfies Prisma.PlayerInclude;
-const findPlayerById = (id: string) => prisma.player.findUnique({ where: { id }, include: playerInclude });
+const assignmentSelect = {
+  id: true, joinedAt: true, leftAt: true, shirtNumber: true,
+  team: { select: { id: true, name: true } },
+} satisfies Prisma.TeamPlayerSelect;
+
+// Only the open assignment is needed for list summaries; history is read on detail.
+const playerListInclude = {
+  teamPlayers: { where: { leftAt: null }, select: assignmentSelect },
+} satisfies Prisma.PlayerInclude;
+const playerDetailInclude = {
+  teamPlayers: { select: assignmentSelect, orderBy: [{ joinedAt: "desc" }, { id: "asc" }] },
+} satisfies Prisma.PlayerInclude;
+
+type PlayerRecord = Prisma.PlayerGetPayload<{ include: typeof playerDetailInclude }>;
+const findPlayerById = (id: string) => prisma.player.findUnique({ where: { id }, include: playerDetailInclude });
+
 const listPlayers = async (params: ListPlayersParams) => {
+  const date = utcDate();
   const searchTerms = params.search?.split(/\s+/).filter(Boolean) ?? [];
-  const searchFilter: Prisma.PlayerWhereInput = params.search ? {
-    OR: [
-      { firstName: { contains: params.search, mode: "insensitive" } },
-      { lastName: { contains: params.search, mode: "insensitive" } },
-      ...(searchTerms.length > 1 ? [{ AND: [{ firstName: { contains: searchTerms[0], mode: "insensitive" as const } }, { lastName: { contains: searchTerms.slice(1).join(" "), mode: "insensitive" as const } }] }] : []),
+  const where: Prisma.PlayerWhereInput = {
+    AND: [
+      ...(params.search ? [{ OR: [
+        { firstName: { contains: params.search, mode: "insensitive" as const } },
+        { lastName: { contains: params.search, mode: "insensitive" as const } },
+        ...(searchTerms.length > 1 ? [{ AND: [
+          { firstName: { contains: searchTerms[0], mode: "insensitive" as const } },
+          { lastName: { contains: searchTerms.slice(1).join(" "), mode: "insensitive" as const } },
+        ] }] : []),
+      ] }] : []),
+      ...(params.status && params.status !== "ALL" ? [{ isActive: params.status === "ACTIVE" }] : []),
+      ...(params.position ? [{ position: params.position }] : []),
+      ...(params.teamName ? [{
+        ...(params.assignmentStatus === "PLANNED" ? {} : { isActive: true }),
+        teamPlayers: { some: {
+          ...(params.assignmentStatus === "PLANNED" ? plannedAssignmentWhere(date) : currentAssignmentWhere(date)),
+          team: { name: { contains: params.teamName, mode: "insensitive" as const } },
+        } },
+      }] : []),
+      ...(params.selectable === true ? [{ isActive: true, teamPlayers: { some: currentAssignmentWhere(date) } }] : []),
     ],
-  } : {};
-  const teamFilter: Prisma.PlayerWhereInput = params.teamName ? { OR: [{ legacyTeam: { name: { contains: params.teamName, mode: "insensitive" } } }, { teamPlayers: { some: { leftAt: null, team: { name: { contains: params.teamName, mode: "insensitive" } } } } }] } : {};
-  const where: Prisma.PlayerWhereInput = { AND: [searchFilter, teamFilter, ...(params.status !== undefined && params.status !== "ALL" ? [{ isActive: params.status === "ACTIVE" }] : []), ...(params.position ? [{ position: params.position }] : [])] };
-  const skip = ((params.page ?? 1) - 1) * (params.pageSize ?? 20);
-  const [data, totalItems] = await Promise.all([prisma.player.findMany({ where, include: playerInclude, orderBy: [{ [params.sortBy ?? "lastName"]: params.sortOrder ?? "asc" }, { id: "asc" }], skip, take: params.pageSize ?? 20 }), prisma.player.count({ where })]);
+  };
+  const [data, totalItems] = await Promise.all([
+    prisma.player.findMany({
+      where, include: playerListInclude,
+      orderBy: [{ [params.sortBy ?? "lastName"]: params.sortOrder ?? "asc" }, { id: "asc" }],
+      skip: ((params.page ?? 1) - 1) * (params.pageSize ?? 20), take: params.pageSize ?? 20,
+    }),
+    prisma.player.count({ where }),
+  ]);
   return { data, totalItems };
 };
-const createPlayer = async (input: CreatePlayerInput) => prisma.$transaction(async (tx) => {
-  const player = await tx.player.create({ data: { firstName: input.firstName.trim(), lastName: input.lastName.trim(), nationality: input.nationality ?? null, position: input.position ?? null, birthday: input.birthday ? new Date(input.birthday) : null, pictureUrl: input.pictureUrl ?? null } });
-  if (input.teamId) await tx.teamPlayer.create({ data: { playerId: player.id, teamId: input.teamId, joinedAt: new Date(input.joinedAt!), shirtNumber: input.shirtNumber ?? null } });
-  return tx.player.findUniqueOrThrow({ where: { id: player.id }, include: playerInclude });
+
+const createPlayer = (input: CreatePlayerInput) => prisma.$transaction(async (tx) => {
+  if (input.teamId) {
+    // Lock the team so a concurrent status change cannot invalidate this check.
+    const teams = await tx.$queryRaw<{ is_active: boolean }[]>`
+      SELECT is_active FROM team WHERE id = ${input.teamId}::uuid FOR UPDATE
+    `;
+    if (!teams[0]) throw new AppError(404, "TEAM_NOT_FOUND", "Équipe introuvable");
+    if (!teams[0].is_active) throw new AppError(409, "TEAM_INACTIVE", "L’équipe est inactive");
+  }
+  const player = await tx.player.create({ data: {
+    firstName: input.firstName.trim(), lastName: input.lastName.trim(),
+    nationality: input.nationality ?? null, position: input.position ?? null,
+    birthday: input.birthday ? new Date(input.birthday) : null, pictureUrl: input.pictureUrl ?? null,
+  } });
+  if (input.teamId) await tx.teamPlayer.create({ data: {
+    playerId: player.id, teamId: input.teamId, joinedAt: new Date(input.joinedAt!), shirtNumber: input.shirtNumber ?? null,
+  } });
+  return tx.player.findUniqueOrThrow({ where: { id: player.id }, include: playerDetailInclude });
 });
-const updatePlayerOptimistic = async (id: string, changes: UpdatePlayerInput) => {
-  const result = await prisma.player.updateManyAndReturn({ where: { id, version: changes.version }, data: { ...(changes.firstName === undefined ? {} : { firstName: changes.firstName.trim() }), ...(changes.lastName === undefined ? {} : { lastName: changes.lastName.trim() }), ...(changes.nationality === undefined ? {} : { nationality: changes.nationality }), ...(changes.position === undefined ? {} : { position: changes.position }), ...(changes.birthday === undefined ? {} : { birthday: changes.birthday ? new Date(changes.birthday) : null }), ...(changes.pictureUrl === undefined ? {} : { pictureUrl: changes.pictureUrl }), ...(changes.isActive === undefined ? {} : { isActive: changes.isActive }), version: { increment: 1 } } });
-  return result[0] ?? null;
-};
-const deactivatePlayer = (id: string) => prisma.$transaction(async (tx) => { await tx.player.update({ where: { id }, data: { isActive: false, version: { increment: 1 } } }); await tx.teamPlayer.updateMany({ where: { playerId: id, leftAt: null }, data: { leftAt: new Date() } }); return tx.player.findUniqueOrThrow({ where: { id }, include: playerInclude }); });
-const activatePlayer = (id: string) => prisma.player.update({ where: { id }, data: { isActive: true, version: { increment: 1 } }, include: playerInclude });
+
+// Shared by PATCH and the dedicated action: only today's current assignment is
+// closed. Planned and historical assignments are intentionally retained.
+const closeCurrentAssignment = (tx: Prisma.TransactionClient, id: string, date: Date) =>
+  tx.teamPlayer.updateMany({
+    where: { playerId: id, ...currentAssignmentWhere(date) },
+    data: { leftAt: utcDate(date) },
+  });
+
+const updatePlayerOptimistic = (id: string, changes: UpdatePlayerInput) => prisma.$transaction(async (tx) => {
+  const { version, birthday, ...fields } = changes;
+  const result = await tx.player.updateManyAndReturn({
+    where: { id, version },
+    data: { ...fields, ...(birthday === undefined ? {} : { birthday: birthday ? new Date(birthday) : null }), version: { increment: 1 } },
+  });
+  if (!result[0]) return null;
+  if (changes.isActive === false) await closeCurrentAssignment(tx, id, utcDate());
+  return tx.player.findUniqueOrThrow({ where: { id }, include: playerDetailInclude });
+});
+
+const deactivatePlayer = (id: string) => prisma.$transaction(async (tx) => {
+  // Serialize repeated/concurrent transitions without changing version on a no-op.
+  const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM player WHERE id = ${id}::uuid FOR UPDATE`;
+  if (!rows[0]) throw new AppError(404, "RESOURCE_NOT_FOUND", "Joueur introuvable");
+  const player = await tx.player.findUniqueOrThrow({ where: { id } });
+  const closed = await closeCurrentAssignment(tx, id, utcDate());
+  if (player.isActive || closed.count > 0) await tx.player.update({
+    where: { id }, data: { isActive: false, version: { increment: 1 } },
+  });
+  return tx.player.findUniqueOrThrow({ where: { id }, include: playerDetailInclude });
+});
+
+const activatePlayer = (id: string) => prisma.player.update({
+  where: { id }, data: { isActive: true, version: { increment: 1 } }, include: playerDetailInclude,
+});
 const deletePlayer = (id: string) => prisma.player.delete({ where: { id } });
-const hasProtectedDependencies = async (id: string) => { const [assignment, event] = await Promise.all([prisma.teamPlayer.count({ where: { playerId: id } }), prisma.matchEvent.count({ where: { playerId: id } })]); return { assignment, event }; };
-const findDuplicate = (input: { firstName?: string; lastName?: string }, excludeId?: string) => prisma.player.findFirst({ where: { ...(input.firstName === undefined ? {} : { firstName: { equals: input.firstName.trim(), mode: "insensitive" } }), ...(input.lastName === undefined ? {} : { lastName: { equals: input.lastName.trim(), mode: "insensitive" } }), ...(excludeId ? { NOT: { id: excludeId } } : {}) } });
-export { activatePlayer, createPlayer, deactivatePlayer, deletePlayer, findDuplicate, findPlayerById, hasProtectedDependencies, listPlayers, updatePlayerOptimistic };
+const hasProtectedDependencies = async (id: string) => {
+  const [assignment, event] = await Promise.all([
+    prisma.teamPlayer.count({ where: { playerId: id } }), prisma.matchEvent.count({ where: { playerId: id } }),
+  ]);
+  return { assignment, event };
+};
+
+export { activatePlayer, createPlayer, deactivatePlayer, deletePlayer, findPlayerById, hasProtectedDependencies, listPlayers, updatePlayerOptimistic };
+export type { PlayerRecord };

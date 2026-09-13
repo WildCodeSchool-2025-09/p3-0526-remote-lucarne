@@ -7,6 +7,10 @@ interface CreateLeagueInput {
   isActive?: boolean;
 }
 
+interface DeleteLeagueInput {
+  confirm: true;
+}
+
 interface LeagueUpdateFields {
   name?: string;
   country?: string;
@@ -72,6 +76,7 @@ export type {
   CountryFilterParams,
   ConditionalLeagueUpdateInput,
   CreateLeagueInput,
+  DeleteLeagueInput,
   League,
   LeagueUpdateFields,
   LeaguePermissions,

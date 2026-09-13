@@ -33,6 +33,11 @@ function getFriendlyError(error: unknown, fallback: string): string {
     return "Vous n’êtes pas autorisé à effectuer cette action.";
   }
 
+  if (error instanceof HttpError && error.code === "LEAGUE_DELETION_BLOCKED") {
+    return error.details?.map((detail) => detail.message).join(" ")
+      || "La suppression est bloquée par des dépendances.";
+  }
+
   return fallback;
 }
 
@@ -335,7 +340,7 @@ function LeagueListPage() {
                       <td data-label="Créée le">{formatDate(league.createdAt)}</td>
                       <td data-label="Actions">
                         {canEdit ? <Link className="lucarne-button lucarne-button--outline" to={`/dashboard/leagues/${league.id}/edit`}>Modifier</Link> : null}
-                        {canDelete ? (
+                        {canEdit ? (
                           <div className="league-list__actions">
                             <Button
                               aria-label={`${actionType === "deactivate" ? "Désactiver" : "Activer"} ${league.name}`}
@@ -344,7 +349,7 @@ function LeagueListPage() {
                             >
                               {actionType === "deactivate" ? "Désactiver" : "Activer"}
                             </Button>
-                            {actionType === "activate" ? (
+                            {canDelete ? (
                               <Button
                                 aria-label={`Supprimer ${league.name}`}
                                 onClick={() => setPendingAction({ league, type: "delete" })}
@@ -388,7 +393,7 @@ function LeagueListPage() {
                 ? `${pendingAction.league.name} deviendra inactive et restera consultable.`
                 : pendingAction.type === "activate"
                   ? `${pendingAction.league.name} redeviendra active.`
-                  : `${pendingAction.league.name} sera supprimée définitivement.`}
+                  : `${pendingAction.league.name} sera supprimée définitivement. Cette action est irréversible et sera refusée si des saisons associées existent.`}
             </p>
             <div className="league-list__dialog-actions">
               <Button onClick={() => setPendingAction(null)} variant="outline">Annuler</Button>

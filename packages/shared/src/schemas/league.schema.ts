@@ -54,6 +54,10 @@ const createLeagueInputSchema = z.object({
   isActive: z.boolean().optional(),
 }).strict();
 
+const deleteLeagueInputSchema = z.object({
+  confirm: z.literal(true, { error: "La confirmation de suppression est requise" }),
+}).strict();
+
 const updateLeagueInputSchema = z.object({
   name: leagueNameSchema.optional(),
   country: leagueCountrySchema.optional(),
@@ -73,6 +77,7 @@ const updateLeagueInputSchema = z.object({
 
 export {
   createLeagueInputSchema,
+  deleteLeagueInputSchema,
   countriesQuerySchema,
   leagueListQuerySchema,
   leagueStatusFilterSchema,
