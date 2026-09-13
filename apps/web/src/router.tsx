@@ -15,6 +15,10 @@ import CreateTeamPage from "./features/team/pages/CreateTeamPage";
 import TeamListPage from "./features/team/pages/TeamListPage";
 import TeamDetailPage from "./features/team/pages/TeamDetailPage";
 import EditTeamPage from "./features/team/pages/EditTeamPage";
+import PlayerListPage from "./features/player/pages/PlayerListPage";
+import CreatePlayerPage from "./features/player/pages/CreatePlayerPage";
+import PlayerDetailPage from "./features/player/pages/PlayerDetailPage";
+import EditPlayerPage from "./features/player/pages/EditPlayerPage";
 
 const router = createBrowserRouter([
   {
@@ -86,6 +90,10 @@ const router = createBrowserRouter([
       { path: "dashboard/teams", element: <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}><TeamListPage /></RequireRole> },
       { path: "dashboard/teams/:teamId", element: <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}><TeamDetailPage /></RequireRole> },
       { path: "dashboard/teams/:teamId/edit", element: <RequireRole allowedRoles={TEAM_EDIT_ROLES}><EditTeamPage /></RequireRole> },
+      { path: "dashboard/players", element: <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}><PlayerListPage /></RequireRole> },
+      { path: "dashboard/players/new", element: <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}><CreatePlayerPage /></RequireRole> },
+      { path: "dashboard/players/:playerId", element: <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}><PlayerDetailPage /></RequireRole> },
+      { path: "dashboard/players/:playerId/edit", element: <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}><EditPlayerPage /></RequireRole> },
       {
         path: "*",
         Component: NotFoundPage,

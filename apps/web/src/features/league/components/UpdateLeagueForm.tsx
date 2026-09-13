@@ -8,7 +8,7 @@ import {
   updateLeagueFormSchema,
 } from "../../../schemas/league.schema";
 import { useUpdateLeague } from "../../../hooks/useUpdateLeague";
-import { Alert, Button, Checkbox, FormField, Input } from "../../../ui";
+import { AlertModal, Button, Checkbox, FormField, Input } from "../../../ui";
 
 interface UpdateLeagueFormProps {
   league: League;
@@ -101,7 +101,7 @@ function UpdateLeagueForm({ league, canEditStatus, onCancel, onReload, onSuccess
       </div>
 
       {isVersionConflict ? (
-        <Alert variant="danger">
+        <AlertModal variant="danger">
           Cette ligue a été modifiée par un autre utilisateur. Rechargez les données avant de réessayer.
           <Button
             onClick={() => {
@@ -113,10 +113,10 @@ function UpdateLeagueForm({ league, canEditStatus, onCancel, onReload, onSuccess
           >
             Recharger les données
           </Button>
-        </Alert>
+        </AlertModal>
       ) : null}
       {mutation.isError && !isVersionConflict ? (
-        <Alert variant="danger">{getErrorMessage(mutation.error, "La ligue n’a pas pu être modifiée.")}</Alert>
+        <AlertModal variant="danger">{getErrorMessage(mutation.error, "La ligue n’a pas pu être modifiée.")}</AlertModal>
       ) : null}
 
       <div className="create-league-form__actions">

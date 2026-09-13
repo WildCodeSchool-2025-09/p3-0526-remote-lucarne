@@ -2,7 +2,7 @@ import type { RequestHandler } from "express";
 import type { Team } from "@lucarne/shared";
 import { AppError } from "../../errors/AppError";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { createTeamService, getTeamService, listTeamsService, updateTeamService } from "./team.service";
+import { createTeamService, deleteTeamService, getTeamService, listTeamsService, updateTeamService } from "./team.service";
 import type { CreateTeamInput, ListTeamsParams, PaginatedTeamsResponse, UpdateTeamInput } from "@lucarne/shared";
 import type { Team as PrismaTeam } from "../../generated/prisma/client";
 
@@ -22,6 +22,10 @@ const listTeams: RequestHandler<Record<string, never>, PaginatedTeamsResponse, n
 });
 const getTeam: RequestHandler<{ teamId: string }, Team> = asyncHandler(async (request, response) => response.json(toTeamResponse(await getTeamService(request.params.teamId))));
 const updateTeam: RequestHandler<{ teamId: string }, Team, UpdateTeamInput> = asyncHandler(async (request, response) => response.json(toTeamResponse(await updateTeamService(request.params.teamId, request.body, request.user!.role))));
+const deleteTeam: RequestHandler<{ teamId: string }> = asyncHandler(async (request, response) => {
+  await deleteTeamService(request.params.teamId, request.user!.role);
+  response.status(204).send();
+});
 
 const createTeam: RequestHandler<
   Record<string, never>,
@@ -41,4 +45,4 @@ const createTeam: RequestHandler<
   response.status(201).json(toTeamResponse(team));
 });
 
-export { createTeam, getTeam, listTeams, toTeamResponse, updateTeam };
+export { createTeam, deleteTeam, getTeam, listTeams, toTeamResponse, updateTeam };

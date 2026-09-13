@@ -1,0 +1,16 @@
+import { Router } from "express";
+import { authenticate } from "../../middlewares/authenticate";
+import { requireRoles } from "../../middlewares/requireRoles";
+import { validateRequest } from "../../middlewares/validateRequest";
+import { createPlayerInputSchema, deletePlayerBodySchema, playerIdParamsSchema, playerListQuerySchema, updatePlayerInputSchema } from "@lucarne/shared";
+import { activatePlayer, createPlayer, deactivatePlayer, deletePlayer, getPlayer, listPlayers, updatePlayer } from "./player.controller";
+import { PLAYER_DELETE_ROLES, PLAYER_VIEW_ROLES, PLAYER_WRITE_ROLES } from "./player.permissions";
+const playerRouter = Router();
+playerRouter.get("/", authenticate, requireRoles(...PLAYER_VIEW_ROLES), validateRequest({ query: playerListQuerySchema }), listPlayers);
+playerRouter.get("/:playerId", authenticate, requireRoles(...PLAYER_VIEW_ROLES), validateRequest({ params: playerIdParamsSchema }), getPlayer);
+playerRouter.post("/", authenticate, requireRoles(...PLAYER_WRITE_ROLES), validateRequest({ body: createPlayerInputSchema }), createPlayer);
+playerRouter.patch("/:playerId", authenticate, requireRoles(...PLAYER_WRITE_ROLES), validateRequest({ params: playerIdParamsSchema, body: updatePlayerInputSchema }), updatePlayer);
+playerRouter.post("/:playerId/deactivate", authenticate, requireRoles(...PLAYER_WRITE_ROLES), validateRequest({ params: playerIdParamsSchema }), deactivatePlayer);
+playerRouter.post("/:playerId/activate", authenticate, requireRoles(...PLAYER_WRITE_ROLES), validateRequest({ params: playerIdParamsSchema }), activatePlayer);
+playerRouter.delete("/:playerId", authenticate, requireRoles(...PLAYER_DELETE_ROLES), validateRequest({ params: playerIdParamsSchema, body: deletePlayerBodySchema }), deletePlayer);
+export default playerRouter;

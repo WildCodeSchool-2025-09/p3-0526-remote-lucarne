@@ -6,7 +6,7 @@ import type {
 } from "@lucarne/shared";
 import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { Alert, Button, Input } from "../../../ui";
+import { Alert, Button } from "../../../ui";
 import { canCreateLeague, canDeleteLeague, canViewLeague, getCurrentAppRole } from "../../../auth/authRole";
 import { HttpError } from "../../../lib/httpClient";
 import { useLeagueList } from "../hooks/useLeagueList";
@@ -62,6 +62,7 @@ function LeagueListPage() {
   const countriesQuery = useLeagueCountries();
   const mutation = useLeagueMutation();
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [isLeagueSuggestionsOpen, setIsLeagueSuggestionsOpen] = useState(false);
   const [countryInput, setCountryInput] = useState("");
   const [isCountrySuggestionsOpen, setIsCountrySuggestionsOpen] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -78,6 +79,14 @@ function LeagueListPage() {
   const countrySuggestions = countryOptions.filter((country) =>
     country.toLocaleLowerCase("fr").includes(countryInput.trim().toLocaleLowerCase("fr")),
   );
+  const leagueSuggestions = useMemo(() => {
+    const names = new Set(query.data?.data.map((league) => league.name) ?? []);
+    const search = (params.search ?? "").trim().toLocaleLowerCase("fr");
+
+    return [...names]
+      .filter((name) => name.toLocaleLowerCase("fr").includes(search))
+      .sort((left, right) => left.localeCompare(right, "fr"));
+  }, [params.search, query.data?.data]);
 
   const setCriteria = (changes: Partial<ListLeaguesParams> & { countries?: string[] }) => {
     setSearchParams((current) => updateParams(current, { ...changes, page: changes.page ?? 1 }));
@@ -144,16 +153,55 @@ function LeagueListPage() {
         {feedback ? <Alert variant={feedback.type === "error" ? "danger" : "success"}>{feedback.message}</Alert> : null}
 
         <div className="league-list__filters" aria-label="Filtres des ligues">
-          <label className="league-list__field">
-            <span>Rechercher</span>
-            <Input
-              aria-label="Rechercher une ligue par nom"
-              onChange={(event) => setCriteria({ search: event.target.value })}
-              placeholder="Nom de la ligue"
-              type="search"
-              value={params.search ?? ""}
-            />
-          </label>
+          <div className="league-list__field league-list__countries">
+            <label htmlFor="league-name-filter">Nom de la ligue</label>
+            <div className="league-list__country-control">
+              <input
+                aria-label="Rechercher une ligue par nom"
+                id="league-name-filter"
+                onBlur={() => {
+                  window.setTimeout(() => setIsLeagueSuggestionsOpen(false), 0);
+                }}
+                onChange={(event) => {
+                  setIsLeagueSuggestionsOpen(true);
+                  setCriteria({ search: event.target.value });
+                }}
+                onFocus={() => setIsLeagueSuggestionsOpen(true)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && leagueSuggestions[0] != null) {
+                    event.preventDefault();
+                    setCriteria({ search: leagueSuggestions[0] });
+                    setIsLeagueSuggestionsOpen(false);
+                  }
+                }}
+                placeholder="Saisir un nom"
+                type="search"
+                value={params.search ?? ""}
+              />
+            </div>
+            {isLeagueSuggestionsOpen ? (
+              <div aria-label="Suggestions de ligues" className="league-list__country-suggestions" role="listbox">
+                {leagueSuggestions.length === 0 ? (
+                  <span className="league-list__country-empty" role="status">Non disponible</span>
+                ) : leagueSuggestions.map((name) => (
+                  <button
+                    aria-selected={params.search === name}
+                    className="league-list__country-suggestion"
+                    key={name}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      setCriteria({ search: name });
+                      setIsLeagueSuggestionsOpen(false);
+                    }}
+                    role="option"
+                    type="button"
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
 
           <div className="league-list__field league-list__countries">
             <label htmlFor="league-country-filter">Pays</label>

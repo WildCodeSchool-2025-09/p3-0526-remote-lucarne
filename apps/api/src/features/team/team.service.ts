@@ -1,6 +1,6 @@
 import type { Team as PrismaTeam } from "../../generated/prisma/client";
 import type { CreateTeamInput, ListTeamsParams, UpdateTeamInput } from "@lucarne/shared";
-import { createTeam, findTeamById, listTeams, updateTeam } from "./team.repository";
+import { createTeam, findTeamById, listTeams, permanentlyDeleteTeam, updateTeam } from "./team.repository";
 import { AppError } from "../../errors/AppError";
 import { APP_ROLES } from "../../auth/appRole";
 
@@ -22,5 +22,10 @@ const updateTeamService = async (id: string, changes: UpdateTeamInput, role: str
   await getTeamService(id);
   return updateTeam(id, changes);
 };
+const deleteTeamService = async (id: string, role: string) => {
+  if (role !== APP_ROLES.ADMIN) throw new AppError(403, "INSUFFICIENT_ROLE", "Only administrators can delete teams");
+  await getTeamService(id);
+  return permanentlyDeleteTeam(id);
+};
 
-export { createTeamService, getTeamService, listTeamsService, updateTeamService };
+export { createTeamService, deleteTeamService, getTeamService, listTeamsService, updateTeamService };

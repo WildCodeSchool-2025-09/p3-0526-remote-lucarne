@@ -17,6 +17,7 @@ const listTeams = async (params: ListTeamsParams) => {
 
 const findTeamById = (id: string) => prisma.team.findUnique({ where: { id } });
 const updateTeam = (id: string, data: UpdateTeamInput) => prisma.team.update({ where: { id }, data });
+const permanentlyDeleteTeam = (id: string): Promise<PrismaTeam> => prisma.team.delete({ where: { id } });
 
 const createTeam = async (input: CreateTeamInput): Promise<PrismaTeam> =>
   prisma.team.create({
@@ -28,4 +29,4 @@ const createTeam = async (input: CreateTeamInput): Promise<PrismaTeam> =>
     },
   });
 
-export { createTeam, findTeamById, listTeams, updateTeam };
+export { createTeam, findTeamById, listTeams, permanentlyDeleteTeam, updateTeam };

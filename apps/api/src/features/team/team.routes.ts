@@ -3,7 +3,8 @@ import { authenticate } from "../../middlewares/authenticate";
 import { requireRoles } from "../../middlewares/requireRoles";
 import { validateRequest } from "../../middlewares/validateRequest";
 import { createTeamInputSchema } from "@lucarne/shared";
-import { createTeam, getTeam, listTeams, updateTeam } from "./team.controller";
+import { createTeam, deleteTeam, getTeam, listTeams, updateTeam } from "./team.controller";
+import { APP_ROLES } from "../../auth/appRole";
 import { TEAM_CREATE_ROLES, TEAM_EDIT_ROLES, TEAM_VIEW_ROLES } from "./team.permissions";
 import { teamIdParamsSchema, teamListQuerySchema, updateTeamInputSchema } from "@lucarne/shared";
 
@@ -20,5 +21,6 @@ teamRouter.post(
   createTeam,
 );
 teamRouter.patch("/:teamId", authenticate, requireRoles(...TEAM_EDIT_ROLES), validateRequest({ params: teamIdParamsSchema, body: updateTeamInputSchema }), updateTeam);
+teamRouter.delete("/:teamId", authenticate, requireRoles(APP_ROLES.ADMIN), validateRequest({ params: teamIdParamsSchema }), deleteTeam);
 
 export default teamRouter;

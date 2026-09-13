@@ -16,5 +16,6 @@ async function createTeam(input: CreateTeamInput): Promise<Team> {
 async function listTeams(params: ListTeamsParams): Promise<PaginatedTeamsResponse> { return httpClient.get<PaginatedTeamsResponse>("/teams", { query: params }); }
 async function getTeam(id: string): Promise<Team> { return httpClient.get<Team>(`/teams/${id}`); }
 async function updateTeam(id: string, input: UpdateTeamInput): Promise<Team> { return httpClient.patch<Team>(`/teams/${id}`, { json: input }); }
+async function deleteTeam(id: string): Promise<void> { await httpClient.delete<void>(`/teams/${id}`); }
 
-export { createTeam, getTeam, listTeams, updateTeam };
+export { createTeam, deleteTeam, getTeam, listTeams, updateTeam };

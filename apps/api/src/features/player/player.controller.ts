@@ -1,0 +1,15 @@
+import type { RequestHandler } from "express";
+import type { Player, PaginatedPlayersResponse } from "@lucarne/shared";
+import { asyncHandler } from "../../utils/asyncHandler";
+import type { CreatePlayerInput, ListPlayersParams, UpdatePlayerInput } from "@lucarne/shared";
+import { activatePlayerService, createPlayerService, deactivatePlayerService, deletePlayerService, getPlayerService, listPlayersService, updatePlayerService } from "./player.service";
+
+const toPlayerResponse = (player: { id: string; firstName: string; lastName: string; nationality: string | null; position: string | null; birthday: Date | null; pictureUrl: string | null; isActive: boolean; version: number; createdAt: Date; teamPlayers?: { team: { id: string; name: string } }[]; legacyTeam?: { id: string; name: string } | null }): Player => { const active = player.teamPlayers?.[0]?.team ?? player.legacyTeam; return { id: player.id, firstName: player.firstName, lastName: player.lastName, nationality: player.nationality, position: player.position, birthday: player.birthday?.toISOString().slice(0, 10) ?? null, pictureUrl: player.pictureUrl, isActive: player.isActive, version: player.version, createdAt: player.createdAt.toISOString(), activeTeam: active ? { id: active.id, name: active.name } : null }; };
+const createPlayer: RequestHandler<Record<string, never>, Player, CreatePlayerInput> = asyncHandler(async (request, response) => response.status(201).json(toPlayerResponse(await createPlayerService(request.body))));
+const listPlayers: RequestHandler<Record<string, never>, PaginatedPlayersResponse, never, ListPlayersParams> = asyncHandler(async (request, response) => { const result = await listPlayersService(request.query); const page = request.query.page ?? 1; const pageSize = request.query.pageSize ?? 20; response.json({ data: result.data.map(toPlayerResponse), pagination: { page, pageSize, totalItems: result.totalItems, totalPages: Math.ceil(result.totalItems / pageSize) } }); });
+const getPlayer: RequestHandler<{ playerId: string }, Player> = asyncHandler(async (request, response) => response.json(toPlayerResponse(await getPlayerService(request.params.playerId))));
+const updatePlayer: RequestHandler<{ playerId: string }, Player, UpdatePlayerInput> = asyncHandler(async (request, response) => response.json(toPlayerResponse(await updatePlayerService(request.params.playerId, request.body))));
+const deactivatePlayer: RequestHandler<{ playerId: string }, Player> = asyncHandler(async (request, response) => response.json(toPlayerResponse(await deactivatePlayerService(request.params.playerId))));
+const activatePlayer: RequestHandler<{ playerId: string }, Player> = asyncHandler(async (request, response) => response.json(toPlayerResponse(await activatePlayerService(request.params.playerId))));
+const deletePlayer: RequestHandler<{ playerId: string }> = asyncHandler(async (request, response) => { await deletePlayerService(request.params.playerId, request.user!.role); response.status(204).send(); });
+export { activatePlayer, createPlayer, deactivatePlayer, deletePlayer, getPlayer, listPlayers, toPlayerResponse, updatePlayer };

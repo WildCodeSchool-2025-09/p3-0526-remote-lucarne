@@ -1,59 +1,50 @@
+import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { canViewLeague, getCurrentAppRole } from "../../../auth/authRole";
-import { Alert, Button } from "../../../ui";
+import { canDeleteLeague, canViewLeague, getCurrentAppRole } from "../../../auth/authRole";
+import { deleteLeague, activateLeague } from "../../../services/league.service";
+import { AlertModal, Button } from "../../../ui";
 import { HttpError } from "../../../lib/httpClient";
 import { useLeagueDetail } from "../hooks/useLeagueDetail";
 import { formatDate, getStatus } from "../utils/leagueList";
 
+type PendingAction = "activate" | "deactivate" | "delete";
+
 function isNotFoundError(error: unknown): boolean {
-  return error instanceof HttpError
-    ? error.status === 404
-    : typeof error === "object" && error != null && "status" in error && error.status === 404;
+  return error instanceof HttpError ? error.status === 404 : typeof error === "object" && error != null && "status" in error && error.status === 404;
 }
 
-function LeagueDetailPage() {
+export default function LeagueDetailPage() {
   const navigate = useNavigate();
   const { leagueId = "" } = useParams();
   const query = useLeagueDetail(leagueId);
-  const canEdit = canViewLeague(getCurrentAppRole());
+  const role = getCurrentAppRole();
+  const [isActionPending, setIsActionPending] = useState(false);
+  const [actionError, setActionError] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const canEdit = canViewLeague(role);
+  const canDelete = canDeleteLeague(role);
 
-  return (
-    <section className="league-detail-page" aria-labelledby="league-detail-title">
-      <div className="league-detail-page__container">
-        <Button onClick={() => void navigate(-1)} variant="ghost">← Retour à la liste</Button>
+  const confirmAction = async () => {
+    if (!query.data || pendingAction == null) return;
+    const action = pendingAction;
+    setPendingAction(null);
+    setIsActionPending(true);
+    setActionError(false);
+    try {
+      if (action === "activate") await activateLeague(query.data.id);
+      else if (action === "deactivate") await deleteLeague(query.data.id);
+      else {
+        await deleteLeague(query.data.id);
+        void navigate("/dashboard/leagues");
+        return;
+      }
+      await query.refetch();
+    } catch {
+      setActionError(true);
+    } finally {
+      setIsActionPending(false);
+    }
+  };
 
-        {query.isPending ? <p role="status">Chargement de la ligue…</p> : null}
-        {query.isError ? (
-          <div className="league-list__state">
-            <Alert>
-              {isNotFoundError(query.error)
-                ? "Cette ligue n’existe plus ou a déjà été supprimée."
-                : "Impossible de charger cette ligue."}
-            </Alert>
-            <Button onClick={() => void navigate(-1)} variant="outline">Retour à la liste</Button>
-          </div>
-        ) : null}
-
-        {query.isSuccess ? (
-          <article className="league-detail-card">
-            <header>
-              <p className="league-list-page__eyebrow">Détail d’une ligue</p>
-              <h1 id="league-detail-title">{query.data.name}</h1>
-              {canEdit ? <Link className="lucarne-button lucarne-button--outline" to={`/dashboard/leagues/${query.data.id}/edit`}>Modifier</Link> : null}
-            </header>
-            <div className="league-detail-card__content">
-              {query.data.logoUrl ? <img alt={`Logo de ${query.data.name}`} className="league-detail-card__logo" src={query.data.logoUrl} /> : <span aria-label={`Initiale de ${query.data.name}`} className="league-detail-card__logo league-detail-card__logo--placeholder">{query.data.name.charAt(0).toUpperCase()}</span>}
-              <dl>
-                <div><dt>Pays</dt><dd>{query.data.country}</dd></div>
-                <div><dt>Statut</dt><dd>{getStatus(query.data) === "ACTIVE" ? "Active" : "Inactive"}</dd></div>
-                <div><dt>Date de création</dt><dd>{formatDate(query.data.createdAt)}</dd></div>
-              </dl>
-            </div>
-          </article>
-        ) : null}
-      </div>
-    </section>
-  );
+  return <section className="league-detail-page" aria-labelledby="league-detail-title"><div className="league-detail-page__container"><Button onClick={() => void navigate(-1)} variant="ghost">← Retour à la liste</Button>{query.isPending ? <p role="status">Chargement de la ligue…</p> : null}{query.isError ? <div className="league-list__state"><AlertModal onClose={() => void navigate(-1)}>{isNotFoundError(query.error) ? "Cette ligue n’existe plus ou a déjà été supprimée." : "Impossible de charger cette ligue."}</AlertModal></div> : null}{query.data ? <article className="league-detail-card"><header><p className="league-list-page__eyebrow">Détail d’une ligue</p><h1 id="league-detail-title">{query.data.name}</h1></header><div className="league-detail-card__content">{query.data.logoUrl ? <img alt={`Logo de ${query.data.name}`} className="league-detail-card__logo" src={query.data.logoUrl} /> : <span aria-label={`Initiale de ${query.data.name}`} className="league-detail-card__logo league-detail-card__logo--placeholder">{query.data.name.charAt(0).toUpperCase()}</span>}<dl><div><dt>Pays</dt><dd>{query.data.country}</dd></div><div><dt>Statut</dt><dd>{getStatus(query.data) === "ACTIVE" ? "Active" : "Inactive"}</dd></div><div><dt>Date de création</dt><dd>{formatDate(query.data.createdAt)}</dd></div></dl></div>{actionError ? <AlertModal variant="danger">Cette action est impossible pour le moment.</AlertModal> : null}<div className="league-detail-card__actions">{canEdit ? <Link className="lucarne-button lucarne-button--outline" to={`/dashboard/leagues/${query.data.id}/edit`}>Modifier</Link> : null}{canDelete ? <><Button disabled={isActionPending} onClick={() => setPendingAction(query.data.isActive ? "deactivate" : "activate")} variant="outline">{query.data.isActive ? "Désactiver" : "Activer"}</Button>{!query.data.isActive ? <Button disabled={isActionPending} onClick={() => setPendingAction("delete")} variant="danger">Supprimer</Button> : null}</> : null}</div></article> : null}</div>{pendingAction ? <div className="league-list__dialog-backdrop"><div aria-labelledby="league-detail-action-title" aria-modal="true" className="league-list__dialog" role="dialog"><h2 id="league-detail-action-title">{pendingAction === "deactivate" ? "Désactiver la ligue ?" : pendingAction === "activate" ? "Activer la ligue ?" : "Supprimer définitivement la ligue ?"}</h2><p>{pendingAction === "deactivate" ? `${query.data?.name} deviendra inactive et restera consultable.` : pendingAction === "activate" ? `${query.data?.name} redeviendra active.` : `${query.data?.name} sera supprimée définitivement.`}</p><div className="league-list__dialog-actions"><Button onClick={() => setPendingAction(null)} variant="outline">Annuler</Button><Button disabled={isActionPending} onClick={() => void confirmAction()} variant={pendingAction === "delete" ? "danger" : "primary"}>{isActionPending ? "Traitement…" : "Confirmer"}</Button></div></div></div> : null}</section>;
 }
-
-export default LeagueDetailPage;

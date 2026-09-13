@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { z } from "zod";
 import { getCurrentAppRole } from "../../auth/authRole";
 import type { AppRole } from "../../auth/authRole";
@@ -119,6 +119,14 @@ function DevLoginPage() {
             >
               Équipe
             </Button>
+            <Button
+              onClick={() => {
+                void navigate("/dashboard/players");
+              }}
+              type="button"
+            >
+              Joueur
+            </Button>
             <Button onClick={handleLogout} type="button" variant="outline">
               Se déconnecter
             </Button>
@@ -169,7 +177,6 @@ function DevLoginPage() {
           <Button disabled={isSubmitting} type="submit">
             {isSubmitting ? "Connexion..." : "Se connecter"}
           </Button>
-          <Link to="/dashboard/teams/new">Ajouter une équipe</Link>
         </form>
       </section>
     </main>

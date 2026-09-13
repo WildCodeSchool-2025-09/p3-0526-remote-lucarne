@@ -122,19 +122,38 @@ model Participation {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model Player {
   id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  teamId      String       @map("team_id") @db.Uuid
+  teamId      String?      @map("team_id") @db.Uuid
   firstName   String       @map("first_name") @db.VarChar(100)
   lastName    String       @map("last_name") @db.VarChar(100)
   nationality String?      @db.VarChar(100)
   position    String?      @db.VarChar(50)
+  birthday    DateTime?    @db.Date
   pictureUrl  String?      @map("picture_url")
   isActive    Boolean      @default(true) @map("is_active")
+  version     Int          @default(0)
   createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
   matchEvents MatchEvent[]
-  team        Team         @relation(fields: [teamId], references: [id], onUpdate: NoAction, map: "fk_player_team")
+  teamPlayers TeamPlayer[]
+  legacyTeam  Team?        @relation("LegacyPlayerTeam", fields: [teamId], references: [id], onUpdate: NoAction, map: "fk_player_team")
 
+  @@index([lastName, firstName], map: "idx_player_name")
   @@index([teamId], map: "idx_player_team")
   @@map("player")
+}
+
+model TeamPlayer {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teamId      String    @map("team_id") @db.Uuid
+  playerId    String    @map("player_id") @db.Uuid
+  joinedAt    DateTime  @map("joined_at") @db.Date
+  leftAt      DateTime? @map("left_at") @db.Date
+  shirtNumber Int?      @map("shirt_number")
+  team        Team      @relation(fields: [teamId], references: [id], onUpdate: NoAction, map: "fk_team_player_team")
+  player      Player    @relation(fields: [playerId], references: [id], onUpdate: NoAction, map: "fk_team_player_player")
+
+  @@index([teamId], map: "idx_team_player_team")
+  @@index([playerId], map: "idx_team_player_player")
+  @@map("team_player")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -192,7 +211,8 @@ model Team {
   awayMatches    GameMatch[]     @relation("AwayTeamMatches")
   homeMatches    GameMatch[]     @relation("HomeTeamMatches")
   participations Participation[]
-  players        Player[]
+  players        TeamPlayer[]
+  legacyPlayers  Player[]      @relation("LegacyPlayerTeam")
   staffMembers   StaffMember[]
 
   @@map("team")
