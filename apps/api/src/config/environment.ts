@@ -33,6 +33,9 @@ const environmentSchema = z.object({
     .max(86_400)
     .default(900),
 
+  LOGIN_RATE_LIMIT_MAX_ATTEMPTS: z.coerce.number().int().min(0).max(100).default(5),
+  LOGIN_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1_000).max(3_600_000).default(60_000),
+
   CLIENT_URL: optionalUrlSchema,
 
   DATABASE_URL: databaseUrlSchema,
@@ -67,9 +70,9 @@ if (parsedEnvironment.NODE_ENV === "test") {
     new URL(testDatabaseUrl).pathname.slice(1),
   );
 
-  if (!testDatabaseName.toLowerCase().includes("test")) {
+  if (!/^lucarne_test(?:_|$)/i.test(testDatabaseName)) {
     throw new Error(
-      "The test database name must contain 'test'",
+      "The test database name must use the dedicated lucarne_test prefix",
     );
   }
 
@@ -87,6 +90,10 @@ const environment = Object.freeze({
   jwt: {
     accessTokenTtlSeconds:
       parsedEnvironment.JWT_ACCESS_TOKEN_TTL_SECONDS,
+  },
+  loginRateLimit: {
+    maxAttempts: parsedEnvironment.LOGIN_RATE_LIMIT_MAX_ATTEMPTS,
+    windowMs: parsedEnvironment.LOGIN_RATE_LIMIT_WINDOW_MS,
   },
   clientUrl: parsedEnvironment.CLIENT_URL,
   database: {

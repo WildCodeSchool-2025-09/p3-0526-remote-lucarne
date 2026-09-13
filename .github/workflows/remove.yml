@@ -6,9 +6,11 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Remove from VPS
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.2
         with:
           username: ${{ secrets.SSH_USER }}
           host: ${{ secrets.SSH_HOST }}

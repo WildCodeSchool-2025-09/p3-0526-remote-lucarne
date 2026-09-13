@@ -28,4 +28,13 @@ describe("app", () => {
 
     consoleError.mockRestore();
   });
+
+  it("returns 400 for malformed JSON", async () => {
+    const response = await request(app)
+      .post("/api/v1/auth/login")
+      .set("content-type", "application/json")
+      .send("{");
+    expect(response.status).toBe(400);
+    expect((response.body as { error: { code: string } }).error.code).toBe("INVALID_JSON");
+  });
 });

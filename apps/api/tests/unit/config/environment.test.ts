@@ -44,7 +44,7 @@ describe("environment", () => {
       "postgresql://test_user:test_password@localhost:5436/lucarne";
 
     await expect(import("../../../src/config/environment")).rejects.toThrow(
-      "The test database name must contain 'test'",
+      "The test database name must use the dedicated lucarne_test prefix",
     );
   });
 

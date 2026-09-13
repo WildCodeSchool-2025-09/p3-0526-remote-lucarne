@@ -17,7 +17,7 @@ if (environment.clientUrl != null) {
   app.use(cors({ origin: [environment.clientUrl] }));
 }
 
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 app.use(API_V1_PATH, router, notFoundHandler);
 
 // Keep unknown API routes out of the SPA fallback.

@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import type { ButtonHTMLAttributes } from "react";
 
 type ButtonVariant = "primary" | "dark" | "outline" | "ghost" | "danger";
@@ -8,21 +9,22 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
 }
 
-function Button({
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button({
   className = "",
   size = "m",
   type = "button",
   variant = "primary",
   ...props
-}: ButtonProps) {
+}, ref) {
   return (
     <button
       className={`lucarne-button lucarne-button--${variant} lucarne-button--${size} ${className}`.trim()}
+      ref={ref}
       type={type}
       {...props}
     />
   );
-}
+});
 
 export { Button };
 export type { ButtonProps, ButtonSize, ButtonVariant };

@@ -5,6 +5,7 @@ import app from "../../../src/app";
 import { APP_ROLES } from "../../../src/auth/appRole";
 import { verifyAccessToken } from "../../../src/auth/jwt";
 import { hashPassword } from "../../../src/auth/password";
+import { clearLoginRateLimit } from "../../../src/middlewares/loginRateLimit";
 
 const email = "admin@lucarne.test";
 const password = "a-secure-password";
@@ -18,6 +19,7 @@ const invalidCredentialsResponse = {
 let userId: string;
 
 beforeEach(async () => {
+  clearLoginRateLimit();
   vi.spyOn(console, "error").mockImplementation(() => undefined);
 
   const role = await prisma.role.create({

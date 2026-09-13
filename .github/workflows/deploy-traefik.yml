@@ -1,18 +1,37 @@
-name: CD-traefik
+name: Deploy Traefik
 
 on:
-  push:
-    branches:
-      - staging
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'staging'
+    runs-on: ubuntu-24.04
+    environment: staging
     steps:
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@master
+      - name: Deploy the CI-validated commit
+        uses: appleboy/ssh-action@v1.2.2
         with:
           username: ${{ secrets.SSH_USER }}
           host: ${{ secrets.SSH_HOST }}
           password: ${{ secrets.SSH_PASSWORD }}
-          script: cd && cd traefik/deploy && bash ./js-project.sh ${{ github.event.repository.owner.name }} ${{ github.event.repository.name }} ${{ vars.PROJECT_NAME }} '${{ toJSON(vars) }}'
+          script: cd traefik/deploy && bash ./js-project.sh ${{ github.event.repository.owner.name }} ${{ github.event.repository.name }} ${{ vars.PROJECT_NAME }} ${{ github.event.workflow_run.head_sha }}
+      - name: Smoke test deployed API and web
+        env:
+          DEPLOY_URL: ${{ vars.DEPLOY_URL }}
+        run: |
+          test -n "$DEPLOY_URL"
+          curl --fail --silent --show-error --max-time 20 "$DEPLOY_URL/api/v1/health"
+          curl --fail --silent --show-error --max-time 20 "$DEPLOY_URL/" > /dev/null

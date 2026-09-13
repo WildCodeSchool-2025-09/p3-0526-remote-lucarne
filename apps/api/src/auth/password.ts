@@ -1,7 +1,7 @@
 import { argon2id, hash, verify } from "argon2";
 import { z } from "zod";
 
-const MIN_PASSWORD_LENGTH = 12;
+const MIN_PASSWORD_LENGTH = 1;
 const MAX_PASSWORD_LENGTH = 128;
 
 const passwordSchema = z

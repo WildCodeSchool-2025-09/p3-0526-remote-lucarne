@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { APP_ROLES, getCurrentAppRole, hasRole, TEAM_EDIT_ROLES } from "../../../auth/authRole";
-import { Alert, Button } from "../../../ui";
 import { useTeamDetail } from "../../../hooks/useTeamDetail";
+import { Alert, Button, ConfirmDialog } from "../../../ui";
 import { useTeamMutation } from "../hooks/useTeamMutation";
 
 type PendingAction = "activate" | "deactivate" | "delete";
@@ -24,7 +24,7 @@ export default function TeamDetailPage() {
       await mutation.mutateAsync({ action, id: query.data.id });
       setPendingAction(null);
       if (action === "delete") void navigate("/dashboard/teams");
-    } catch { /* mutation.error is shown in the dialog */ }
+    } catch { /* The dialog retains the mutation error. */ }
   };
 
   if (query.isPending) return <section className="league-detail-page"><p role="status">Chargement de l’équipe…</p></section>;
@@ -32,5 +32,5 @@ export default function TeamDetailPage() {
   if (query.data == null) return <section className="league-detail-page"><Alert variant="danger">Équipe introuvable.</Alert></section>;
 
   const team = query.data;
-  return <section className="league-detail-page" aria-labelledby="team-detail-title"><div className="league-detail-page__container"><Button onClick={() => void navigate(-1)} variant="ghost">← Retour à la liste</Button><article className="league-detail-card"><header><p className="league-list-page__eyebrow">Détail d’une équipe</p><h1 id="team-detail-title">{team.name}</h1></header><div className="league-detail-card__content"><dl><div><dt>Stade</dt><dd>{team.stadium ?? "Non renseigné"}</dd></div><div><dt>Statut</dt><dd>{team.isActive ? "Active" : "Inactive"}</dd></div></dl></div><div className="league-detail-card__actions">{canEdit ? <Link className="lucarne-button lucarne-button--outline" to={`/dashboard/teams/${team.id}/edit`}>Modifier</Link> : null}{canDelete ? <><Button disabled={mutation.isPending} onClick={() => setPendingAction(team.isActive ? "deactivate" : "activate")} variant="outline">{team.isActive ? "Désactiver" : "Activer"}</Button>{!team.isActive ? <Button disabled={mutation.isPending} onClick={() => setPendingAction("delete")} variant="danger">Supprimer</Button> : null}</> : null}</div></article></div>{pendingAction ? <div className="league-list__dialog-backdrop"><div aria-modal="true" className="league-list__dialog" role="dialog"><h2>Confirmer l’action ?</h2>{mutation.isError ? <Alert variant="danger">Cette action est impossible pour le moment.</Alert> : null}<div className="league-list__dialog-actions"><Button onClick={() => { mutation.reset(); setPendingAction(null); }} variant="outline">Annuler</Button><Button disabled={mutation.isPending} onClick={() => void confirmAction()} variant={pendingAction === "delete" ? "danger" : "primary"}>{mutation.isPending ? "Traitement…" : "Confirmer"}</Button></div></div></div> : null}</section>;
+  return <section className="league-detail-page" aria-labelledby="team-detail-title"><div className="league-detail-page__container"><Button onClick={() => void navigate(-1)} variant="ghost">← Retour à la liste</Button><article className="league-detail-card"><header><p className="league-list-page__eyebrow">Détail d’une équipe</p><h1 id="team-detail-title">{team.name}</h1></header><div className="league-detail-card__content"><dl><div><dt>Stade</dt><dd>{team.stadium ?? "Non renseigné"}</dd></div><div><dt>Statut</dt><dd>{team.isActive ? "Active" : "Inactive"}</dd></div></dl></div><div className="league-detail-card__actions">{canEdit ? <Link className="lucarne-button lucarne-button--outline" to={`/dashboard/teams/${team.id}/edit`}>Modifier</Link> : null}{canEdit ? <Button disabled={mutation.isPending} onClick={() => setPendingAction(team.isActive ? "deactivate" : "activate")} variant="outline">{team.isActive ? "Désactiver" : "Activer"}</Button> : null}{canDelete ? <Button disabled={mutation.isPending} onClick={() => setPendingAction("delete")} variant="danger">Supprimer</Button> : null}</div></article></div><ConfirmDialog error={mutation.isError ? "Cette action est impossible pour le moment." : undefined} onCancel={() => { mutation.reset(); setPendingAction(null); }} onConfirm={() => void confirmAction()} open={pendingAction != null} pending={mutation.isPending} title="Confirmer l’action ?" variant={pendingAction === "delete" ? "danger" : "primary"} /></section>;
 }

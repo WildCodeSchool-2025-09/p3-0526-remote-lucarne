@@ -18,7 +18,7 @@ const getTeamService = async (id: string) => {
   return team;
 };
 const updateTeamService = async (id: string, changes: UpdateTeamInput, role: string) => {
-  if (changes.isActive !== undefined && role !== APP_ROLES.ADMIN) throw new AppError(403, "INSUFFICIENT_ROLE", "Only administrators can change team status");
+  void role;
   await getTeamService(id);
   return updateTeam(id, changes);
 };

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router";
 import App from "./App";
 import {
@@ -24,7 +25,9 @@ import DevLoginPage from "./pages/dev/DevLoginPage";
 import HomePage from "./pages/HomePage";
 import NotFoundPage from "./pages/NotFoundPage";
 import RouteErrorPage from "./pages/RouteErrorPage";
-import UiDemoPage from "./pages/UiDemoPage";
+
+const UiDemoPage = lazy(() => import("./pages/UiDemoPage"));
+const loadingPage = <p role="status">Chargement…</p>;
 
 const router = createBrowserRouter([
   {
@@ -37,7 +40,7 @@ const router = createBrowserRouter([
       },
       {
         path: "ui-demo",
-        Component: UiDemoPage,
+        element: <Suspense fallback={loadingPage}><UiDemoPage /></Suspense>,
       },
       ...(import.meta.env.DEV
         ? [
