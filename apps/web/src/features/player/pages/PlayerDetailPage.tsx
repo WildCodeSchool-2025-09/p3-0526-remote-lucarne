@@ -9,6 +9,23 @@ import { CreatePlayerAssignmentForm } from "../components/CreatePlayerAssignment
 
 type PendingAction = "activate" | "deactivate" | "delete";
 const playerEditRoles = [APP_ROLES.ADMIN, APP_ROLES.MODERATOR, APP_ROLES.EDITOR] as const;
+const confirmationCopy: Record<PendingAction, { actionLabel: string; description: string; title: string }> = {
+  activate: {
+    actionLabel: "Activer",
+    description: "Le joueur sera réactivé. Aucune affectation ne sera créée.",
+    title: "Activer ce joueur ?",
+  },
+  deactivate: {
+    actionLabel: "Désactiver",
+    description: "L’affectation courante sera clôturée. Les affectations planifiées et l’historique seront conservés.",
+    title: "Désactiver ce joueur ?",
+  },
+  delete: {
+    actionLabel: "Supprimer définitivement",
+    description: "Cette suppression est définitive.",
+    title: "Supprimer ce joueur ?",
+  },
+};
 
 function errorMessage(error: unknown): string {
   if (error instanceof HttpError && error.status === 403) return "Accès refusé.";
@@ -45,5 +62,6 @@ export default function PlayerDetailPage() {
   if (query.data == null) return <section className="league-detail-page"><Alert variant="danger">Joueur introuvable.</Alert></section>;
 
   const player = query.data;
-  return <section className="league-detail-page" aria-labelledby="player-detail-title"><div className="league-detail-page__container"><Button onClick={() => void navigate(-1)} variant="ghost">← Retour</Button><article className="league-detail-card"><p className="league-list-page__eyebrow">Fiche joueur</p><h1 id="player-detail-title">{player.firstName} {player.lastName}</h1><dl><div><dt>Équipe</dt><dd>{player.activeTeam?.name ?? "Non renseignée"}</dd></div><div><dt>Poste</dt><dd>{player.position ?? "Non renseigné"}</dd></div><div><dt>Statut</dt><dd>{player.isActive ? "Actif" : "Inactif"}</dd></div><div><dt>Nationalité</dt><dd>{player.nationality ?? "Non renseignée"}</dd></div></dl><PlayerAssignments assignments={player.assignments} />{canEdit && !isScheduling ? <Button onClick={() => setIsScheduling(true)} variant="outline">Planifier une affectation</Button> : null}{canEdit && isScheduling ? <CreatePlayerAssignmentForm onCancel={() => setIsScheduling(false)} onSuccess={() => setIsScheduling(false)} playerId={player.id} /> : null}<div className="league-detail-card__actions">{canEdit ? <Link className="lucarne-button lucarne-button--outline" to={`/dashboard/players/${player.id}/edit`}>Modifier</Link> : null}{canEdit ? <Button disabled={mutation.isPending} onClick={() => setPendingAction(player.isActive ? "deactivate" : "activate")} variant="outline">{player.isActive ? "Désactiver" : "Activer"}</Button> : null}{canDelete ? <Button disabled={mutation.isPending} onClick={() => setPendingAction("delete")} variant="danger">Supprimer</Button> : null}</div></article></div><ConfirmDialog error={mutation.isError ? "Cette action est impossible pour le moment." : undefined} onCancel={() => { mutation.reset(); setPendingAction(null); }} onConfirm={() => void confirmAction()} open={pendingAction != null} pending={mutation.isPending} title="Confirmer l’action ?" variant={pendingAction === "delete" ? "danger" : "primary"} /></section>;
+  const confirmation = pendingAction == null ? null : confirmationCopy[pendingAction];
+  return <section className="league-detail-page" aria-labelledby="player-detail-title"><div className="league-detail-page__container"><Button onClick={() => void navigate(-1)} variant="ghost">← Retour</Button><article className="league-detail-card"><p className="league-list-page__eyebrow">Fiche joueur</p><h1 id="player-detail-title">{player.firstName} {player.lastName}</h1><dl><div><dt>Équipe</dt><dd>{player.activeTeam?.name ?? "Non renseignée"}</dd></div><div><dt>Poste</dt><dd>{player.position ?? "Non renseigné"}</dd></div><div><dt>Statut</dt><dd>{player.isActive ? "Actif" : "Inactif"}</dd></div><div><dt>Nationalité</dt><dd>{player.nationality ?? "Non renseignée"}</dd></div></dl><PlayerAssignments assignments={player.assignments} />{canEdit && !isScheduling ? <Button onClick={() => setIsScheduling(true)} variant="outline">Planifier une affectation</Button> : null}{canEdit && isScheduling ? <CreatePlayerAssignmentForm onCancel={() => setIsScheduling(false)} onSuccess={() => setIsScheduling(false)} playerId={player.id} /> : null}<div className="league-detail-card__actions">{canEdit ? <Link className="lucarne-button lucarne-button--outline" to={`/dashboard/players/${player.id}/edit`}>Modifier</Link> : null}{canEdit ? <Button disabled={mutation.isPending} onClick={() => setPendingAction(player.isActive ? "deactivate" : "activate")} variant="outline">{player.isActive ? "Désactiver" : "Activer"}</Button> : null}{canDelete ? <Button disabled={mutation.isPending} onClick={() => setPendingAction("delete")} variant="danger">Supprimer</Button> : null}</div></article></div><ConfirmDialog actionLabel={confirmation?.actionLabel} error={mutation.isError ? "Cette action est impossible pour le moment." : undefined} onCancel={() => { mutation.reset(); setPendingAction(null); }} onConfirm={() => void confirmAction()} open={pendingAction != null} pending={mutation.isPending} title={confirmation?.title ?? "Confirmer l’action ?"} variant={pendingAction === "delete" ? "danger" : "primary"}>{confirmation?.description}</ConfirmDialog></section>;
 }

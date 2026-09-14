@@ -61,6 +61,8 @@ describe("UpdatePlayerForm", () => {
     useUpdatePlayerMock.mockReturnValue({ error: Object.assign(new Error("Conflict"), { code: "RESOURCE_VERSION_CONFLICT" }), isError: true, isPending: false, mutate, reset: resetMutation });
     render(<UpdatePlayerForm player={player} onCancel={vi.fn()} onReload={onReload} onSuccess={vi.fn()} />);
 
+    fireEvent.change(screen.getByLabelText(/Pr.nom/), { target: { value: "Alexandre" } });
+    expect(screen.getByDisplayValue("Alexandre")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Recharger la fiche" }));
     expect(resetMutation).toHaveBeenCalledOnce();
     expect(onReload).toHaveBeenCalledOnce();
