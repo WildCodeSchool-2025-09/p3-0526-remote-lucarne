@@ -1,10 +1,8 @@
 import { useEffect } from "react";
-import { Link, Outlet, useNavigate } from "react-router";
-import { getCurrentAppRole } from "./auth/authRole";
+import { Outlet, useNavigate } from "react-router";
 
 function App() {
   const navigate = useNavigate();
-  const role = getCurrentAppRole();
 
   useEffect(() => {
     const onSessionExpired = () => void navigate(import.meta.env.DEV ? "/dev/login" : "/", { replace: true });
