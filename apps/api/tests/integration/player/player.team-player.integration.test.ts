@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import type { PlayerDetail } from "@lucarne/shared";
 import client from "../../../database/client";
 import prisma from "../../../database/prisma";
 import request from "supertest";
@@ -224,19 +225,20 @@ describe("team_player integrity and player deactivation", () => {
     const repeated = await request(app)
       .post(`/api/v1/players/${player.id}/deactivate`)
       .set("Authorization", `Bearer ${editor.accessToken}`);
+    const firstBody = first.body as PlayerDetail;
+    const repeatedBody = repeated.body as PlayerDetail;
 
     expect(first.status).toBe(200);
-    expect(first.body).toMatchObject({ isActive: false });
-    expect(first.body.assignments).toEqual(expect.arrayContaining([
-      expect.objectContaining({ team: expect.objectContaining({ id: currentTeam.id }), state: "HISTORICAL" }),
-      expect.objectContaining({ team: expect.objectContaining({ id: futureTeam.id }), state: "PLANNED", leftAt: null }),
-    ]));
+    expect(firstBody).toMatchObject({ isActive: false });
+    expect(firstBody.assignments.some((assignment) => assignment.team.id === currentTeam.id && assignment.state === "HISTORICAL")).toBe(true);
+    expect(firstBody.assignments.some((assignment) => assignment.team.id === futureTeam.id && assignment.state === "PLANNED" && assignment.leftAt === null)).toBe(true);
     expect(repeated.status).toBe(200);
-    expect(repeated.body.version).toBe(first.body.version);
-    await expect(prisma.teamPlayer.findMany({ where: { playerId: player.id }, orderBy: { joinedAt: "asc" } })).resolves.toMatchObject([
-      { teamId: currentTeam.id, leftAt: expect.any(Date) },
-      { teamId: futureTeam.id, leftAt: null },
-    ]);
+    expect(repeatedBody.version).toBe(firstBody.version);
+    const assignments = await prisma.teamPlayer.findMany({ where: { playerId: player.id }, orderBy: { joinedAt: "asc" } });
+    expect(assignments).toHaveLength(2);
+    expect(assignments[0]).toMatchObject({ teamId: currentTeam.id });
+    expect(assignments[0]?.leftAt).toBeInstanceOf(Date);
+    expect(assignments[1]).toMatchObject({ teamId: futureTeam.id, leftAt: null });
   });
 
   it("rolls back the assignment closure when the player status update fails", async () => {

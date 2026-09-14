@@ -185,9 +185,10 @@ model StaffMember {
   id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   firstName        String            @map("first_name") @db.VarChar(100)
   lastName         String            @map("last_name") @db.VarChar(100)
-  nationality      String?           @db.VarChar(100)
+  nationality      String            @db.VarChar(100)
   pictureUrl       String?           @map("picture_url")
   isActive         Boolean           @default(true) @map("is_active")
+  version          Int               @default(0)
   createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
   teamStaffMembers TeamStaffMember[]
 

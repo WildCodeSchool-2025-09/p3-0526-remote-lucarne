@@ -1,0 +1,18 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { StaffMember, UpdateStaffMemberInput } from "@lucarne/shared";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { useUpdateStaffMember } from "../../../hooks/useStaff";
+import { Alert, Button, FormField, Input } from "../../../ui";
+
+const staffFormSchema = z.object({ firstName: z.string().trim().min(1, "Prénom requis").max(100), lastName: z.string().trim().min(1, "Nom requis").max(100), nationality: z.string().trim().min(1, "Nationalité requise").max(100), pictureUrl: z.string().refine((value) => value === "" || /^https?:\/\//.test(value), "URL invalide"), version: z.number() });
+type StaffFormValues = z.infer<typeof staffFormSchema>;
+const valuesOf = (staffMember: StaffMember): StaffFormValues => ({ firstName: staffMember.firstName, lastName: staffMember.lastName, nationality: staffMember.nationality, pictureUrl: staffMember.pictureUrl ?? "", version: staffMember.version });
+function UpdateStaffMemberForm({ staffMember, onCancel, onReload, onSuccess }: { staffMember: StaffMember; onCancel: () => void; onReload: () => void; onSuccess: (staffMember: StaffMember) => void }) {
+  const mutation = useUpdateStaffMember(); const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm<StaffFormValues>({ resolver: zodResolver(staffFormSchema), defaultValues: valuesOf(staffMember) }); useEffect(() => { reset(valuesOf(staffMember)); }, [staffMember, reset]);
+  const submit = (values: StaffFormValues) => mutation.mutate({ id: staffMember.id, input: { firstName: values.firstName, lastName: values.lastName, nationality: values.nationality, pictureUrl: values.pictureUrl || null, version: values.version } satisfies UpdateStaffMemberInput }, { onSuccess: (updated) => { reset(valuesOf(updated)); onSuccess(updated); } });
+  const isVersionConflict = mutation.error instanceof Error && "code" in mutation.error && mutation.error.code === "RESOURCE_VERSION_CONFLICT";
+  return <form className="create-team-form" noValidate onSubmit={(event) => { void handleSubmit(submit)(event); }}><div className="create-team-form__fields"><FormField error={errors.firstName?.message} htmlFor="update-staff-first-name" label="Prénom" required><Input id="update-staff-first-name" hasError={errors.firstName != null} {...register("firstName")} /></FormField><FormField error={errors.lastName?.message} htmlFor="update-staff-last-name" label="Nom" required><Input id="update-staff-last-name" hasError={errors.lastName != null} {...register("lastName")} /></FormField><FormField error={errors.nationality?.message} htmlFor="update-staff-nationality" label="Nationalité" required><Input id="update-staff-nationality" hasError={errors.nationality != null} {...register("nationality")} /></FormField><FormField error={errors.pictureUrl?.message} htmlFor="update-staff-picture-url" label="URL de la photo"><Input id="update-staff-picture-url" hasError={errors.pictureUrl != null} type="url" {...register("pictureUrl")} /></FormField></div>{isVersionConflict ? <Alert variant="danger">Le membre du staff a été modifié ailleurs. <Button onClick={() => { mutation.reset(); onReload(); }} type="button" variant="outline">Recharger la fiche</Button></Alert> : null}{mutation.isError && !isVersionConflict ? <Alert variant="danger">Impossible de modifier le membre du staff.</Alert> : null}<div className="create-league-form__actions"><Button onClick={onCancel} type="button" variant="ghost">Annuler</Button><Button disabled={!isDirty || mutation.isPending} type="submit">{mutation.isPending ? "Enregistrement…" : "Enregistrer"}</Button></div></form>;
+}
+export { UpdateStaffMemberForm };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createTeamInputSchema } from "@lucarne/shared/schemas";
+import { createTeamInputSchema, deleteTeamInputSchema } from "@lucarne/shared/schemas";
 
 describe("createTeamInputSchema", () => {
   it("accepts a team with only a name", () => {
@@ -84,5 +84,13 @@ describe("createTeamInputSchema", () => {
 
     expect(first.success).toBe(true);
     expect(second.success).toBe(true);
+  });
+});
+
+describe("deleteTeamInputSchema", () => {
+  it("requires an explicit confirmation and rejects additional fields", () => {
+    expect(deleteTeamInputSchema.safeParse({ confirm: true }).success).toBe(true);
+    expect(deleteTeamInputSchema.safeParse({}).success).toBe(false);
+    expect(deleteTeamInputSchema.safeParse({ confirm: true, force: true }).success).toBe(false);
   });
 });

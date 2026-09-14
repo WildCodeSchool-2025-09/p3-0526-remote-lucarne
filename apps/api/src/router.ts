@@ -4,6 +4,7 @@ import healthRouter from "./features/health/health.routes";
 import leagueRouter from "./features/league/league.routes";
 import teamRouter from "./features/team/team.routes";
 import playerRouter from "./features/player/player.routes";
+import staffRouter from "./features/staff/staff.routes";
 
 const router = Router();
 
@@ -12,5 +13,6 @@ router.use("/health", healthRouter);
 router.use("/leagues", leagueRouter);
 router.use("/teams", teamRouter);
 router.use("/players", playerRouter);
+router.use("/staff-members", staffRouter);
 
 export default router;

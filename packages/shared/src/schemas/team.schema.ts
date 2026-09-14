@@ -43,5 +43,6 @@ const updateTeamInputSchema = z.object({
 }).strict().refine((value) => Object.keys(value).length > 0, { message: "Au moins un champ doit être modifié" });
 
 const teamIdParamsSchema = z.object({ teamId: z.string().uuid() }).strict();
+const deleteTeamInputSchema = z.object({ confirm: z.literal(true, { error: "La confirmation de suppression est requise" }) }).strict();
 
-export { createTeamInputSchema, teamIdParamsSchema, teamListQuerySchema, updateTeamInputSchema };
+export { createTeamInputSchema, deleteTeamInputSchema, teamIdParamsSchema, teamListQuerySchema, updateTeamInputSchema };

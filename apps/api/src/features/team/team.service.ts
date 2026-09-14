@@ -1,6 +1,7 @@
 import type { Team as PrismaTeam } from "../../generated/prisma/client";
-import type { CreateTeamInput, ListTeamsParams, UpdateTeamInput } from "@lucarne/shared";
-import { createTeam, findTeamById, listTeams, permanentlyDeleteTeam, updateTeam } from "./team.repository";
+import { Prisma } from "../../generated/prisma/client";
+import type { CreateTeamInput, ListTeamsParams, TeamDeletionDependencies, TeamDeletionPreview, UpdateTeamInput } from "@lucarne/shared";
+import { createTeam, findTeamById, getTeamDeletionDependencies, hasDeletionDependencies, listTeams, permanentlyDeleteTeam, updateTeam } from "./team.repository";
 import { AppError } from "../../errors/AppError";
 import { APP_ROLES } from "../../auth/appRole";
 
@@ -22,10 +23,31 @@ const updateTeamService = async (id: string, changes: UpdateTeamInput, role: str
   await getTeamService(id);
   return updateTeam(id, changes);
 };
+const getTeamDeletionPreviewService = async (id: string): Promise<TeamDeletionPreview> => {
+  await getTeamService(id);
+  const dependencies = await getTeamDeletionDependencies(id);
+  return { dependencies, canDelete: !hasDeletionDependencies(dependencies) };
+};
+const deletionBlockedError = (dependencies: TeamDeletionDependencies) => new AppError(
+  409,
+  "TEAM_DELETION_BLOCKED",
+  "Team cannot be permanently deleted while it has protected dependencies",
+  Object.entries(dependencies)
+    .filter(([, count]) => count > 0)
+    .map(([field, count]) => ({ field, message: `${count} protected record(s) block permanent deletion` })),
+);
 const deleteTeamService = async (id: string, role: string) => {
   if (role !== APP_ROLES.ADMIN) throw new AppError(403, "INSUFFICIENT_ROLE", "Only administrators can delete teams");
   await getTeamService(id);
-  return permanentlyDeleteTeam(id);
+  try {
+    const result = await permanentlyDeleteTeam(id);
+    if (!result.deleted) throw deletionBlockedError(result.dependencies);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      throw deletionBlockedError(await getTeamDeletionDependencies(id));
+    }
+    throw error;
+  }
 };
 
-export { createTeamService, deleteTeamService, getTeamService, listTeamsService, updateTeamService };
+export { createTeamService, deleteTeamService, getTeamDeletionPreviewService, getTeamService, listTeamsService, updateTeamService };

@@ -4,3 +4,4 @@ export * from "./league.types";
 export * from "./player.types";
 export * from "./pagination.types";
 export * from "./team.types";
+export * from "./staff.types";

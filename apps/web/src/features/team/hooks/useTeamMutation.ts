@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { HttpError } from "../../../lib/httpClient";
-import { deleteTeam, updateTeam } from "../../../services/team.service";
+import { deleteTeam, getTeamDeletionPreview, updateTeam } from "../../../services/team.service";
 import { teamKeys } from "../teamKeys";
 
 interface TeamMutationInput { action: "delete" | "deactivate" | "activate"; id: string; }
@@ -21,4 +21,11 @@ function useTeamMutation() {
   });
 }
 
-export { useTeamMutation };
+const useTeamDeletionPreview = (id: string, enabled: boolean) => useQuery({
+  queryKey: [...teamKeys.detail(id), "deletion-preview"],
+  queryFn: () => getTeamDeletionPreview(id),
+  enabled: enabled && id !== "",
+  retry: false,
+});
+
+export { useTeamDeletionPreview, useTeamMutation };

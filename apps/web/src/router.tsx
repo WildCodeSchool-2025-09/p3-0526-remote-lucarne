@@ -17,6 +17,10 @@ import CreatePlayerPage from "./features/player/pages/CreatePlayerPage";
 import EditPlayerPage from "./features/player/pages/EditPlayerPage";
 import PlayerDetailPage from "./features/player/pages/PlayerDetailPage";
 import PlayerListPage from "./features/player/pages/PlayerListPage";
+import CreateStaffMemberPage from "./features/staff/pages/CreateStaffMemberPage";
+import EditStaffMemberPage from "./features/staff/pages/EditStaffMemberPage";
+import StaffMemberDetailPage from "./features/staff/pages/StaffMemberDetailPage";
+import StaffMemberListPage from "./features/staff/pages/StaffMemberListPage";
 import CreateTeamPage from "./features/team/pages/CreateTeamPage";
 import EditTeamPage from "./features/team/pages/EditTeamPage";
 import TeamDetailPage from "./features/team/pages/TeamDetailPage";
@@ -151,6 +155,38 @@ const router = createBrowserRouter([
         element: (
           <RequireRole allowedRoles={PLAYER_WRITE_ROLES}>
             <EditPlayerPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/staff-members",
+        element: (
+          <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}>
+            <StaffMemberListPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/staff-members/new",
+        element: (
+          <RequireRole allowedRoles={PLAYER_WRITE_ROLES}>
+            <CreateStaffMemberPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/staff-members/:staffMemberId",
+        element: (
+          <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}>
+            <StaffMemberDetailPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/staff-members/:staffMemberId/edit",
+        element: (
+          <RequireRole allowedRoles={PLAYER_WRITE_ROLES}>
+            <EditStaffMemberPage />
           </RequireRole>
         ),
       },

@@ -16,6 +16,7 @@ const createStaffMember = () => prisma.staffMember.create({
   data: {
     firstName: "Alex",
     lastName: "Martin",
+    nationality: "France",
   },
 });
 

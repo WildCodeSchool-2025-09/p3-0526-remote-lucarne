@@ -1,6 +1,6 @@
 import prisma from "../../../database/prisma";
 import type { Team as PrismaTeam } from "../../generated/prisma/client";
-import type { CreateTeamInput, ListTeamsParams, UpdateTeamInput } from "@lucarne/shared";
+import type { CreateTeamInput, ListTeamsParams, TeamDeletionDependencies, UpdateTeamInput } from "@lucarne/shared";
 
 const listTeams = async (params: ListTeamsParams) => {
   const where = {
@@ -17,7 +17,34 @@ const listTeams = async (params: ListTeamsParams) => {
 
 const findTeamById = (id: string) => prisma.team.findUnique({ where: { id } });
 const updateTeam = (id: string, data: UpdateTeamInput) => prisma.team.update({ where: { id }, data });
-const permanentlyDeleteTeam = (id: string): Promise<PrismaTeam> => prisma.team.delete({ where: { id } });
+const getTeamDeletionDependencies = async (id: string): Promise<TeamDeletionDependencies> => {
+  const [participations, playerAssignments, staffAssignments, homeMatches, awayMatches] = await Promise.all([
+    prisma.participation.count({ where: { teamId: id } }),
+    prisma.teamPlayer.count({ where: { teamId: id } }),
+    prisma.teamStaffMember.count({ where: { teamId: id } }),
+    prisma.gameMatch.count({ where: { homeTeamId: id } }),
+    prisma.gameMatch.count({ where: { awayTeamId: id } }),
+  ]);
+  return { participations, playerAssignments, staffAssignments, homeMatches, awayMatches };
+};
+
+const hasDeletionDependencies = (dependencies: TeamDeletionDependencies) =>
+  Object.values(dependencies).some((count) => count > 0);
+
+const permanentlyDeleteTeam = async (id: string): Promise<{ deleted: boolean; dependencies: TeamDeletionDependencies }> =>
+  prisma.$transaction(async (transaction) => {
+    const [participations, playerAssignments, staffAssignments, homeMatches, awayMatches] = await Promise.all([
+      transaction.participation.count({ where: { teamId: id } }),
+      transaction.teamPlayer.count({ where: { teamId: id } }),
+      transaction.teamStaffMember.count({ where: { teamId: id } }),
+      transaction.gameMatch.count({ where: { homeTeamId: id } }),
+      transaction.gameMatch.count({ where: { awayTeamId: id } }),
+    ]);
+    const dependencies = { participations, playerAssignments, staffAssignments, homeMatches, awayMatches };
+    if (hasDeletionDependencies(dependencies)) return { deleted: false, dependencies };
+    await transaction.team.delete({ where: { id } });
+    return { deleted: true, dependencies };
+  });
 
 const createTeam = async (input: CreateTeamInput): Promise<PrismaTeam> =>
   prisma.team.create({
@@ -29,4 +56,4 @@ const createTeam = async (input: CreateTeamInput): Promise<PrismaTeam> =>
     },
   });
 
-export { createTeam, findTeamById, listTeams, permanentlyDeleteTeam, updateTeam };
+export { createTeam, findTeamById, getTeamDeletionDependencies, hasDeletionDependencies, listTeams, permanentlyDeleteTeam, updateTeam };

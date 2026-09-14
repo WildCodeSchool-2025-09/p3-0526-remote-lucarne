@@ -2,8 +2,8 @@ import type { RequestHandler } from "express";
 import type { Team } from "@lucarne/shared";
 import { AppError } from "../../errors/AppError";
 import { asyncHandler } from "../../utils/asyncHandler";
-import { createTeamService, deleteTeamService, getTeamService, listTeamsService, updateTeamService } from "./team.service";
-import type { CreateTeamInput, ListTeamsParams, PaginatedTeamsResponse, UpdateTeamInput } from "@lucarne/shared";
+import { createTeamService, deleteTeamService, getTeamDeletionPreviewService, getTeamService, listTeamsService, updateTeamService } from "./team.service";
+import type { CreateTeamInput, DeleteTeamInput, ListTeamsParams, PaginatedTeamsResponse, TeamDeletionPreview, UpdateTeamInput } from "@lucarne/shared";
 import type { Team as PrismaTeam } from "../../generated/prisma/client";
 
 const toTeamResponse = (team: PrismaTeam): Team => ({
@@ -21,8 +21,9 @@ const listTeams: RequestHandler<Record<string, never>, PaginatedTeamsResponse, n
   response.json({ data: result.data.map(toTeamResponse), pagination: { page, pageSize, totalItems: result.totalItems, totalPages: Math.ceil(result.totalItems / pageSize) } });
 });
 const getTeam: RequestHandler<{ teamId: string }, Team> = asyncHandler(async (request, response) => response.json(toTeamResponse(await getTeamService(request.params.teamId))));
+const getTeamDeletionPreview: RequestHandler<{ teamId: string }, TeamDeletionPreview> = asyncHandler(async (request, response) => response.json(await getTeamDeletionPreviewService(request.params.teamId)));
 const updateTeam: RequestHandler<{ teamId: string }, Team, UpdateTeamInput> = asyncHandler(async (request, response) => response.json(toTeamResponse(await updateTeamService(request.params.teamId, request.body, request.user!.role))));
-const deleteTeam: RequestHandler<{ teamId: string }> = asyncHandler(async (request, response) => {
+const deleteTeam: RequestHandler<{ teamId: string }, void, DeleteTeamInput> = asyncHandler(async (request, response) => {
   await deleteTeamService(request.params.teamId, request.user!.role);
   response.status(204).send();
 });
@@ -45,4 +46,4 @@ const createTeam: RequestHandler<
   response.status(201).json(toTeamResponse(team));
 });
 
-export { createTeam, deleteTeam, getTeam, listTeams, toTeamResponse, updateTeam };
+export { createTeam, deleteTeam, getTeam, getTeamDeletionPreview, listTeams, toTeamResponse, updateTeam };
