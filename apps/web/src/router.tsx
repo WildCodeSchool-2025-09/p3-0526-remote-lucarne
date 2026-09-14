@@ -13,6 +13,7 @@ import EditLeaguePage from "./features/league/pages/EditLeaguePage";
 import CreateLeaguePage from "./features/league/pages/CreateLeaguePage";
 import LeagueDetailPage from "./features/league/pages/LeagueDetailPage";
 import LeagueListPage from "./features/league/pages/LeagueListPage";
+import DashboardLayout from "./components/dashboard/DashboardLayout";
 import CreatePlayerPage from "./features/player/pages/CreatePlayerPage";
 import EditPlayerPage from "./features/player/pages/EditPlayerPage";
 import PlayerDetailPage from "./features/player/pages/PlayerDetailPage";
@@ -58,15 +59,9 @@ const router = createBrowserRouter([
         path: "dashboard/league",
         element: (
           <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}>
-            <LeagueListPage />
-          </RequireRole>
-        ),
-      },
-      {
-        path: "dashboard/leagues",
-        element: (
-          <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}>
-            <LeagueListPage />
+            <DashboardLayout activeItem="leagues">
+              <LeagueListPage />
+            </DashboardLayout>
           </RequireRole>
         ),
       },

@@ -1,6 +1,6 @@
 import type { League } from "@lucarne/shared";
 import { MemoryRouter } from "react-router";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearAccessToken, setAccessToken } from "../../../../src/lib/authToken";
@@ -55,6 +55,11 @@ function renderPage(entry = "/dashboard/leagues") {
   );
 }
 
+async function openTableActions(user: ReturnType<typeof userEvent.setup>, index = 0) {
+  const table = within(screen.getByRole("table"));
+  await user.click(table.getAllByRole("button", { name: /Ouvrir les actions/ })[index]);
+}
+
 describe("LeagueListPage", () => {
   const mutateAsync = vi.fn().mockResolvedValue(undefined);
 
@@ -74,11 +79,13 @@ describe("LeagueListPage", () => {
     mutationHook.mockReturnValue({ isPending: false, mutateAsync } as never);
   });
 
-  it.each(["ADMIN", "MODERATOR", "EDITOR"] as const)("shows edit actions for %s", (role) => {
+  it.each(["ADMIN", "MODERATOR", "EDITOR"] as const)("shows edit actions for %s", async (role) => {
     setAccessToken(token(role));
     renderPage();
 
-    expect(screen.getAllByRole("link", { name: "Modifier" })).toHaveLength(2);
+    const user = userEvent.setup();
+    await openTableActions(user, 0);
+    expect(screen.getByRole("menuitem", { name: "Modifier" })).toBeInTheDocument();
   });
 
   it("hides edit actions for USER", () => {
@@ -92,13 +99,13 @@ describe("LeagueListPage", () => {
     renderPage();
 
     expect(screen.getByRole("heading", { name: "Ligues" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ligue de France" })).toBeInTheDocument();
+    expect(within(screen.getByRole("table")).getByRole("link", { name: "Ligue de France" })).toBeInTheDocument();
     expect(screen.getAllByText("France").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Active").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Inactive").length).toBeGreaterThan(0);
     expect(screen.getByText("11/09/2026")).toBeInTheDocument();
-    expect(screen.getByLabelText("Initiale de Ligue de France")).toHaveTextContent("L");
-    expect(screen.getByAltText("Logo de Liga España")).toBeInTheDocument();
+    expect(screen.getAllByLabelText("Initiale de Ligue de France")[0]).toHaveTextContent("L");
+    expect(screen.getAllByAltText("Logo de Liga España")[0]).toBeInTheDocument();
   });
 
   it("updates search, multi-country filter, status and sort, then resets criteria", async () => {
@@ -159,7 +166,8 @@ describe("LeagueListPage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: "Désactiver Ligue de France" }));
+    await openTableActions(user);
+    await user.click(screen.getByRole("menuitem", { name: "Désactiver" }));
     expect(screen.getByRole("dialog")).toHaveTextContent("deviendra inactive");
     await user.click(screen.getByRole("button", { name: "Confirmer" }));
 
@@ -168,17 +176,21 @@ describe("LeagueListPage", () => {
   });
 
   it("shows activate and delete actions next to an inactive league", () => {
+    const user = userEvent.setup();
     renderPage();
 
-    expect(screen.getByRole("button", { name: /Activer Liga/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Supprimer Liga/ })).toBeInTheDocument();
+    return openTableActions(user, 1).then(() => {
+      expect(screen.getByRole("menuitem", { name: "Activer" })).toBeInTheDocument();
+      expect(screen.getByRole("menuitem", { name: "Supprimer" })).toBeInTheDocument();
+    });
   });
 
   it("confirms activation of an inactive league", async () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: /Activer Liga/ }));
+    await openTableActions(user, 1);
+    await user.click(screen.getByRole("menuitem", { name: "Activer" }));
     expect(screen.getByRole("dialog")).toHaveTextContent("redeviendra active");
     await user.click(screen.getByRole("button", { name: "Confirmer" }));
 
@@ -190,7 +202,8 @@ describe("LeagueListPage", () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole("button", { name: /Supprimer Liga/ }));
+    await openTableActions(user, 1);
+    await user.click(screen.getByRole("menuitem", { name: "Supprimer" }));
     expect(screen.getByRole("dialog")).toHaveTextContent("supprimée définitivement");
     await user.click(screen.getByRole("button", { name: "Confirmer" }));
 
@@ -201,8 +214,11 @@ describe("LeagueListPage", () => {
     setAccessToken(token(role));
     renderPage();
 
-    expect(screen.getByRole("button", { name: /Désactiver Ligue de France/ })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Supprimer/ })).not.toBeInTheDocument();
+    const user = userEvent.setup();
+    return openTableActions(user).then(() => {
+      expect(screen.getByRole("menuitem", { name: "Désactiver" })).toBeInTheDocument();
+      expect(screen.queryByRole("menuitem", { name: "Supprimer" })).not.toBeInTheDocument();
+    });
   });
 
   it("shows loading, empty and error states", () => {

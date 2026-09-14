@@ -1,8 +1,10 @@
 import { useEffect } from "react";
-import { Outlet, useNavigate } from "react-router";
+import { Outlet, useLocation, useNavigate } from "react-router";
 
 function App() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isLeagueDashboard = location.pathname === "/dashboard/league";
 
   useEffect(() => {
     const onSessionExpired = () => void navigate(import.meta.env.DEV ? "/dev/login" : "/", { replace: true });
@@ -12,7 +14,7 @@ function App() {
 
   return (
     <>
-      <header>Lucarnes</header>
+      {isLeagueDashboard ? null : <header>Lucarnes</header>}
       <main>
         <Outlet />
       </main>
