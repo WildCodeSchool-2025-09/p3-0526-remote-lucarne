@@ -179,6 +179,20 @@ describe("team_player integrity and player deactivation", () => {
     expect(namesake.id).not.toBe(futurePlayer.id);
   });
 
+  it("filters players by active status without changing the default list", async () => {
+    await Promise.all([createPlayer(true), createPlayer(false)]);
+
+    const active = await listPlayersService({ status: "ACTIVE", page: 1, pageSize: 20 });
+    const inactive = await listPlayersService({ status: "INACTIVE", page: 1, pageSize: 20 });
+    const all = await listPlayersService({ status: "ALL", page: 1, pageSize: 20 });
+
+    expect(active.data).toHaveLength(1);
+    expect(active.data[0]?.isActive).toBe(true);
+    expect(inactive.data).toHaveLength(1);
+    expect(inactive.data[0]?.isActive).toBe(false);
+    expect(all.data).toHaveLength(2);
+  });
+
   it("closes the current assignment, preserves a planned assignment, and is idempotent", async () => {
     const [currentTeam, futureTeam, currentPlayer, futurePlayer] = await Promise.all([createTeam(), createTeam(), createPlayer(), createPlayer()]);
     await prisma.teamPlayer.create({ data: { teamId: currentTeam.id, playerId: currentPlayer.id, joinedAt: date("2026-01-01") } });
