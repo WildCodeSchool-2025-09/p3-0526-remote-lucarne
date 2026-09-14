@@ -14,7 +14,7 @@ function App() {
 
   return (
     <>
-      <header>Lucarne{role != null ? <nav aria-label="Navigation principale"><Link to="/dashboard/players">Joueurs</Link><Link className="lucarne-button lucarne-button--outline" to="/dashboard/staff-members">Staff</Link></nav> : null}</header>
+      <header>Lucarnes</header>
       <main>
         <Outlet />
       </main>

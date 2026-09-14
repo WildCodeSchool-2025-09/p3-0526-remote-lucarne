@@ -127,6 +127,14 @@ function DevLoginPage() {
             >
               Joueur
             </Button>
+            <Button
+              onClick={() => {
+                void navigate("/dashboard/staff-members");
+              }}
+              type="button"
+            >
+              Staff
+            </Button>
             <Button onClick={handleLogout} type="button" variant="outline">
               Se déconnecter
             </Button>

@@ -88,6 +88,7 @@ describe("DevLoginPage", () => {
       expect(screen.getByRole("button", { name: "Ligue" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Équipe" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Joueur" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Staff" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Se déconnecter" })).toBeInTheDocument();
     },
   );
@@ -150,6 +151,21 @@ describe("DevLoginPage", () => {
     await user.click(screen.getByRole("button", { name: "Joueur" }));
 
     expect(screen.getByTestId("current-path")).toHaveTextContent(/^\/dashboard\/players$/);
+  });
+
+  it("redirects to the staff list from the connected action", async () => {
+    const user = userEvent.setup();
+    setAccessToken(createToken(APP_ROLES.ADMIN));
+    render(
+      <MemoryRouter initialEntries={["/dev/login"]}>
+        <DevLoginPage />
+        <CurrentPath />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Staff" }));
+
+    expect(screen.getByTestId("current-path")).toHaveTextContent("/dashboard/staff-members");
   });
 
   it("shows an invalid session without crashing", () => {
