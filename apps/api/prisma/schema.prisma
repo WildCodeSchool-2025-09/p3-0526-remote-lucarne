@@ -182,19 +182,31 @@ model Season {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model StaffMember {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  teamId      String   @map("team_id") @db.Uuid
-  firstName   String   @map("first_name") @db.VarChar(100)
-  lastName    String   @map("last_name") @db.VarChar(100)
-  nationality String?  @db.VarChar(100)
-  jobTitle    String   @map("job_title") @db.VarChar(100)
-  pictureUrl  String?  @map("picture_url")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  team        Team     @relation(fields: [teamId], references: [id], onUpdate: NoAction, map: "fk_staff_team")
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName        String            @map("first_name") @db.VarChar(100)
+  lastName         String            @map("last_name") @db.VarChar(100)
+  nationality      String?           @db.VarChar(100)
+  pictureUrl       String?           @map("picture_url")
+  isActive         Boolean           @default(true) @map("is_active")
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  teamStaffMembers TeamStaffMember[]
 
-  @@index([teamId], map: "idx_staff_team")
   @@map("staff_member")
+}
+
+model TeamStaffMember {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  teamId        String      @map("team_id") @db.Uuid
+  staffMemberId String      @unique(map: "uq_active_team_staff_member_per_staff_member", where: raw("(left_at IS NULL)")) @map("staff_member_id") @db.Uuid
+  jobTitle      String      @map("job_title") @db.VarChar(100)
+  joinedAt      DateTime    @map("joined_at") @db.Date
+  leftAt        DateTime?   @map("left_at") @db.Date
+  staffMember   StaffMember @relation(fields: [staffMemberId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "team_staff_member_staff_member_id_fkey")
+  team          Team        @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "team_staff_member_team_id_fkey")
+
+  @@index([staffMemberId], map: "idx_team_staff_member_staff_member")
+  @@index([teamId], map: "idx_team_staff_member_team")
+  @@map("team_staff_member")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -209,7 +221,7 @@ model Team {
   homeMatches    GameMatch[]     @relation("HomeTeamMatches")
   participations Participation[]
   players        TeamPlayer[]
-  staffMembers   StaffMember[]
+  staffMembers   TeamStaffMember[]
 
   @@map("team")
 }

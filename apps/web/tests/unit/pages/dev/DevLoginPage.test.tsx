@@ -65,7 +65,7 @@ describe("DevLoginPage", () => {
     await user.click(screen.getByRole("button", { name: "Se connecter" }));
 
     expect(await screen.findByText("Email requis")).toBeInTheDocument();
-    expect(screen.getByText("Le mot de passe doit contenir au moins 12 caractères")).toBeInTheDocument();
+    expect(screen.getByText("Le mot de passe doit contenir au moins 1 caractère")).toBeInTheDocument();
     expect(loginMock).not.toHaveBeenCalled();
   });
 

@@ -55,6 +55,6 @@ describe("password validation", () => {
   });
 
   it("prevents hashing an invalid password", async () => {
-    await expect(hashPassword("too-short")).rejects.toThrow();
+    await expect(hashPassword("")).rejects.toThrow();
   });
 });

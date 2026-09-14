@@ -8,11 +8,9 @@ const seedStaff = async (
   for (const [teamIndex, teamId] of SEED_IDS.teams.entries()) {
     const staffMember = {
       id: SEED_IDS.staffMembers[teamIndex],
-      teamId,
       firstName: faker.person.firstName(),
       lastName: faker.person.lastName(),
       nationality: faker.location.country(),
-      jobTitle: "COACH",
       pictureUrl: faker.image.avatar(),
       isActive: true,
     };
@@ -24,6 +22,22 @@ const seedStaff = async (
       update: staffMember,
       create: staffMember,
     });
+
+    // Never reopen or overwrite an existing assignment history when reseeding.
+    const assignment = await database.teamStaffMember.findFirst({
+      where: { staffMemberId: staffMember.id },
+    });
+    if (assignment == null) {
+      await database.teamStaffMember.create({
+        data: {
+          id: SEED_IDS.teamStaffMembers[teamIndex],
+          staffMemberId: staffMember.id,
+          teamId,
+          jobTitle: "COACH",
+          joinedAt: new Date("2026-09-01T00:00:00.000Z"),
+        },
+      });
+    }
   }
 };
 

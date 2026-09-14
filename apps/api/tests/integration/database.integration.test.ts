@@ -39,6 +39,7 @@ describe("database seeders", () => {
       participationCount,
       playerCount,
       staffCount,
+      staffAssignmentCount,
     ] = await Promise.all([
       prisma.role.findMany({
         orderBy: { name: "asc" },
@@ -59,6 +60,9 @@ describe("database seeders", () => {
       prisma.staffMember.count({
         where: { id: { in: [...SEED_IDS.staffMembers] } },
       }),
+      prisma.teamStaffMember.count({
+        where: { id: { in: [...SEED_IDS.teamStaffMembers] } },
+      }),
     ]);
 
     expect({
@@ -69,6 +73,7 @@ describe("database seeders", () => {
       participationCount,
       playerCount,
       staffCount,
+      staffAssignmentCount,
     }).toEqual({
       roleNames: Object.values(APP_ROLES).sort(),
       leagueCount: 1,
@@ -77,13 +82,14 @@ describe("database seeders", () => {
       participationCount: 2,
       playerCount: PLAYERS_PER_TEAM * 2,
       staffCount: 2,
+      staffAssignmentCount: 2,
     });
 
     for (const teamId of SEED_IDS.teams) {
       await expect(prisma.teamPlayer.count({ where: { teamId, leftAt: null } }))
         .resolves.toBe(PLAYERS_PER_TEAM);
-      await expect(prisma.staffMember.count({
-        where: { teamId, jobTitle: "COACH" },
+      await expect(prisma.teamStaffMember.count({
+        where: { teamId, jobTitle: "COACH", leftAt: null },
       })).resolves.toBe(1);
       await expect(prisma.participation.findUnique({
         where: {
@@ -103,20 +109,28 @@ describe("database seeders", () => {
   it("is idempotent and deterministic", async () => {
     await seedDatabase();
 
-    const [initialRoles, initialPlayers] = await Promise.all([
+    const [initialRoles, initialPlayers, initialStaffAssignments] = await Promise.all([
       prisma.role.findMany({ orderBy: { name: "asc" } }),
       prisma.player.findMany({
         where: { id: { in: [...SEED_IDS.players] } },
+        orderBy: { id: "asc" },
+      }),
+      prisma.teamStaffMember.findMany({
+        where: { id: { in: [...SEED_IDS.teamStaffMembers] } },
         orderBy: { id: "asc" },
       }),
     ]);
 
     await seedDatabase();
 
-    const [rolesAfterSecondRun, playersAfterSecondRun] = await Promise.all([
+    const [rolesAfterSecondRun, playersAfterSecondRun, staffAssignmentsAfterSecondRun] = await Promise.all([
       prisma.role.findMany({ orderBy: { name: "asc" } }),
       prisma.player.findMany({
         where: { id: { in: [...SEED_IDS.players] } },
+        orderBy: { id: "asc" },
+      }),
+      prisma.teamStaffMember.findMany({
+        where: { id: { in: [...SEED_IDS.teamStaffMembers] } },
         orderBy: { id: "asc" },
       }),
     ]);
@@ -126,6 +140,7 @@ describe("database seeders", () => {
       Object.values(APP_ROLES).length,
     );
     expect(playersAfterSecondRun).toEqual(initialPlayers);
+    expect(staffAssignmentsAfterSecondRun).toEqual(initialStaffAssignments);
     await expect(prisma.player.count({
       where: { id: { in: [...SEED_IDS.players] } },
     })).resolves.toBe(PLAYERS_PER_TEAM * 2);

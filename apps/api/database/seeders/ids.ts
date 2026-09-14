@@ -14,6 +14,10 @@ const SEED_IDS = Object.freeze({
     "00000000-0000-4000-8000-000000000301",
     "00000000-0000-4000-8000-000000000302",
   ],
+  teamStaffMembers: [
+    "00000000-0000-4000-8000-000000000501",
+    "00000000-0000-4000-8000-000000000502",
+  ],
   players: Array.from(
     { length: PLAYERS_PER_TEAM * 2 },
     (_value, index) => createSeedUuid(201 + index),

@@ -13,7 +13,7 @@ import { Alert, Button, FormField, Input } from "../../ui";
 const devLoginSchema = z.object({
   email: z.email({ error: "Email requis" }),
   password: z.string({ error: "Mot de passe requis" })
-    .min(1, { error: "Le mot de passe doit contenir au moins 1 caractères" }),
+    .min(1, { error: "Le mot de passe doit contenir au moins 1 caractère" }),
 });
 
 type DevLoginFormValues = z.infer<typeof devLoginSchema>;
