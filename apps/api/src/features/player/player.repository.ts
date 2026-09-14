@@ -1,6 +1,6 @@
 import prisma from "../../../database/prisma";
 import type { Prisma } from "../../generated/prisma/client";
-import type { CreatePlayerInput, ListPlayersParams, UpdatePlayerInput } from "@lucarne/shared";
+import type { CreatePlayerAssignmentInput, CreatePlayerInput, ListPlayersParams, UpdatePlayerInput } from "@lucarne/shared";
 import { AppError } from "../../errors/AppError";
 import { currentAssignmentWhere, plannedAssignmentWhere, utcDate } from "./player.assignment";
 
@@ -11,7 +11,7 @@ const assignmentSelect = {
 
 // Only the open assignment is needed for list summaries; history is read on detail.
 const playerListInclude = {
-  teamPlayers: { where: { leftAt: null }, select: assignmentSelect },
+  teamPlayers: { where: currentAssignmentWhere(), select: assignmentSelect },
 } satisfies Prisma.PlayerInclude;
 const playerDetailInclude = {
   teamPlayers: { select: assignmentSelect, orderBy: [{ joinedAt: "desc" }, { id: "asc" }] },
@@ -76,6 +76,37 @@ const createPlayer = (input: CreatePlayerInput) => prisma.$transaction(async (tx
   return tx.player.findUniqueOrThrow({ where: { id: player.id }, include: playerDetailInclude });
 });
 
+const createPlayerAssignment = (playerId: string, input: CreatePlayerAssignmentInput) => prisma.$transaction(async (tx) => {
+  const date = utcDate();
+  const joinedAt = new Date(input.joinedAt);
+  if (joinedAt < date) throw new AppError(400, "ASSIGNMENT_START_IN_PAST", "La date de début ne peut pas être antérieure à aujourd’hui");
+
+  const players = await tx.$queryRaw<{ id: string }[]>`
+    SELECT id FROM player WHERE id = ${playerId}::uuid FOR UPDATE
+  `;
+  if (!players[0]) throw new AppError(404, "RESOURCE_NOT_FOUND", "Joueur introuvable");
+
+  const teams = await tx.$queryRaw<{ is_active: boolean }[]>`
+    SELECT is_active FROM team WHERE id = ${input.teamId}::uuid FOR UPDATE
+  `;
+  if (!teams[0]) throw new AppError(404, "TEAM_NOT_FOUND", "Équipe introuvable");
+  if (!teams[0].is_active) throw new AppError(409, "TEAM_INACTIVE", "L’équipe est inactive");
+
+  const planned = await tx.teamPlayer.findFirst({
+    where: { playerId, ...plannedAssignmentWhere(date) }, select: { id: true },
+  });
+  if (planned) throw new AppError(409, "ASSIGNMENT_ALREADY_PLANNED", "Le joueur possède déjà une affectation planifiée");
+
+  await tx.teamPlayer.updateMany({
+    where: { playerId, ...currentAssignmentWhere(date) },
+    data: { leftAt: joinedAt },
+  });
+  await tx.teamPlayer.create({ data: {
+    playerId, teamId: input.teamId, joinedAt, shirtNumber: input.shirtNumber ?? null,
+  } });
+  return tx.player.findUniqueOrThrow({ where: { id: playerId }, include: playerDetailInclude });
+});
+
 // Shared by PATCH and the dedicated action: only today's current assignment is
 // closed. Planned and historical assignments are intentionally retained.
 const closeCurrentAssignment = (tx: Prisma.TransactionClient, id: string, date: Date) =>
@@ -118,5 +149,5 @@ const hasProtectedDependencies = async (id: string) => {
   return { assignment, event };
 };
 
-export { activatePlayer, createPlayer, deactivatePlayer, deletePlayer, findPlayerById, hasProtectedDependencies, listPlayers, updatePlayerOptimistic };
+export { activatePlayer, createPlayer, createPlayerAssignment, deactivatePlayer, deletePlayer, findPlayerById, hasProtectedDependencies, listPlayers, updatePlayerOptimistic };
 export type { PlayerRecord };

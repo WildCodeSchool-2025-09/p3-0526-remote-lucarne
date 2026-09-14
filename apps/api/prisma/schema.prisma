@@ -141,7 +141,7 @@ model Player {
 model TeamPlayer {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   teamId      String    @map("team_id") @db.Uuid
-  playerId    String    @unique(map: "uq_active_team_player_per_player", where: raw("(left_at IS NULL)")) @map("player_id") @db.Uuid
+  playerId    String    @map("player_id") @db.Uuid
   joinedAt    DateTime  @map("joined_at") @db.Date
   leftAt      DateTime? @map("left_at") @db.Date
   shirtNumber Int?      @map("shirt_number")

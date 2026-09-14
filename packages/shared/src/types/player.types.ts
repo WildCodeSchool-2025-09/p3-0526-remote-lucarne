@@ -7,6 +7,7 @@ type PlayerAssignment = { id: string; team: { id: string; name: string }; joined
 type PlayerDetail = Player & { assignments: PlayerAssignment[] };
 type ListPlayersParams = { page?: number; pageSize?: 20; search?: string; teamName?: string; assignmentStatus?: "CURRENT" | "PLANNED"; selectable?: boolean; position?: string; status?: PlayerStatusFilter; sortBy?: "lastName" | "createdAt"; sortOrder?: "asc" | "desc" };
 type CreatePlayerInput = { firstName: string; lastName: string; nationality?: string | null; position?: string | null; birthday?: string | null; pictureUrl?: string | null; teamId?: string; joinedAt?: string; shirtNumber?: number | null };
+type CreatePlayerAssignmentInput = { teamId: string; joinedAt: string; shirtNumber?: number | null };
 type UpdatePlayerInput = Partial<Omit<CreatePlayerInput, "teamId" | "joinedAt" | "shirtNumber">> & { isActive?: boolean; version: number };
 type PaginatedPlayersResponse = PaginatedResponse<Player>;
-export type { CreatePlayerInput, ListPlayersParams, PaginatedPlayersResponse, Player, PlayerAssignment, PlayerDetail, PlayerStatus, PlayerStatusFilter, UpdatePlayerInput };
+export type { CreatePlayerAssignmentInput, CreatePlayerInput, ListPlayersParams, PaginatedPlayersResponse, Player, PlayerAssignment, PlayerDetail, PlayerStatus, PlayerStatusFilter, UpdatePlayerInput };

@@ -1,8 +1,8 @@
 import type { AppRole } from "../../auth/appRole";
 import { APP_ROLES } from "../../auth/appRole";
 import { AppError } from "../../errors/AppError";
-import type { CreatePlayerInput, ListPlayersParams, Player, PlayerDetail, UpdatePlayerInput } from "@lucarne/shared";
-import { activatePlayer, createPlayer, deactivatePlayer, deletePlayer, findPlayerById, hasProtectedDependencies, listPlayers, updatePlayerOptimistic } from "./player.repository";
+import type { CreatePlayerAssignmentInput, CreatePlayerInput, ListPlayersParams, Player, PlayerDetail, UpdatePlayerInput } from "@lucarne/shared";
+import { activatePlayer, createPlayer, createPlayerAssignment, deactivatePlayer, deletePlayer, findPlayerById, hasProtectedDependencies, listPlayers, updatePlayerOptimistic } from "./player.repository";
 import type { PlayerRecord } from "./player.repository";
 import { assignmentState, utcDate } from "./player.assignment";
 
@@ -34,6 +34,7 @@ const toPlayerDetail = (player: PlayerRecord): PlayerDetail => {
 };
 
 const createPlayerService = async (input: CreatePlayerInput) => toPlayerDetail(await createPlayer(input));
+const createPlayerAssignmentService = async (playerId: string, input: CreatePlayerAssignmentInput) => toPlayerDetail(await createPlayerAssignment(playerId, input));
 const getPlayerService = async (id: string) => {
   const player = await findPlayerById(id);
   if (!player) throw new AppError(404, "RESOURCE_NOT_FOUND", "Joueur introuvable");
@@ -59,4 +60,4 @@ const deletePlayerService = async (id: string, role: AppRole) => {
   if (dependencies.assignment || dependencies.event) throw new AppError(409, "PROTECTED_DEPENDENCIES", "Suppression bloquée : le joueur possède des affectations ou des événements protégés");
   return deletePlayer(id);
 };
-export { activatePlayerService, createPlayerService, deactivatePlayerService, deletePlayerService, getPlayerService, listPlayersService, updatePlayerService };
+export { activatePlayerService, createPlayerAssignmentService, createPlayerService, deactivatePlayerService, deletePlayerService, getPlayerService, listPlayersService, updatePlayerService };

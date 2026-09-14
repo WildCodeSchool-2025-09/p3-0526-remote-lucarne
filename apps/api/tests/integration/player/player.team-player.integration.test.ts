@@ -3,7 +3,11 @@ import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import client from "../../../database/client";
 import prisma from "../../../database/prisma";
-import { deactivatePlayerService, getPlayerService, listPlayersService } from "../../../src/features/player/player.service";
+import request from "supertest";
+import app from "../../../src/app";
+import { createPlayerAssignmentService, deactivatePlayerService, getPlayerService, listPlayersService } from "../../../src/features/player/player.service";
+import { assignmentState } from "../../../src/features/player/player.assignment";
+import { createEditor, createUser } from "../../helpers/auth";
 import { describe, expect, it } from "vitest";
 
 const date = (value: string): Date => new Date(`${value}T00:00:00.000Z`);
@@ -113,14 +117,53 @@ describe("team_player source of truth migration", () => {
 });
 
 describe("team_player integrity and player deactivation", () => {
-  it("enforces one open assignment while retaining historical assignments and protecting teams", async () => {
+  it("prevents overlapping assignments while retaining historical assignments and protecting teams", async () => {
     const [firstTeam, secondTeam, player] = await Promise.all([createTeam(), createTeam(), createPlayer()]);
     await prisma.teamPlayer.create({ data: { teamId: firstTeam.id, playerId: player.id, joinedAt: date("2025-01-01"), leftAt: date("2025-12-31") } });
-    await prisma.teamPlayer.create({ data: { teamId: secondTeam.id, playerId: player.id, joinedAt: date("2026-01-01") } });
+    await prisma.teamPlayer.create({ data: { teamId: secondTeam.id, playerId: player.id, joinedAt: date("2026-01-01"), leftAt: date("2099-01-01") } });
 
-    await expect(prisma.teamPlayer.create({ data: { teamId: firstTeam.id, playerId: player.id, joinedAt: date("2099-01-01") } })).rejects.toMatchObject({ code: "P2002" });
+    await expect(prisma.teamPlayer.create({ data: { teamId: firstTeam.id, playerId: player.id, joinedAt: date("2026-02-01") } })).rejects.toThrow();
     await expect(prisma.teamPlayer.create({ data: { teamId: firstTeam.id, playerId: player.id, joinedAt: date("2026-02-01"), leftAt: date("2026-01-31") } })).rejects.toThrow();
     await expect(prisma.team.delete({ where: { id: secondTeam.id } })).rejects.toMatchObject({ code: "P2003" });
+  });
+
+  it("schedules a future assignment, closes the current assignment on that date, and rejects a second planned assignment", async () => {
+    const [currentTeam, futureTeam, anotherFutureTeam, player] = await Promise.all([createTeam(), createTeam(), createTeam(), createPlayer()]);
+    await prisma.teamPlayer.create({ data: { teamId: currentTeam.id, playerId: player.id, joinedAt: date("2026-01-01") } });
+
+    const scheduled = await createPlayerAssignmentService(player.id, { teamId: futureTeam.id, joinedAt: "2099-01-01" });
+
+    expect(scheduled.activeTeam).toMatchObject({ id: currentTeam.id });
+    expect(scheduled.assignments).toEqual(expect.arrayContaining([
+      expect.objectContaining({ team: { id: currentTeam.id, name: currentTeam.name }, leftAt: "2099-01-01", state: "CURRENT" }),
+      expect.objectContaining({ team: { id: futureTeam.id, name: futureTeam.name }, leftAt: null, state: "PLANNED" }),
+    ]));
+    await expect(createPlayerAssignmentService(player.id, { teamId: anotherFutureTeam.id, joinedAt: "2099-02-01" }))
+      .rejects.toMatchObject({ code: "ASSIGNMENT_ALREADY_PLANNED" });
+    expect(assignmentState({ joinedAt: date("2026-01-01"), leftAt: date("2099-01-01") }, date("2099-01-01"))).toBe("HISTORICAL");
+    expect(assignmentState({ joinedAt: date("2099-01-01"), leftAt: null }, date("2099-01-01"))).toBe("CURRENT");
+  });
+
+  it("exposes assignment planning to writers only and validates its payload", async () => {
+    const [editor, user, team, player] = await Promise.all([createEditor(), createUser(), createTeam(), createPlayer()]);
+
+    const forbidden = await request(app)
+      .post(`/api/v1/players/${player.id}/assignments`)
+      .set("Authorization", `Bearer ${user.accessToken}`)
+      .send({ teamId: team.id, joinedAt: "2099-01-01" });
+    const invalid = await request(app)
+      .post(`/api/v1/players/${player.id}/assignments`)
+      .set("Authorization", `Bearer ${editor.accessToken}`)
+      .send({ teamId: team.id });
+    const created = await request(app)
+      .post(`/api/v1/players/${player.id}/assignments`)
+      .set("Authorization", `Bearer ${editor.accessToken}`)
+      .send({ teamId: team.id, joinedAt: "2099-01-01", shirtNumber: 8 });
+
+    expect(forbidden.status).toBe(403);
+    expect(invalid.status).toBe(400);
+    expect(created.status).toBe(201);
+    expect(created.body).toMatchObject({ assignments: [{ team: { id: team.id }, state: "PLANNED", shirtNumber: 8 }] });
   });
 
   it("does not present a future assignment as active and allows homonyms", async () => {
