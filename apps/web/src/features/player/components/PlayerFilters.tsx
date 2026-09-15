@@ -44,7 +44,7 @@ function PlayerFilters({ canCreate = false, onChange, onReset, params, playerNam
   const activeCount = Number(Boolean(params.search)) + Number(Boolean(params.teamName)) + Number(Boolean(params.position)) + Number(params.status !== "ALL");
 
   return <DashboardListFilters activeCount={activeCount} label="Filtres des joueuses" mobileAction={canCreate ? <Link className="lucarne-button lucarne-button--primary lucarne-button--xl dashboard-list__mobile-create" to="/dashboard/players/new">Ajouter une joueuse</Link> : undefined}>
-    <PlayerAutocomplete ariaLabel="Rechercher une joueuse par nom" field="player" onChange={(value) => onChange({ search: value })} options={playerNames} placeholder="Saisir un nom" value={params.search ?? ""} />
+    <PlayerAutocomplete ariaLabel="Rechercher une joueuse" field="player" onChange={(value) => onChange({ search: value })} options={playerNames} placeholder="Saisir un nom" value={params.search ?? ""} />
     <PlayerAutocomplete ariaLabel="Équipe" field="team" onChange={(value) => onChange({ teamName: value })} options={teamNames} placeholder="Saisir une équipe" value={params.teamName ?? ""} />
     <PlayerAutocomplete ariaLabel="Poste" field="position" onChange={(value) => onChange({ position: value })} options={positions} placeholder="Saisir un poste" value={params.position ?? ""} />
     <label className="dashboard-list__field dashboard-list__field--status"><span><FilterIcon aria-hidden="true" size={16} />Statut</span><Select aria-label="Filtrer par statut" onChange={(event) => onChange({ status: event.target.value as PlayerStatusFilter })} value={params.status}><option value="ALL">Toutes</option><option value="ACTIVE">Actives</option><option value="INACTIVE">Inactives</option></Select></label>

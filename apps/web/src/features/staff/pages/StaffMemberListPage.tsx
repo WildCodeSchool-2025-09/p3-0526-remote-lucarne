@@ -1,31 +1,55 @@
-import type { ListStaffMembersParams, StaffMember, StaffMemberStatusFilter } from "@lucarne/shared";
-import { useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router";
-import { useStaffMemberList } from "../../../hooks/useStaff";
-import { Alert, Button, Input } from "../../../ui";
-
-type SuggestionField = "staffMember" | "team";
-
-function paramsOf(search: URLSearchParams): ListStaffMembersParams {
-  return { page: Number(search.get("page") ?? 1), pageSize: 20, search: search.get("search") ?? undefined, teamName: search.get("teamName") ?? undefined, status: (search.get("status") as StaffMemberStatusFilter) || "ALL", sortBy: (search.get("sortBy") as "lastName" | "createdAt") || "lastName", sortOrder: (search.get("sortOrder") as "asc" | "desc") || "asc" };
-}
-
-function uniqueSuggestions(values: string[], search: string): string[] {
-  const normalizedSearch = search.trim().toLocaleLowerCase("fr");
-  return [...new Set(values)].filter((value) => value.toLocaleLowerCase("fr").includes(normalizedSearch)).sort((left, right) => left.localeCompare(right, "fr"));
-}
-
-function StaffAutocomplete({ ariaLabel, field, onChange, onSelect, openField, options, placeholder, setOpenField, value }: { ariaLabel: string; field: SuggestionField; onChange: (value: string) => void; onSelect: (value: string) => void; openField: SuggestionField | null; options: string[]; placeholder: string; setOpenField: (field: SuggestionField | null) => void; value: string }) {
-  const isOpen = openField === field;
-  return <div className="league-list__field league-list__countries"><label htmlFor={`staff-${field}-filter`}>{ariaLabel}</label><div className="league-list__country-control"><Input aria-label={ariaLabel} id={`staff-${field}-filter`} onBlur={() => { window.setTimeout(() => setOpenField(null), 0); }} onChange={(event) => { onChange(event.target.value); setOpenField(field); }} onFocus={() => setOpenField(field)} onKeyDown={(event) => { if (event.key === "Enter" && options[0] != null) { event.preventDefault(); onSelect(options[0]); setOpenField(null); } }} placeholder={placeholder} type="search" value={value} /></div>{isOpen ? <div aria-label={`Suggestions de ${ariaLabel.toLocaleLowerCase("fr")}`} className="league-list__country-suggestions" role="listbox">{options.length === 0 ? <span className="league-list__country-empty" role="status">Non disponible</span> : options.map((option) => <button aria-selected={value === option} className="league-list__country-suggestion" key={option} onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(option); setOpenField(null); }} role="option" type="button">{option}</button>)}</div> : null}</div>;
-}
+import type { ListStaffMembersParams, StaffMember } from "@lucarne/shared";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
+import { APP_ROLES, getCurrentAppRole, hasRole, PLAYER_WRITE_ROLES } from "../../../auth/authRole";
+import DashboardListPageHeader from "../../../components/dashboard/DashboardListPageHeader";
+import { useActivateStaffMember, useDeactivateStaffMember, useDeleteStaffMember, useStaffMemberList } from "../../../hooks/useStaff";
+import { Alert, Button, ConfirmDialog, EmptyState, LoadingState, Pagination, temporaryIcons } from "../../../ui";
+import StaffFilters from "../components/StaffFilters";
+import StaffMobileCard from "../components/StaffMobileCard";
+import StaffTable from "../components/StaffTable";
+import { type StaffActionType } from "../components/StaffRowActions";
+import { parseParams, updateParams } from "../utils/staffMemberList";
 
 export default function StaffMemberListPage() {
-  const [url, setUrl] = useSearchParams(); const params = paramsOf(url); const query = useStaffMemberList(params); const [openField, setOpenField] = useState<SuggestionField | null>(null);
-  const setCriteria = (change: Partial<ListStaffMembersParams>) => setUrl((current) => { const next = new URLSearchParams(current); Object.entries({ ...change, page: change.page ?? 1 }).forEach(([key, value]) => { if (value == null || value === "" || value === "ALL") next.delete(key); else next.set(key, String(value)); }); return next; });
+  const [url, setUrl] = useSearchParams();
+  const params = parseParams(url);
+  const query = useStaffMemberList(params);
+  const activate = useActivateStaffMember();
+  const deactivate = useDeactivateStaffMember();
+  const remove = useDeleteStaffMember();
+  const role = getCurrentAppRole();
+  const canEdit = hasRole(role, PLAYER_WRITE_ROLES);
+  const canDelete = role === APP_ROLES.ADMIN;
+  const [pendingAction, setPendingAction] = useState<{ staffMember: StaffMember; type: StaffActionType } | null>(null);
+  const setCriteria = (change: Partial<ListStaffMembersParams>) => setUrl((current) => updateParams(current, { ...change, page: change.page ?? 1 }));
   const staffMembers = useMemo(() => query.data?.data ?? [], [query.data?.data]);
-  const staffSuggestions = useMemo(() => uniqueSuggestions(staffMembers.map((staffMember) => `${staffMember.firstName} ${staffMember.lastName}`), params.search ?? ""), [staffMembers, params.search]);
-  const teamSuggestions = useMemo(() => uniqueSuggestions(staffMembers.flatMap((staffMember) => staffMember.activeTeam?.name ? [staffMember.activeTeam.name] : []), params.teamName ?? ""), [staffMembers, params.teamName]);
-  const totalPages = query.data?.pagination.totalPages ?? 0; const isFiltered = Boolean(params.search || params.teamName || params.status !== "ALL");
-  return <section className="league-list-page" aria-labelledby="staff-list-title"><div className="league-list-page__container"><header className="league-list-page__header"><div><p className="league-list-page__eyebrow">Dashboard</p><h1 id="staff-list-title">Staff</h1><p>Consultez les membres du staff actifs et inactifs.</p></div><Link className="lucarne-button lucarne-button--primary lucarne-button--xl" to="/dashboard/staff-members/new">Créer un membre du staff</Link></header><div aria-label="Filtres du staff" className="league-list__filters"><StaffAutocomplete ariaLabel="Rechercher un membre du staff par nom" field="staffMember" onChange={(value) => setCriteria({ search: value })} onSelect={(value) => setCriteria({ search: value })} openField={openField} options={staffSuggestions} placeholder="Prénom ou nom" setOpenField={setOpenField} value={params.search ?? ""} /><StaffAutocomplete ariaLabel="Équipe" field="team" onChange={(value) => setCriteria({ teamName: value })} onSelect={(value) => setCriteria({ teamName: value })} openField={openField} options={teamSuggestions} placeholder="Nom de l’équipe" setOpenField={setOpenField} value={params.teamName ?? ""} /><div className="league-list__field"><label htmlFor="staff-status-filter">Statut</label><select aria-label="Statut" id="staff-status-filter" value={params.status ?? "ALL"} onChange={(event) => setCriteria({ status: event.target.value as StaffMemberStatusFilter })}><option value="ALL">Tous les statuts</option><option value="ACTIVE">Actifs</option><option value="INACTIVE">Inactifs</option></select></div><Button className="league-list__reset" onClick={() => setUrl(new URLSearchParams())} variant="outline">Réinitialiser</Button></div>{query.isPending ? <p role="status">Chargement du staff…</p> : null}{query.isError ? <div className="league-list__state"><Alert>Impossible de charger le staff.</Alert><Button onClick={() => void query.refetch()}>Réessayer</Button></div> : null}{query.isSuccess && query.data.data.length === 0 ? <div className="league-list__state"><p>{isFiltered ? "Aucun membre du staff ne correspond à vos critères." : "Aucun membre du staff n’est disponible."}</p>{isFiltered ? <Button onClick={() => setUrl(new URLSearchParams())} variant="outline">Réinitialiser les critères</Button> : null}</div> : null}{query.isSuccess && query.data.data.length > 0 ? <div className="league-list__table-wrapper"><table className="league-list__table"><caption className="sr-only">Liste des membres du staff</caption><thead><tr><th scope="col">Identité</th><th scope="col">Équipe</th><th scope="col">Nationalité</th><th scope="col">Statut</th><th scope="col">Créé le</th></tr></thead><tbody>{query.data.data.map((staffMember: StaffMember) => <tr key={staffMember.id}><td data-label="Identité"><Link className="league-list__name" to={`/dashboard/staff-members/${staffMember.id}`}>{staffMember.firstName} {staffMember.lastName}</Link></td><td data-label="Équipe">{staffMember.activeTeam?.name ?? "—"}</td><td data-label="Nationalité">{staffMember.nationality}</td><td data-label="Statut"><span className={`league-list__status league-list__status--${staffMember.isActive ? "active" : "inactive"}`}>{staffMember.isActive ? "Actif" : "Inactif"}</span></td><td data-label="Créé le">{new Date(staffMember.createdAt).toLocaleDateString("fr-FR")}</td></tr>)}</tbody></table></div> : null}{query.isSuccess && totalPages > 0 ? <nav aria-label="Pagination du staff" className="league-list__pagination"><Button disabled={params.page === 1} onClick={() => setCriteria({ page: (params.page ?? 1) - 1 })} variant="outline">Précédent</Button><span>Page {params.page} sur {totalPages}</span><Button disabled={params.page === totalPages} onClick={() => setCriteria({ page: (params.page ?? 1) + 1 })} variant="outline">Suivant</Button></nav> : null}</div></section>;
+  const staffNames = useMemo(() => staffMembers.map((member) => `${member.firstName} ${member.lastName}`), [staffMembers]);
+  const teamNames = useMemo(() => staffMembers.flatMap((member) => member.activeTeam?.name ? [member.activeTeam.name] : []), [staffMembers]);
+  const totalPages = query.data?.pagination.totalPages ?? 0;
+  const isFiltered = Boolean(params.search || params.teamName || params.status !== "ALL");
+  const mutation = pendingAction?.type === "activate" ? activate : pendingAction?.type === "deactivate" ? deactivate : remove;
+  const confirmAction = async () => {
+    if (pendingAction == null || mutation.isPending) return;
+    try { await mutation.mutateAsync(pendingAction.staffMember.id); setPendingAction(null); } catch { /* Dialog displays the error. */ }
+  };
+
+  useEffect(() => {
+    if (query.isSuccess && totalPages > 0 && (params.page ?? 1) > totalPages) setUrl((current) => updateParams(current, { page: totalPages }));
+  }, [params.page, query.isSuccess, setUrl, totalPages]);
+
+  return (
+    <section aria-labelledby="staff-list-title" className="dashboard-list-page">
+      <div className="dashboard-list-page__container">
+        <DashboardListPageHeader canCreate count={query.data?.pagination.totalItems ?? 0} countLabel="membres" createHref="/dashboard/staff-members/new" createLabel="Ajouter un membre du staff" description="Consultez les membres du staff actifs et inactifs." headingId="staff-list-title" icon={temporaryIcons.staff} title="Staff" />
+        <StaffFilters canCreate onChange={setCriteria} onReset={() => setUrl(new URLSearchParams())} params={params} staffNames={staffNames} teamNames={teamNames} />
+        {query.isPending ? <LoadingState>Chargement du staff…</LoadingState> : null}
+        {query.isError ? <div className="dashboard-list__state"><Alert>Impossible de charger le staff.</Alert><Button onClick={() => void query.refetch()}>Réessayer</Button></div> : null}
+        {query.isSuccess && query.data.data.length === 0 ? <EmptyState action={isFiltered ? <Button onClick={() => setUrl(new URLSearchParams())} variant="outline">Réinitialiser les critères</Button> : undefined}>{isFiltered ? "Aucun membre du staff ne correspond à vos critères." : "Aucun membre du staff n’est disponible."}</EmptyState> : null}
+        {query.isSuccess && query.data.data.length > 0 ? <><StaffTable canDelete={canDelete} canEdit={canEdit} onAction={(staffMember, type) => setPendingAction({ staffMember, type })} staffMembers={query.data.data} /><div aria-label="Liste des membres du staff sous forme de cartes" className="dashboard-list-cards" role="list">{query.data.data.map((staffMember) => <StaffMobileCard canDelete={canDelete} canEdit={canEdit} key={staffMember.id} onAction={(selectedMember, type) => setPendingAction({ staffMember: selectedMember, type })} staffMember={staffMember} />)}</div></> : null}
+        {query.isSuccess && totalPages > 0 ? <Pagination label="Pagination du staff" onPageChange={(page) => setCriteria({ page })} page={params.page ?? 1} totalPages={totalPages} /> : null}
+      </div>
+      <ConfirmDialog actionLabel={pendingAction?.type === "delete" ? "Supprimer définitivement" : pendingAction?.type === "deactivate" ? "Désactiver" : "Activer"} error={mutation.isError ? "Cette action est impossible pour le moment." : undefined} onCancel={() => { mutation.reset(); setPendingAction(null); }} onConfirm={() => void confirmAction()} open={pendingAction != null} pending={mutation.isPending} title={pendingAction?.type === "delete" ? "Supprimer ce membre du staff ?" : pendingAction?.type === "deactivate" ? "Désactiver ce membre du staff ?" : "Activer ce membre du staff ?"} variant={pendingAction?.type === "delete" ? "danger" : "primary"}>{pendingAction?.type === "delete" ? "Cette suppression est définitive." : pendingAction?.type === "deactivate" ? "L’affectation courante sera clôturée. Les affectations planifiées et l’historique seront conservés." : "Le membre du staff sera réactivé. Aucune affectation ne sera créée."}</ConfirmDialog>
+    </section>
+  );
 }

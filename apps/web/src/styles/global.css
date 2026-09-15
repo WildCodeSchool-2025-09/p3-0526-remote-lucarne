@@ -1715,6 +1715,10 @@ input {
   .dashboard-list-card--player .dashboard-list-card__optional-secondary {
     display: block;
   }
+
+  .dashboard-list-card--staff .dashboard-list-card__optional-secondary {
+    display: block;
+  }
 }
 
 .ui-demo-page {

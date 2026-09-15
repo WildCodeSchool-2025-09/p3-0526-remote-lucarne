@@ -162,9 +162,12 @@ const router = createBrowserRouter([
       },
       {
         path: "dashboard/staff-members",
+        handle: { usesDashboardListLayout: true },
         element: (
           <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}>
-            <StaffMemberListPage />
+            <DashboardLayout activeItem="staff">
+              <StaffMemberListPage />
+            </DashboardLayout>
           </RequireRole>
         ),
       },
