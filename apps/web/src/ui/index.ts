@@ -5,6 +5,7 @@ export * from "./Checkbox";
 export * from "./ConfirmDialog";
 export * from "./EmptyState";
 export * from "./EntityLogo";
+export * from "./EntityAvatar";
 export * from "./FormField";
 export * from "./Input";
 export * from "./icons";

@@ -1,37 +1,68 @@
-import type { ListPlayersParams, Player, PlayerStatusFilter } from "@lucarne/shared";
-import { useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router";
-import { Alert, Button } from "../../../ui";
-import { usePlayerList } from "../../../hooks/usePlayer";
-
-type SuggestionField = "player" | "team" | "position";
-
-function paramsOf(search: URLSearchParams): ListPlayersParams {
-  return { page: Number(search.get("page") ?? 1), pageSize: 20, search: search.get("search") ?? undefined, teamName: search.get("teamName") ?? undefined, position: search.get("position") ?? undefined, status: (search.get("status") as PlayerStatusFilter) || "ALL", sortBy: (search.get("sortBy") as "lastName" | "createdAt") || "lastName", sortOrder: (search.get("sortOrder") as "asc" | "desc") || "asc" };
-}
-
-function uniqueSuggestions(values: string[], search: string): string[] {
-  const normalizedSearch = search.trim().toLocaleLowerCase("fr");
-  return [...new Set(values)].filter((value) => value.toLocaleLowerCase("fr").includes(normalizedSearch)).sort((left, right) => left.localeCompare(right, "fr"));
-}
-
-function PlayerAutocomplete({ ariaLabel, field, options, value, onChange, onSelect, openField, setOpenField, placeholder }: { ariaLabel: string; field: SuggestionField; options: string[]; value: string; onChange: (value: string) => void; onSelect: (value: string) => void; openField: SuggestionField | null; setOpenField: (field: SuggestionField | null) => void; placeholder: string }) {
-  const isOpen = openField === field;
-  return <div className="league-list__field league-list__countries"><label htmlFor={`player-${field}-filter`}>{ariaLabel}</label><div className="league-list__country-control"><input aria-label={ariaLabel} id={`player-${field}-filter`} onBlur={() => { window.setTimeout(() => setOpenField(null), 0); }} onChange={(event) => { onChange(event.target.value); setOpenField(field); }} onFocus={() => setOpenField(field)} onKeyDown={(event) => { if (event.key === "Enter" && options[0] != null) { event.preventDefault(); onSelect(options[0]); setOpenField(null); } }} placeholder={placeholder} type="search" value={value} /></div>{isOpen ? <div aria-label={`Suggestions de ${ariaLabel.toLocaleLowerCase("fr")}`} className="league-list__country-suggestions" role="listbox">{options.length === 0 ? <span className="league-list__country-empty" role="status">Non disponible</span> : options.map((option) => <button aria-selected={value === option} className="league-list__country-suggestion" key={option} onMouseDown={(event) => event.preventDefault()} onClick={() => { onSelect(option); setOpenField(null); }} role="option" type="button">{option}</button>)}</div> : null}</div>;
-}
+import type { ListPlayersParams, Player } from "@lucarne/shared";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router";
+import { APP_ROLES, getCurrentAppRole, hasRole, PLAYER_WRITE_ROLES } from "../../../auth/authRole";
+import DashboardListPageHeader from "../../../components/dashboard/DashboardListPageHeader";
+import { useActivatePlayer, useDeactivatePlayer, useDeletePlayer, usePlayerList } from "../../../hooks/usePlayer";
+import { Alert, Button, ConfirmDialog, EmptyState, LoadingState, Pagination, temporaryIcons } from "../../../ui";
+import PlayerFilters from "../components/PlayerFilters";
+import PlayerMobileCard from "../components/PlayerMobileCard";
+import PlayerTable from "../components/PlayerTable";
+import { type PlayerActionType } from "../components/PlayerRowActions";
+import { parseParams, updateParams } from "../utils/playerList";
 
 export default function PlayerListPage() {
   const [url, setUrl] = useSearchParams();
-  const params = paramsOf(url);
+  const params = parseParams(url);
   const query = usePlayerList(params);
-  const [openField, setOpenField] = useState<SuggestionField | null>(null);
-  const setCriteria = (change: Partial<ListPlayersParams>) => setUrl((current) => { const next = new URLSearchParams(current); Object.entries({ ...change, page: change.page ?? 1 }).forEach(([key, value]) => { if (value == null || value === "" || value === "ALL") next.delete(key); else next.set(key, String(value)); }); return next; });
-  const players = useMemo(() => query.data?.data ?? [], [query.data?.data]);
-  const playerSuggestions = useMemo(() => uniqueSuggestions(players.map((player) => `${player.firstName} ${player.lastName}`), params.search ?? ""), [players, params.search]);
-  const teamSuggestions = useMemo(() => uniqueSuggestions(players.flatMap((player) => player.activeTeam?.name ? [player.activeTeam.name] : []), params.teamName ?? ""), [players, params.teamName]);
-  const positionSuggestions = useMemo(() => uniqueSuggestions(players.flatMap((player) => player.position ? [player.position] : []), params.position ?? ""), [players, params.position]);
+  const activate = useActivatePlayer();
+  const deactivate = useDeactivatePlayer();
+  const remove = useDeletePlayer();
+  const role = getCurrentAppRole();
+  const canEdit = hasRole(role, PLAYER_WRITE_ROLES);
+  const canDelete = role === APP_ROLES.ADMIN;
+  const [pendingAction, setPendingAction] = useState<{ player: Player; type: PlayerActionType } | null>(null);
+  const setCriteria = (change: Partial<ListPlayersParams>) => setUrl((current) => updateParams(current, { ...change, page: change.page ?? 1 }));
+  const players = query.data?.data ?? [];
+  const playerNames = players.map((player) => `${player.firstName} ${player.lastName}`);
+  const teamNames = players.flatMap((player) => player.activeTeam?.name ? [player.activeTeam.name] : []);
+  const positions = players.flatMap((player) => player.position ? [player.position] : []);
   const totalPages = query.data?.pagination.totalPages ?? 0;
   const isFiltered = Boolean(params.search || params.teamName || params.position || params.status !== "ALL");
+  const mutation = pendingAction?.type === "activate" ? activate : pendingAction?.type === "deactivate" ? deactivate : remove;
 
-  return <section className="league-list-page" aria-labelledby="player-list-title"><div className="league-list-page__container"><header className="league-list-page__header"><div><p className="league-list-page__eyebrow">Dashboard</p><h1 id="player-list-title">Joueurs</h1><p>Consultez les joueurs actifs et inactifs.</p></div><Link className="lucarne-button lucarne-button--primary lucarne-button--xl" to="/dashboard/players/new">Créer un joueur</Link></header><div aria-label="Filtres des joueurs" className="league-list__filters"><PlayerAutocomplete ariaLabel="Rechercher un joueur par nom" field="player" onChange={(value) => setCriteria({ search: value })} onSelect={(value) => setCriteria({ search: value })} openField={openField} options={playerSuggestions} placeholder="Prénom ou nom" setOpenField={setOpenField} value={params.search ?? ""} /><PlayerAutocomplete ariaLabel="Équipe" field="team" onChange={(value) => setCriteria({ teamName: value })} onSelect={(value) => setCriteria({ teamName: value })} openField={openField} options={teamSuggestions} placeholder="Nom de l’équipe" setOpenField={setOpenField} value={params.teamName ?? ""} /><PlayerAutocomplete ariaLabel="Poste" field="position" onChange={(value) => setCriteria({ position: value })} onSelect={(value) => setCriteria({ position: value })} openField={openField} options={positionSuggestions} placeholder="Ex. Attaquante" setOpenField={setOpenField} value={params.position ?? ""} /><div className="league-list__field"><label htmlFor="player-status-filter">Statut</label><select aria-label="Statut" id="player-status-filter" value={params.status ?? "ALL"} onChange={(event) => setCriteria({ status: event.target.value as PlayerStatusFilter })}><option value="ALL">Tous les statuts</option><option value="ACTIVE">Actives</option><option value="INACTIVE">Inactives</option></select></div><Button className="league-list__reset" onClick={() => setUrl(new URLSearchParams())} variant="outline">Réinitialiser</Button></div>{query.isPending ? <p role="status">Chargement des joueurs…</p> : null}{query.isError ? <div className="league-list__state"><Alert>Impossible de charger les joueurs. Veuillez réessayer.</Alert><Button onClick={() => void query.refetch()}>Réessayer</Button></div> : null}{query.isSuccess && query.data.data.length === 0 ? <div className="league-list__state"><p>{isFiltered ? "Aucun joueur ne correspond à vos critères." : "Aucun joueur n’est disponible."}</p>{isFiltered ? <Button onClick={() => setUrl(new URLSearchParams())} variant="outline">Réinitialiser les critères</Button> : null}</div> : null}{query.isSuccess && query.data.data.length > 0 ? <div className="league-list__table-wrapper"><table className="league-list__table"><caption className="sr-only">Liste des joueurs</caption><thead><tr><th scope="col">Identité</th><th scope="col">Équipe</th><th scope="col">Poste</th><th scope="col">Statut</th><th scope="col">Créé le</th></tr></thead><tbody>{query.data.data.map((player: Player) => <tr key={player.id}><td data-label="Identité"><Link className="league-list__name" to={`/dashboard/players/${player.id}`}>{player.firstName} {player.lastName}</Link></td><td data-label="Équipe">{player.activeTeam?.name ?? "—"}</td><td data-label="Poste">{player.position ?? "—"}</td><td data-label="Statut"><span className={`league-list__status league-list__status--${player.isActive ? "active" : "inactive"}`}>{player.isActive ? "Active" : "Inactive"}</span></td><td data-label="Créé le">{new Date(player.createdAt).toLocaleDateString("fr-FR")}</td></tr>)}</tbody></table></div> : null}{query.isSuccess && totalPages > 0 ? <nav aria-label="Pagination des joueurs" className="league-list__pagination"><Button disabled={params.page === 1} onClick={() => setCriteria({ page: (params.page ?? 1) - 1 })} variant="outline">Précédent</Button><span>Page {params.page} sur {totalPages}</span><Button disabled={params.page === totalPages} onClick={() => setCriteria({ page: (params.page ?? 1) + 1 })} variant="outline">Suivant</Button></nav> : null}</div></section>;
+  const confirmAction = async () => {
+    if (pendingAction == null || mutation.isPending) return;
+    try {
+      await mutation.mutateAsync(pendingAction.player.id);
+      setPendingAction(null);
+    } catch { /* The dialog exposes the failure state. */ }
+  };
+
+  useEffect(() => {
+    if (query.isSuccess && totalPages > 0 && (params.page ?? 1) > totalPages) setUrl((current) => updateParams(current, { page: totalPages }));
+  }, [params.page, query.isSuccess, setUrl, totalPages]);
+
+  return (
+    <section aria-labelledby="player-list-title" className="dashboard-list-page">
+      <div className="dashboard-list-page__container">
+        <DashboardListPageHeader canCreate count={query.data?.pagination.totalItems ?? 0} countLabel="joueuses" createHref="/dashboard/players/new" createLabel="Ajouter une joueuse" description="Consultez les joueuses actives et inactives." headingId="player-list-title" icon={temporaryIcons.players} title="Joueuses" />
+        <PlayerFilters canCreate onChange={setCriteria} onReset={() => setUrl(new URLSearchParams())} params={params} playerNames={playerNames} positions={positions} teamNames={teamNames} />
+
+        {query.isPending ? <LoadingState>Chargement des joueuses…</LoadingState> : null}
+        {query.isError ? <div className="dashboard-list__state"><Alert>Impossible de charger les joueuses. Veuillez réessayer.</Alert><Button onClick={() => void query.refetch()}>Réessayer</Button></div> : null}
+        {query.isSuccess && query.data.data.length === 0 ? <EmptyState action={isFiltered ? <Button onClick={() => setUrl(new URLSearchParams())} variant="outline">Réinitialiser les critères</Button> : undefined}>{isFiltered ? "Aucune joueuse ne correspond à vos critères." : "Aucune joueuse n’est disponible."}</EmptyState> : null}
+        {query.isSuccess && query.data.data.length > 0 ? (
+          <>
+            <PlayerTable canDelete={canDelete} canEdit={canEdit} onAction={(player, type) => setPendingAction({ player, type })} players={query.data.data} />
+            <div aria-label="Liste des joueuses sous forme de cartes" className="dashboard-list-cards" role="list">
+              {query.data.data.map((player) => <PlayerMobileCard canDelete={canDelete} canEdit={canEdit} key={player.id} onAction={(selectedPlayer, type) => setPendingAction({ player: selectedPlayer, type })} player={player} />)}
+            </div>
+          </>
+        ) : null}
+        {query.isSuccess && totalPages > 0 ? <Pagination label="Pagination des joueuses" onPageChange={(page) => setCriteria({ page })} page={params.page ?? 1} totalPages={totalPages} /> : null}
+      </div>
+      <ConfirmDialog actionLabel={pendingAction?.type === "delete" ? "Supprimer définitivement" : pendingAction?.type === "deactivate" ? "Désactiver" : "Activer"} error={mutation.isError ? "Cette action est impossible pour le moment." : undefined} onCancel={() => { mutation.reset(); setPendingAction(null); }} onConfirm={() => void confirmAction()} open={pendingAction != null} pending={mutation.isPending} title={pendingAction?.type === "delete" ? "Supprimer cette joueuse ?" : pendingAction?.type === "deactivate" ? "Désactiver cette joueuse ?" : "Activer cette joueuse ?"} variant={pendingAction?.type === "delete" ? "danger" : "primary"}>{pendingAction?.type === "delete" ? "Cette suppression est définitive." : pendingAction?.type === "deactivate" ? "L’affectation courante sera clôturée. Les affectations planifiées et l’historique seront conservés." : "La joueuse sera réactivée. Aucune affectation ne sera créée."}</ConfirmDialog>
+    </section>
+  );
 }

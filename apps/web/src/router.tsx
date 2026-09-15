@@ -127,9 +127,12 @@ const router = createBrowserRouter([
       },
       {
         path: "dashboard/players",
+        handle: { usesDashboardListLayout: true },
         element: (
           <RequireRole allowedRoles={VIEW_LEAGUE_ROLES}>
-            <PlayerListPage />
+            <DashboardLayout activeItem="players">
+              <PlayerListPage />
+            </DashboardLayout>
           </RequireRole>
         ),
       },
