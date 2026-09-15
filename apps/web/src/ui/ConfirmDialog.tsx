@@ -17,6 +17,7 @@ interface ConfirmDialogProps {
 
 function ConfirmDialog({ actionLabel = "Confirmer", children, error, onCancel, onConfirm, open, pending = false, title, variant = "primary" }: ConfirmDialogProps) {
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const previousFocus = useRef<HTMLElement | null>(null);
   const titleId = useId();
   const descriptionId = useId();
@@ -28,7 +29,7 @@ function ConfirmDialog({ actionLabel = "Confirmer", children, error, onCancel, o
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !pending) onCancel();
       if (event.key === "Tab") {
-        const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>(".league-list__dialog button:not([disabled])"));
+        const buttons = Array.from(dialogRef.current?.querySelectorAll<HTMLButtonElement>("button:not([disabled])") ?? []);
         if (buttons.length < 2) return;
         const first = buttons[0]; const last = buttons[buttons.length - 1];
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
@@ -40,7 +41,28 @@ function ConfirmDialog({ actionLabel = "Confirmer", children, error, onCancel, o
   }, [onCancel, open, pending]);
 
   if (!open) return null;
-  return <div className="league-list__dialog-backdrop"><div aria-describedby={children ? descriptionId : undefined} aria-labelledby={titleId} aria-modal="true" className="league-list__dialog" role="dialog"><h2 id={titleId}>{title}</h2>{children ? <p id={descriptionId}>{children}</p> : null}{error ? <Alert variant="danger">{error}</Alert> : null}<div className="league-list__dialog-actions"><Button disabled={pending} onClick={onCancel} variant="outline">Annuler</Button><Button disabled={pending} onClick={onConfirm} ref={confirmRef} variant={variant}>{pending ? "Traitement…" : actionLabel}</Button></div></div></div>;
+  return (
+    <div className="lucarne-dialog-backdrop">
+      <div
+        aria-describedby={children ? descriptionId : undefined}
+        aria-labelledby={titleId}
+        aria-modal="true"
+        className="lucarne-dialog"
+        ref={dialogRef}
+        role="dialog"
+      >
+        <h2 id={titleId}>{title}</h2>
+        {children ? <p id={descriptionId}>{children}</p> : null}
+        {error ? <Alert variant="danger">{error}</Alert> : null}
+        <div className="lucarne-dialog__actions">
+          <Button disabled={pending} onClick={onCancel} variant="outline">Annuler</Button>
+          <Button disabled={pending} onClick={onConfirm} ref={confirmRef} variant={variant}>
+            {pending ? "Traitement…" : actionLabel}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export { ConfirmDialog };

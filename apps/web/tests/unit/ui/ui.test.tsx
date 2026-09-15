@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { Button } from "../../../src/ui/Button";
 import { Checkbox } from "../../../src/ui/Checkbox";
+import { EntityLogo } from "../../../src/ui/EntityLogo";
 import { FormField } from "../../../src/ui/FormField";
 import { Input } from "../../../src/ui/Input";
 
@@ -48,5 +49,14 @@ describe("Lucarne UI primitives", () => {
 
     expect(screen.getByLabelText("Nom *")).toHaveAttribute("id", "name");
     expect(screen.getByRole("alert")).toHaveTextContent("Le nom est obligatoire");
+  });
+
+  it("renders an entity logo or an accessible initial fallback", () => {
+    const { rerender } = render(<EntityLogo logoUrl={null} name="Paris FC" />);
+
+    expect(screen.getByLabelText("Initiale de Paris FC")).toHaveTextContent("P");
+
+    rerender(<EntityLogo logoUrl="https://example.com/logo.png" name="Paris FC" />);
+    expect(screen.getByAltText("Logo de Paris FC")).toHaveAttribute("src", "https://example.com/logo.png");
   });
 });

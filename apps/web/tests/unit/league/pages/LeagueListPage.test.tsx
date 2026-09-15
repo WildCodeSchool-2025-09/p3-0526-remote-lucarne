@@ -85,7 +85,7 @@ describe("LeagueListPage", () => {
 
     const user = userEvent.setup();
     await openTableActions(user, 0);
-    expect(screen.getByRole("menuitem", { name: "Modifier" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Modifier" })).toBeInTheDocument();
   });
 
   it("hides edit actions for USER", () => {
@@ -93,6 +93,7 @@ describe("LeagueListPage", () => {
     renderPage();
 
     expect(screen.queryByRole("link", { name: "Modifier" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Ajouter une ligue" })).not.toBeInTheDocument();
   });
 
   it("displays the five league fields and an initial when the logo is absent", () => {
@@ -106,11 +107,15 @@ describe("LeagueListPage", () => {
     expect(screen.getByText("11/09/2026")).toBeInTheDocument();
     expect(screen.getAllByLabelText("Initiale de Ligue de France")[0]).toHaveTextContent("L");
     expect(screen.getAllByAltText("Logo de Liga España")[0]).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Liste des ligues sous forme de cartes" })).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
   });
 
   it("updates search, multi-country filter, status and sort, then resets criteria", async () => {
     const user = userEvent.setup();
     renderPage("/dashboard/leagues?search=France&country=France&status=ACTIVE&sortOrder=desc&page=2");
+
+    expect(screen.getByRole("button", { name: "Afficher les filtres, 3 actifs" })).toBeInTheDocument();
 
     await user.clear(screen.getByRole("searchbox", { name: "Rechercher une ligue par nom" }));
     await user.type(screen.getByRole("searchbox", { name: "Rechercher une ligue par nom" }), "Liga");
@@ -167,7 +172,7 @@ describe("LeagueListPage", () => {
     renderPage();
 
     await openTableActions(user);
-    await user.click(screen.getByRole("menuitem", { name: "Désactiver" }));
+    await user.click(screen.getByRole("button", { name: "Désactiver" }));
     expect(screen.getByRole("dialog")).toHaveTextContent("deviendra inactive");
     await user.click(screen.getByRole("button", { name: "Confirmer" }));
 
@@ -180,8 +185,8 @@ describe("LeagueListPage", () => {
     renderPage();
 
     return openTableActions(user, 1).then(() => {
-      expect(screen.getByRole("menuitem", { name: "Activer" })).toBeInTheDocument();
-      expect(screen.getByRole("menuitem", { name: "Supprimer" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Activer" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Supprimer" })).toBeInTheDocument();
     });
   });
 
@@ -190,7 +195,7 @@ describe("LeagueListPage", () => {
     renderPage();
 
     await openTableActions(user, 1);
-    await user.click(screen.getByRole("menuitem", { name: "Activer" }));
+    await user.click(screen.getByRole("button", { name: "Activer" }));
     expect(screen.getByRole("dialog")).toHaveTextContent("redeviendra active");
     await user.click(screen.getByRole("button", { name: "Confirmer" }));
 
@@ -203,7 +208,7 @@ describe("LeagueListPage", () => {
     renderPage();
 
     await openTableActions(user, 1);
-    await user.click(screen.getByRole("menuitem", { name: "Supprimer" }));
+    await user.click(screen.getByRole("button", { name: "Supprimer" }));
     expect(screen.getByRole("dialog")).toHaveTextContent("supprimée définitivement");
     await user.click(screen.getByRole("button", { name: "Confirmer" }));
 
@@ -216,8 +221,8 @@ describe("LeagueListPage", () => {
 
     const user = userEvent.setup();
     return openTableActions(user).then(() => {
-      expect(screen.getByRole("menuitem", { name: "Désactiver" })).toBeInTheDocument();
-      expect(screen.queryByRole("menuitem", { name: "Supprimer" })).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Désactiver" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Supprimer" })).not.toBeInTheDocument();
     });
   });
 

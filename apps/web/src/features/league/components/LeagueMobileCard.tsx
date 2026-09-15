@@ -1,7 +1,7 @@
 import type { League } from "@lucarne/shared";
 import { Link } from "react-router";
+import { EntityLogo } from "../../../ui";
 import { getStatus } from "../utils/leagueList";
-import LeagueLogo from "./LeagueLogo";
 import LeagueRowActions, { type LeagueActionType } from "./LeagueRowActions";
 import LeagueStatusBadge from "./LeagueStatusBadge";
 
@@ -16,15 +16,15 @@ function LeagueMobileCard({ canDelete, canEdit, league, onAction }: LeagueMobile
   const status = getStatus(league);
 
   return (
-    <article className="league-mobile-card">
-      <div className="league-mobile-card__main">
-        <LeagueLogo league={league} />
+    <article className="dashboard-list-card" role="listitem">
+      <div className="dashboard-list-card__main">
+        <EntityLogo logoUrl={league.logoUrl} name={league.name} />
         <div>
-          <Link className="league-list__name" to={`/dashboard/leagues/${league.id}`}>{league.name}</Link>
+          <Link className="dashboard-list__name" to={`/dashboard/leagues/${league.id}`}>{league.name}</Link>
           <p>{league.country}</p>
         </div>
       </div>
-      <div className="league-mobile-card__footer">
+      <div className="dashboard-list-card__footer">
         <LeagueStatusBadge status={status} />
         <LeagueRowActions
           canDelete={canDelete}

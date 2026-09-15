@@ -1,10 +1,20 @@
 import { useEffect } from "react";
-import { Outlet, useLocation, useNavigate } from "react-router";
+import { Outlet, useMatches, useNavigate } from "react-router";
+
+interface AppRouteHandle {
+  usesDashboardListLayout?: boolean;
+}
+
+function isAppRouteHandle(value: unknown): value is AppRouteHandle {
+  return typeof value === "object" && value != null;
+}
 
 function App() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const isLeagueDashboard = location.pathname === "/dashboard/league";
+  const matches = useMatches();
+  const usesDashboardListLayout = matches.some(
+    (match) => isAppRouteHandle(match.handle) && match.handle.usesDashboardListLayout === true,
+  );
 
   useEffect(() => {
     const onSessionExpired = () => void navigate(import.meta.env.DEV ? "/dev/login" : "/", { replace: true });
@@ -14,7 +24,7 @@ function App() {
 
   return (
     <>
-      {isLeagueDashboard ? null : <header>Lucarnes</header>}
+      {usesDashboardListLayout ? null : <header>Lucarnes</header>}
       <main>
         <Outlet />
       </main>

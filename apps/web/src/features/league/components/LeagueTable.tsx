@@ -1,10 +1,10 @@
 import type { League } from "@lucarne/shared";
 import { Link } from "react-router";
+import { EntityLogo } from "../../../ui";
 import { getStatus } from "../utils/leagueList";
-import LeagueLogo from "./LeagueLogo";
 import LeagueRowActions, { type LeagueActionType } from "./LeagueRowActions";
 import LeagueStatusBadge from "./LeagueStatusBadge";
-import { formatDate } from "../utils/leagueList";
+import { formatDate } from "../../../lib/dateFormat";
 
 interface LeagueTableProps {
   canDelete: boolean;
@@ -15,8 +15,8 @@ interface LeagueTableProps {
 
 function LeagueTable({ canDelete, canEdit, leagues, onAction }: LeagueTableProps) {
   return (
-    <div className="league-list__table-wrapper">
-      <table className="league-list__table">
+    <div className="dashboard-list__table-wrapper">
+      <table className="dashboard-list__table">
         <caption className="sr-only">Liste des ligues</caption>
         <thead>
           <tr>
@@ -33,9 +33,9 @@ function LeagueTable({ canDelete, canEdit, leagues, onAction }: LeagueTableProps
             return (
               <tr key={league.id}>
                 <td data-label="Ligue">
-                  <div className="league-list__league-cell">
-                    <LeagueLogo league={league} />
-                    <Link className="league-list__name" to={`/dashboard/leagues/${league.id}`}>{league.name}</Link>
+                  <div className="dashboard-list__resource-cell">
+                    <EntityLogo logoUrl={league.logoUrl} name={league.name} />
+                    <Link className="dashboard-list__name" to={`/dashboard/leagues/${league.id}`}>{league.name}</Link>
                   </div>
                 </td>
                 <td data-label="Pays">{league.country}</td>

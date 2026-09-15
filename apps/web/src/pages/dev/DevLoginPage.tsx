@@ -105,7 +105,7 @@ function DevLoginPage() {
           <div className="dev-login-card__actions">
             <Button
               onClick={() => {
-                void navigate("/dashboard/league");
+                void navigate("/dashboard/leagues");
               }}
               type="button"
             >

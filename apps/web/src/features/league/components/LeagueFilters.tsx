@@ -1,9 +1,11 @@
 import type { LeagueSortField, LeagueStatusFilter, ListLeaguesParams } from "@lucarne/shared";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
+import DashboardListFilters from "../../../components/dashboard/DashboardListFilters";
 import { Button, Input, Select, temporaryIcons } from "../../../ui";
 
 interface LeagueFiltersProps {
+  canCreate: boolean;
   countries: string[];
   params: ListLeaguesParams;
   onChange: (changes: Partial<ListLeaguesParams> & { countries?: string[] }) => void;
@@ -11,7 +13,7 @@ interface LeagueFiltersProps {
   leagueNames: string[];
 }
 
-function LeagueFilters({ countries, params, onChange, onReset, leagueNames }: LeagueFiltersProps) {
+function LeagueFilters({ canCreate, countries, params, onChange, onReset, leagueNames }: LeagueFiltersProps) {
   const [countryInput, setCountryInput] = useState("");
   const [isLeagueSuggestionsOpen, setIsLeagueSuggestionsOpen] = useState(false);
   const [isCountrySuggestionsOpen, setIsCountrySuggestionsOpen] = useState(false);
@@ -42,15 +44,23 @@ function LeagueFilters({ countries, params, onChange, onReset, leagueNames }: Le
   };
 
   return (
-    <div aria-label="Filtres des ligues" className="league-list__filters">
-      <Link className="lucarne-button lucarne-button--primary lucarne-button--xl league-list__mobile-create" to="/dashboard/leagues/new">
-        Ajouter une ligue
-      </Link>
-      <div className="league-list__field league-list__countries league-list__name-filter">
+    <DashboardListFilters
+      activeCount={Number(Boolean(params.search)) + Number((params.countries?.length ?? 0) > 0) + Number(params.status !== "ALL")}
+      label="Filtres des ligues"
+      mobileAction={canCreate ? (
+        <Link className="lucarne-button lucarne-button--primary lucarne-button--xl dashboard-list__mobile-create" to="/dashboard/leagues/new">
+          Ajouter une ligue
+        </Link>
+      ) : undefined}
+    >
+      <div className="dashboard-list__field dashboard-list__autocomplete dashboard-list__field--name">
         <label htmlFor="league-name-filter">Nom de la ligue</label>
-        <div className="league-list__country-control">
-          <SearchIcon aria-hidden="true" className="league-list__filter-icon" size={18} />
+        <div className="dashboard-list__autocomplete-control">
+          <SearchIcon aria-hidden="true" className="dashboard-list__filter-icon" size={18} />
           <Input
+            aria-autocomplete="list"
+            aria-controls={isLeagueSuggestionsOpen ? "league-name-suggestions" : undefined}
+            aria-expanded={isLeagueSuggestionsOpen}
             aria-label="Rechercher une ligue par nom"
             id="league-name-filter"
             onBlur={() => window.setTimeout(() => setIsLeagueSuggestionsOpen(false), 0)}
@@ -72,13 +82,13 @@ function LeagueFilters({ countries, params, onChange, onReset, leagueNames }: Le
           />
         </div>
         {isLeagueSuggestionsOpen ? (
-          <div aria-label="Suggestions de ligues" className="league-list__country-suggestions" role="listbox">
+          <div aria-label="Suggestions de ligues" className="dashboard-list__suggestions" id="league-name-suggestions" role="listbox">
             {leagueSuggestions.length === 0 ? (
-              <span className="league-list__country-empty" role="status">Non disponible</span>
+              <span className="dashboard-list__suggestions-empty" role="status">Non disponible</span>
             ) : leagueSuggestions.map((name) => (
               <button
                 aria-selected={params.search === name}
-                className="league-list__country-suggestion"
+                className="dashboard-list__suggestion"
                 key={name}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
@@ -95,13 +105,13 @@ function LeagueFilters({ countries, params, onChange, onReset, leagueNames }: Le
         ) : null}
       </div>
 
-      <div className="league-list__field league-list__countries league-list__country-filter">
+      <div className="dashboard-list__field dashboard-list__autocomplete dashboard-list__field--country">
         <label htmlFor="league-country-filter">Pays</label>
-        <div className="league-list__country-control">
+        <div className="dashboard-list__autocomplete-control">
           {(params.countries ?? []).map((country) => (
             <button
               aria-label={`Retirer ${country}`}
-              className="league-list__country-tag"
+              className="dashboard-list__tag"
               key={country}
               onClick={() => onChange({ countries: params.countries?.filter((item) => item !== country) })}
               type="button"
@@ -110,6 +120,9 @@ function LeagueFilters({ countries, params, onChange, onReset, leagueNames }: Le
             </button>
           ))}
           <Input
+            aria-autocomplete="list"
+            aria-controls={isCountrySuggestionsOpen ? "league-country-suggestions" : undefined}
+            aria-expanded={isCountrySuggestionsOpen}
             aria-label="Ajouter un pays"
             id="league-country-filter"
             onBlur={() => window.setTimeout(() => setIsCountrySuggestionsOpen(false), 0)}
@@ -131,13 +144,13 @@ function LeagueFilters({ countries, params, onChange, onReset, leagueNames }: Le
           />
         </div>
         {isCountrySuggestionsOpen ? (
-          <div aria-label="Suggestions de pays" className="league-list__country-suggestions" role="listbox">
+          <div aria-label="Suggestions de pays" className="dashboard-list__suggestions" id="league-country-suggestions" role="listbox">
             {countrySuggestions.length === 0 ? (
-              <span className="league-list__country-empty" role="status">Non disponible</span>
+              <span className="dashboard-list__suggestions-empty" role="status">Non disponible</span>
             ) : countrySuggestions.map((country) => (
               <button
                 aria-selected={params.countries?.includes(country) ?? false}
-                className="league-list__country-suggestion"
+                className="dashboard-list__suggestion"
                 key={country}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
@@ -154,7 +167,7 @@ function LeagueFilters({ countries, params, onChange, onReset, leagueNames }: Le
         ) : null}
       </div>
 
-      <label className="league-list__field">
+      <label className="dashboard-list__field dashboard-list__field--status">
         <span><FilterIcon aria-hidden="true" size={16} />Statut</span>
         <Select
           aria-label="Filtrer par statut"
@@ -167,7 +180,7 @@ function LeagueFilters({ countries, params, onChange, onReset, leagueNames }: Le
         </Select>
       </label>
 
-      <label className="league-list__field">
+      <label className="dashboard-list__field dashboard-list__field--sort">
         <span>Tri</span>
         <Select
           aria-label="Trier les ligues"
@@ -183,8 +196,8 @@ function LeagueFilters({ countries, params, onChange, onReset, leagueNames }: Le
           <option value="createdAt:desc">Date de création : décroissante</option>
         </Select>
       </label>
-      <Button className="league-list__reset" onClick={onReset} variant="outline">Réinitialiser</Button>
-    </div>
+      <Button className="dashboard-list__reset" onClick={onReset} variant="outline">Réinitialiser</Button>
+    </DashboardListFilters>
   );
 }
 

@@ -119,7 +119,7 @@ describe("DevLoginPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Ligue" }));
 
-    expect(screen.getByTestId("current-path")).toHaveTextContent("/dashboard/league");
+    expect(screen.getByTestId("current-path")).toHaveTextContent("/dashboard/leagues");
   });
 
   it("redirects to the team list from the connected action", async () => {

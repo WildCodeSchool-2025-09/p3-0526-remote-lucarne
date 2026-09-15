@@ -37,14 +37,19 @@ describe("Team navigation through the application routes", () => {
 
         expect(await screen.findByRole("heading", { name: "Équipes" })).toBeInTheDocument();
         expect(router.state.location.pathname).toBe("/dashboard/teams");
-        expect(await screen.findByText("Aucune équipe ne correspond à vos critères.")).toBeInTheDocument();
-        const createLink = screen.getByRole("link", { name: "Créer une équipe" });
-        expect(createLink).toHaveAttribute("href", "/dashboard/teams/new");
+        expect(screen.getByRole("navigation", { name: "Navigation du dashboard" })).toBeInTheDocument();
+        expect(screen.queryByText("Lucarnes", { selector: "header" })).not.toBeInTheDocument();
+        expect(await screen.findByText("Aucune équipe n’est disponible.")).toBeInTheDocument();
+        const createLinks = screen.getAllByRole("link", { name: "Ajouter une équipe" });
+        expect(createLinks).toHaveLength(2);
+        expect(createLinks[0]).toHaveAttribute("href", "/dashboard/teams/new");
 
-        await user.click(createLink);
+        await user.click(createLinks[0]);
 
         expect(await screen.findByRole("heading", { name: "Créer une équipe" })).toBeInTheDocument();
         expect(router.state.location.pathname).toBe("/dashboard/teams/new");
+        expect(screen.queryByRole("navigation", { name: "Navigation du dashboard" })).not.toBeInTheDocument();
+        expect(screen.getByText("Lucarnes", { selector: "header" })).toBeInTheDocument();
         expect(screen.getByLabelText("Nom de l’équipe *")).toBeInTheDocument();
         expect(screen.getByRole("button", { name: "Créer l’équipe" })).toBeEnabled();
         expect(screen.queryByRole("alert")).not.toBeInTheDocument();

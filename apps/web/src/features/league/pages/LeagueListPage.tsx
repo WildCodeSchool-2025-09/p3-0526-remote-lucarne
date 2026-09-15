@@ -2,11 +2,11 @@ import type { League, ListLeaguesParams } from "@lucarne/shared";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { canCreateLeague, canDeleteLeague, canViewLeague, getCurrentAppRole } from "../../../auth/authRole";
-import { Alert, Button, ConfirmDialog, EmptyState, LoadingState, Pagination } from "../../../ui";
+import DashboardListPageHeader from "../../../components/dashboard/DashboardListPageHeader";
+import { Alert, Button, ConfirmDialog, EmptyState, LoadingState, Pagination, temporaryIcons } from "../../../ui";
 import { HttpError } from "../../../lib/httpClient";
 import LeagueFilters from "../components/LeagueFilters";
 import LeagueMobileCard from "../components/LeagueMobileCard";
-import LeaguePageHeader from "../components/LeaguePageHeader";
 import { type LeagueActionType } from "../components/LeagueRowActions";
 import LeagueTable from "../components/LeagueTable";
 import { useLeagueCountries } from "../hooks/useLeagueCountries";
@@ -105,13 +105,24 @@ function LeagueListPage() {
   };
 
   return (
-    <section className="league-list-page" aria-labelledby="league-list-title">
-      <div className="league-list-page__container">
-        <LeaguePageHeader canCreate={canCreate} leagueCount={query.data?.pagination.totalItems ?? 0} />
+    <section className="dashboard-list-page" aria-labelledby="league-list-title">
+      <div className="dashboard-list-page__container">
+        <DashboardListPageHeader
+          canCreate={canCreate}
+          count={query.data?.pagination.totalItems ?? 0}
+          countLabel="ligues"
+          createHref="/dashboard/leagues/new"
+          createLabel="Ajouter une ligue"
+          description="Consulter et gérer les ligues."
+          headingId="league-list-title"
+          icon={temporaryIcons.leagues}
+          title="Ligues"
+        />
 
         {feedback ? <Alert variant={feedback.type === "error" ? "danger" : "success"}>{feedback.message}</Alert> : null}
 
         <LeagueFilters
+          canCreate={canCreate}
           countries={countryOptions}
           leagueNames={leagueNames}
           onChange={setCriteria}
@@ -121,7 +132,7 @@ function LeagueListPage() {
 
         {query.isPending ? <LoadingState>Chargement des ligues…</LoadingState> : null}
         {query.isError ? (
-          <div className="league-list__state">
+          <div className="dashboard-list__state">
             <Alert>Impossible de charger les ligues. Veuillez réessayer.</Alert>
             <Button onClick={() => void query.refetch()}>Réessayer</Button>
           </div>
@@ -136,7 +147,7 @@ function LeagueListPage() {
         {query.isSuccess && query.data.data.length > 0 ? (
           <>
             <LeagueTable canDelete={canDelete} canEdit={canEdit} leagues={query.data.data} onAction={requestAction} />
-            <div aria-label="Liste mobile des ligues" className="league-mobile-cards">
+            <div aria-label="Liste des ligues sous forme de cartes" className="dashboard-list-cards" role="list">
               {query.data.data.map((league) => (
                 <LeagueMobileCard
                   canDelete={canDelete}
