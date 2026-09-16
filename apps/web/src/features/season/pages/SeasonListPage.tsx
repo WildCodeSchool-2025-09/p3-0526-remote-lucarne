@@ -45,13 +45,15 @@ function SeasonListPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const setCriteria = (changes: Partial<ListSeasonsParams>) => setSearchParams((current) => updateParams(updateParams(current, changes), { page: 1 }));
-  const requestCurrent = async (season: Season) => {
-    try {
-      await setCurrentMutation.mutateAsync({ leagueId: season.leagueId, seasonId: season.id });
-      setFeedback("La saison courante a été mise à jour.");
-    } catch (error) {
-      setFeedback(error instanceof HttpError ? error.message : "La saison courante n’a pas pu être mise à jour.");
-    }
+  const requestCurrent = (season: Season): void => {
+    void (async () => {
+      try {
+        await setCurrentMutation.mutateAsync({ leagueId: season.leagueId, seasonId: season.id });
+        setFeedback("La saison courante a été mise à jour.");
+      } catch (error) {
+        setFeedback(error instanceof HttpError ? error.message : "La saison courante n’a pas pu être mise à jour.");
+      }
+    })();
   };
 
   useEffect(() => {

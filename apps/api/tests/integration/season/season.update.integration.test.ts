@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { ApiErrorResponse } from "@lucarne/shared";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import prisma from "../../../database/prisma";
@@ -57,7 +58,7 @@ describe("PATCH /api/v1/seasons/:seasonId", () => {
     const response = await request(app).patch(`/api/v1/seasons/${season.id}`).set("Authorization", `Bearer ${user.accessToken}`).send({ name: "Stale update", version: 0 });
 
     expect(response.status).toBe(409);
-    expect(response.body.error.code).toBe("RESOURCE_VERSION_CONFLICT");
+    expect((response.body as ApiErrorResponse).error.code).toBe("RESOURCE_VERSION_CONFLICT");
     await expect(prisma.season.findUnique({ where: { id: season.id } })).resolves.toMatchObject({ name: "First update", version: 1 });
   });
 
@@ -73,7 +74,7 @@ describe("PATCH /api/v1/seasons/:seasonId", () => {
       .send({ endDate: "2026-08-01", version: 0 });
 
     expect(response.status).toBe(409);
-    expect(response.body.error.code).toBe("SEASON_PERIOD_CONFLICT");
+    expect((response.body as ApiErrorResponse).error.code).toBe("SEASON_PERIOD_CONFLICT");
     await expect(prisma.season.findUnique({ where: { id: season.id } })).resolves.toMatchObject({ endDate: new Date("2027-06-30"), version: 0 });
   });
 });

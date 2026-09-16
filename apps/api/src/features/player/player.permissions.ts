@@ -1,8 +1,8 @@
 import { APP_ROLES } from "../../auth/appRole";
 const PLAYER_VIEW_ROLES = [
-    APP_ROLES.ADMIN, 
-    APP_ROLES.MODERATOR, 
-    APP_ROLES.EDITOR
+  APP_ROLES.ADMIN, 
+  APP_ROLES.MODERATOR, 
+  APP_ROLES.EDITOR,
 ] as const;
 
 const PLAYER_WRITE_ROLES = PLAYER_VIEW_ROLES;

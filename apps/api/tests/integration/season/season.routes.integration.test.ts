@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { ApiErrorResponse, PaginatedSeasonsResponse, SeasonDetail } from "@lucarne/shared";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import prisma from "../../../database/prisma";
@@ -72,7 +73,7 @@ describe("season routes", () => {
       .send({ name: "2026-2027", startDate: "2026-08-01", endDate: "2027-06-30" });
 
     expect(inactiveResponse.status).toBe(409);
-    expect(inactiveResponse.body.error.code).toBe("LEAGUE_INACTIVE");
+    expect((inactiveResponse.body as ApiErrorResponse).error.code).toBe("LEAGUE_INACTIVE");
 
     const activeLeague = await createLeague();
     const createRequest = () => request(app)
@@ -82,7 +83,7 @@ describe("season routes", () => {
     const duplicateResponse = await createRequest().send({ name: "2026-2027", startDate: "2026-08-01", endDate: "2027-06-30" });
 
     expect(duplicateResponse.status).toBe(409);
-    expect(duplicateResponse.body.error.code).toBe("RESOURCE_ALREADY_EXISTS");
+    expect((duplicateResponse.body as ApiErrorResponse).error.code).toBe("RESOURCE_ALREADY_EXISTS");
   });
 
   it("lists and details seasons with participating teams and matchdays", async () => {
@@ -99,13 +100,13 @@ describe("season routes", () => {
       .get(`/api/v1/seasons?leagueId=${league.id}&status=INACTIVE`)
       .set("Authorization", `Bearer ${user.accessToken}`);
     expect(listResponse.status).toBe(200);
-    expect(listResponse.body.data).toHaveLength(1);
+    expect((listResponse.body as PaginatedSeasonsResponse).data).toHaveLength(1);
 
     const detailResponse = await request(app)
       .get(`/api/v1/seasons/${season.id}`)
       .set("Authorization", `Bearer ${user.accessToken}`);
     expect(detailResponse.status).toBe(200);
-    expect(detailResponse.body).toMatchObject({
+    expect(detailResponse.body as SeasonDetail).toMatchObject({
       id: season.id,
       league: { id: league.id },
       participatingTeams: [{ id: team.id, status: "REGISTERED", points: 0, rank: null, scheduledMatchCount: 0 }],
@@ -143,16 +144,17 @@ describe("season routes", () => {
       .set("Authorization", `Bearer ${user.accessToken}`);
 
     expect(response.status).toBe(200);
-    expect(response.body.participatingTeams).toEqual(expect.arrayContaining([
+    const seasonDetail = response.body as SeasonDetail;
+    expect(seasonDetail.participatingTeams).toEqual(expect.arrayContaining([
       expect.objectContaining({
         id: withdrawnTeam.id,
         status: "WITHDRAWN",
         points: 8,
         rank: 3,
         scheduledMatchCount: 1,
-        registrationAt: expect.any(String),
       }),
       expect.objectContaining({ id: registeredTeam.id, status: "REGISTERED", scheduledMatchCount: 1 }),
     ]));
+    expect(seasonDetail.participatingTeams.find((participation) => participation.id === withdrawnTeam.id)?.registrationAt).toEqual(expect.any(String));
   });
 });
