@@ -6,6 +6,9 @@ import {
   TEAM_CREATE_ROLES,
   TEAM_EDIT_ROLES,
   PLAYER_WRITE_ROLES,
+  SEASON_CREATE_ROLES,
+  SEASON_UPDATE_ROLES,
+  SEASON_VIEW_ROLES,
   VIEW_LEAGUE_ROLES,
 } from "./auth/authRole";
 import { RequireRole } from "./auth/RequireRole";
@@ -22,6 +25,10 @@ import CreateStaffMemberPage from "./features/staff/pages/CreateStaffMemberPage"
 import EditStaffMemberPage from "./features/staff/pages/EditStaffMemberPage";
 import StaffMemberDetailPage from "./features/staff/pages/StaffMemberDetailPage";
 import StaffMemberListPage from "./features/staff/pages/StaffMemberListPage";
+import SeasonListPage from "./features/season/pages/SeasonListPage";
+import SeasonDetailPage from "./features/season/pages/SeasonDetailPage";
+import CreateSeasonPage from "./features/season/pages/CreateSeasonPage";
+import EditSeasonPage from "./features/season/pages/EditSeasonPage";
 import CreateTeamPage from "./features/team/pages/CreateTeamPage";
 import EditTeamPage from "./features/team/pages/EditTeamPage";
 import TeamDetailPage from "./features/team/pages/TeamDetailPage";
@@ -87,6 +94,41 @@ const router = createBrowserRouter([
         element: (
           <RequireRole allowedRoles={CREATE_LEAGUE_ROLES}>
             <CreateLeaguePage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/seasons",
+        handle: { usesDashboardListLayout: true },
+        element: (
+          <RequireRole allowedRoles={SEASON_VIEW_ROLES}>
+            <DashboardLayout activeItem="seasons">
+              <SeasonListPage />
+            </DashboardLayout>
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/seasons/new",
+        element: (
+          <RequireRole allowedRoles={SEASON_CREATE_ROLES}>
+            <CreateSeasonPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/seasons/:seasonId",
+        element: (
+          <RequireRole allowedRoles={SEASON_VIEW_ROLES}>
+            <SeasonDetailPage />
+          </RequireRole>
+        ),
+      },
+      {
+        path: "dashboard/seasons/:seasonId/edit",
+        element: (
+          <RequireRole allowedRoles={SEASON_UPDATE_ROLES}>
+            <EditSeasonPage />
           </RequireRole>
         ),
       },

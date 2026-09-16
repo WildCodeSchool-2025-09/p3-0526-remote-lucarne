@@ -27,24 +27,6 @@ const toLeagueResponse = (league: {
   createdAt: league.createdAt.toISOString(),
 });
 
-const toCreatedLeagueResponse = (league: {
-  id: string;
-  name: string;
-  country: string;
-  logoUrl: string | null;
-  isActive: boolean;
-  version: number;
-  createdAt: Date;
-}) => ({
-  id: league.id,
-  name: league.name,
-  country: league.country,
-  logoUrl: league.logoUrl,
-  isActive: league.isActive,
-  version: league.version,
-  createdAt: league.createdAt.toISOString(),
-});
-
 const createLeague: RequestHandler<
   Record<string, never>,
   League,
@@ -52,7 +34,7 @@ const createLeague: RequestHandler<
 > = asyncHandler(async (request, response) => {
   const league = await createLeagueService(request.body);
 
-  response.status(201).json(toCreatedLeagueResponse(league));
+  response.status(201).json(toLeagueResponse(league));
 });
 
 const listLeagues: RequestHandler<

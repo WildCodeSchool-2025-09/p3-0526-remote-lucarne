@@ -5,3 +5,5 @@ export * from "./player.types";
 export * from "./pagination.types";
 export * from "./team.types";
 export * from "./staff.types";
+export * from "./season.types";
+export * from "./participation.types";

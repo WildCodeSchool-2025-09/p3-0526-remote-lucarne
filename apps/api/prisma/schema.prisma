@@ -170,6 +170,7 @@ model Season {
   startDate      DateTime        @map("start_date") @db.Date
   endDate        DateTime        @map("end_date") @db.Date
   isActive       Boolean         @default(false) @map("is_active")
+  version        Int             @default(0)
   createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   matchdays      Matchday[]
   participations Participation[]

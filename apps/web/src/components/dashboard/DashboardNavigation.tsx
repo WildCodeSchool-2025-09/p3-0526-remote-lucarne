@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import { temporaryIcons } from "../../ui";
 
-type DashboardNavigationItemKey = "leagues" | "teams" | "players" | "staff";
+type DashboardNavigationItemKey = "leagues" | "seasons" | "teams" | "players" | "staff";
 
 type DashboardNavigationItem = {
   key: DashboardNavigationItemKey;
@@ -12,6 +12,7 @@ type DashboardNavigationItem = {
 
 const navigationItems: DashboardNavigationItem[] = [
   { key: "leagues", label: "Ligues", icon: "leagues", to: "/dashboard/leagues" },
+  { key: "seasons", label: "Saisons", icon: "seasons", to: "/dashboard/seasons" },
   { key: "teams", label: "Équipes", icon: "teams", to: "/dashboard/teams" },
   { key: "players", label: "Joueuses", icon: "players", to: "/dashboard/players" },
   { key: "staff", label: "Staff", icon: "staff", to: "/dashboard/staff-members" },

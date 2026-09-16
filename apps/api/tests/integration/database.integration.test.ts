@@ -109,7 +109,7 @@ describe("database seeders", () => {
   it("is idempotent and deterministic", async () => {
     await seedDatabase();
 
-    const [initialRoles, initialPlayers, initialStaffAssignments] = await Promise.all([
+    const [initialRoles, initialPlayers, initialStaffAssignments, initialParticipations] = await Promise.all([
       prisma.role.findMany({ orderBy: { name: "asc" } }),
       prisma.player.findMany({
         where: { id: { in: [...SEED_IDS.players] } },
@@ -118,12 +118,16 @@ describe("database seeders", () => {
       prisma.teamStaffMember.findMany({
         where: { id: { in: [...SEED_IDS.teamStaffMembers] } },
         orderBy: { id: "asc" },
+      }),
+      prisma.participation.findMany({
+        where: { seasonId: SEED_IDS.season, teamId: { in: [...SEED_IDS.teams] } },
+        orderBy: [{ teamId: "asc" }, { seasonId: "asc" }],
       }),
     ]);
 
     await seedDatabase();
 
-    const [rolesAfterSecondRun, playersAfterSecondRun, staffAssignmentsAfterSecondRun] = await Promise.all([
+    const [rolesAfterSecondRun, playersAfterSecondRun, staffAssignmentsAfterSecondRun, participationsAfterSecondRun] = await Promise.all([
       prisma.role.findMany({ orderBy: { name: "asc" } }),
       prisma.player.findMany({
         where: { id: { in: [...SEED_IDS.players] } },
@@ -132,6 +136,10 @@ describe("database seeders", () => {
       prisma.teamStaffMember.findMany({
         where: { id: { in: [...SEED_IDS.teamStaffMembers] } },
         orderBy: { id: "asc" },
+      }),
+      prisma.participation.findMany({
+        where: { seasonId: SEED_IDS.season, teamId: { in: [...SEED_IDS.teams] } },
+        orderBy: [{ teamId: "asc" }, { seasonId: "asc" }],
       }),
     ]);
 
@@ -141,6 +149,7 @@ describe("database seeders", () => {
     );
     expect(playersAfterSecondRun).toEqual(initialPlayers);
     expect(staffAssignmentsAfterSecondRun).toEqual(initialStaffAssignments);
+    expect(participationsAfterSecondRun).toEqual(initialParticipations);
     await expect(prisma.player.count({
       where: { id: { in: [...SEED_IDS.players] } },
     })).resolves.toBe(PLAYERS_PER_TEAM * 2);

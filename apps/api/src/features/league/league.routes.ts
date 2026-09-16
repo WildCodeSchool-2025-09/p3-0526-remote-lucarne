@@ -10,10 +10,7 @@ import {
   listLeaguesQuerySchema,
   updateLeagueBodySchema,
 } from "./league.schema";
-import {
-  LEAGUE_VIEW_ROLES,
-  APP_ROLES,
-} from "../../auth/appRole";
+import { LEAGUE_DELETE_ROLES, LEAGUE_VIEW_ROLES, LEAGUE_WRITE_ROLES } from "./league.permissions";
 
 const leagueRouter = Router();
 
@@ -43,7 +40,7 @@ leagueRouter.get(
 leagueRouter.post(
   "/",
   authenticate,
-  requireRoles(...LEAGUE_VIEW_ROLES),
+  requireRoles(...LEAGUE_WRITE_ROLES),
   validateRequest({ body: createLeagueBodySchema }),
   createLeague,
 );
@@ -51,7 +48,7 @@ leagueRouter.post(
 leagueRouter.delete(
   "/:leagueId",
   authenticate,
-  requireRoles(APP_ROLES.ADMIN),
+  requireRoles(...LEAGUE_DELETE_ROLES),
   validateRequest({ params: leagueIdParamsSchema, body: deleteLeagueBodySchema }),
   deleteLeague,
 );
@@ -59,7 +56,7 @@ leagueRouter.delete(
 leagueRouter.patch(
   "/:leagueId",
   authenticate,
-  requireRoles(...LEAGUE_VIEW_ROLES),
+  requireRoles(...LEAGUE_WRITE_ROLES),
   validateRequest({ params: leagueIdParamsSchema, body: updateLeagueBodySchema }),
   updateLeague,
 );
@@ -67,7 +64,7 @@ leagueRouter.patch(
 leagueRouter.patch(
   "/:leagueId/activate",
   authenticate,
-  requireRoles(...LEAGUE_VIEW_ROLES),
+  requireRoles(...LEAGUE_WRITE_ROLES),
   validateRequest({ params: leagueIdParamsSchema }),
   activateLeague,
 );
@@ -75,7 +72,7 @@ leagueRouter.patch(
 leagueRouter.patch(
   "/:leagueId/deactivate",
   authenticate,
-  requireRoles(...LEAGUE_VIEW_ROLES),
+  requireRoles(...LEAGUE_WRITE_ROLES),
   validateRequest({ params: leagueIdParamsSchema }),
   deactivateLeague,
 );
