@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { z } from "zod";
 import { getCurrentAppRole } from "../../auth/authRole";
 import type { AppRole } from "../../auth/authRole";
@@ -56,6 +56,11 @@ function getDevLoginErrorMessage(error: unknown): string {
 
 function DevLoginPage() {
   const navigate = useNavigate();
+  const locationState: unknown = useLocation().state;
+  const sessionExpired = typeof locationState === "object"
+    && locationState != null
+    && "sessionExpired" in locationState
+    && locationState.sessionExpired === true;
   const [session, setSession] = useState<DevSessionState>(getSessionState);
   const [loginError, setLoginError] = useState<string | null>(null);
   const {
@@ -76,7 +81,7 @@ function DevLoginPage() {
 
     try {
       await login(values);
-      setSession(getSessionState());
+      void navigate("/dashboard", { replace: true });
     } catch (error) {
       setLoginError(getDevLoginErrorMessage(error));
     }
@@ -153,6 +158,11 @@ function DevLoginPage() {
           Cette page temporaire sert uniquement à tester les rôles de LEAGUE-001.
         </p>
 
+        {sessionExpired ? (
+          <Alert variant="danger">
+            Votre session a expiré ou n’est plus valide. Reconnectez-vous pour continuer.
+          </Alert>
+        ) : null}
         {session.status === "invalid" ? (
           <Alert variant="danger">La session existante est invalide.</Alert>
         ) : null}

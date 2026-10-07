@@ -5,21 +5,27 @@ import { withdrawParticipation } from "../../../services/participation.service";
 import { seasonKeys } from "../seasonKeys";
 
 interface WithdrawParticipationInput {
-  seasonId: string;
+  leagueSeasonId: string;
   teamId: string;
 }
 
 function useWithdrawParticipation() {
   const queryClient = useQueryClient();
 
-  return useMutation<WithdrawParticipationResponse, HttpError, WithdrawParticipationInput>({
-    mutationFn: ({ seasonId, teamId }) => withdrawParticipation(seasonId, teamId),
-    onSuccess: async (result) => {
-      await queryClient.invalidateQueries({ queryKey: seasonKeys.detail(result.participation.seasonId) });
+  return useMutation<
+    WithdrawParticipationResponse,
+    HttpError,
+    WithdrawParticipationInput
+  >({
+    mutationFn: ({ leagueSeasonId, teamId }) =>
+      withdrawParticipation(leagueSeasonId, teamId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: seasonKeys.all });
     },
     retry: false,
   });
 }
 
 export { useWithdrawParticipation };
+
 export type { WithdrawParticipationInput };

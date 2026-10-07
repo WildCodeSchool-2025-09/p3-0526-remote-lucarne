@@ -4,16 +4,22 @@ import type { HttpError } from "../../../lib/httpClient";
 import { getParticipationWithdrawalPreview } from "../../../services/participation.service";
 
 interface ParticipationWithdrawalPreviewInput {
-  seasonId: string;
+  leagueSeasonId: string;
   teamId: string;
 }
 
 function useParticipationWithdrawalPreview() {
-  return useMutation<ParticipationWithdrawalPreview, HttpError, ParticipationWithdrawalPreviewInput>({
-    mutationFn: ({ seasonId, teamId }) => getParticipationWithdrawalPreview(seasonId, teamId),
+  return useMutation<
+    ParticipationWithdrawalPreview,
+    HttpError,
+    ParticipationWithdrawalPreviewInput
+  >({
+    mutationFn: ({ leagueSeasonId, teamId }) =>
+      getParticipationWithdrawalPreview(leagueSeasonId, teamId),
     retry: false,
   });
 }
 
 export { useParticipationWithdrawalPreview };
+
 export type { ParticipationWithdrawalPreviewInput };

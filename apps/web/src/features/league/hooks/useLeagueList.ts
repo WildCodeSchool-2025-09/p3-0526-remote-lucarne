@@ -13,4 +13,5 @@ function useLeagueList(params: ListLeaguesParams) {
 }
 
 export { useLeagueList };
+
 export type { HttpError };

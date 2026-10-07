@@ -1,7 +1,9 @@
+import { dashboardStyles } from "./dashboardStyles";
 import { Link } from "react-router";
 import { temporaryIcons } from "../../ui";
+import { dashboardResources, type DashboardResource } from "./dashboardResources";
 
-type DashboardNavigationItemKey = "leagues" | "seasons" | "teams" | "players" | "staff";
+type DashboardNavigationItemKey = DashboardResource;
 
 type DashboardNavigationItem = {
   key: DashboardNavigationItemKey;
@@ -11,28 +13,50 @@ type DashboardNavigationItem = {
 };
 
 const navigationItems: DashboardNavigationItem[] = [
-  { key: "leagues", label: "Ligues", icon: "leagues", to: "/dashboard/leagues" },
-  { key: "seasons", label: "Saisons", icon: "seasons", to: "/dashboard/seasons" },
-  { key: "teams", label: "Équipes", icon: "teams", to: "/dashboard/teams" },
-  { key: "players", label: "Joueuses", icon: "players", to: "/dashboard/players" },
-  { key: "staff", label: "Staff", icon: "staff", to: "/dashboard/staff-members" },
+  {
+    key: "matches",
+    label: "Matchs",
+    icon: "matches",
+    to: dashboardResources.matches.path,
+  },
+  {
+    key: "leagues",
+    label: "Ligues",
+    icon: "leagues",
+    to: dashboardResources.leagues.path,
+  },
+  {
+    key: "seasons",
+    label: "Saisons",
+    icon: "seasons",
+    to: dashboardResources.seasons.path,
+  },
+  { key: "teams", label: "Équipes", icon: "teams", to: dashboardResources.teams.path },
+  {
+    key: "players",
+    label: "Joueuses",
+    icon: "players",
+    to: dashboardResources.players.path,
+  },
+  { key: "staff", label: "Staff", icon: "staff", to: dashboardResources.staff.path },
 ];
 
 interface DashboardNavigationProps {
-  activeItem: DashboardNavigationItemKey;
+  activeItem?: DashboardNavigationItemKey;
   onNavigate?: () => void;
 }
 
 function DashboardNavigation({ activeItem, onNavigate }: DashboardNavigationProps) {
   return (
-    <nav aria-label="Navigation du dashboard" className="dashboard-navigation">
+    <nav aria-label="Navigation du dashboard" className="grid gap-1.5">
       {navigationItems.map((item) => {
         const Icon = temporaryIcons[item.icon];
-        const className = `dashboard-navigation__item${item.key === activeItem ? " dashboard-navigation__item--active" : ""}`;
+        const isActive = item.key === activeItem;
+        const className = `${dashboardStyles.navigationLink} ${isActive ? dashboardStyles.activeLink : dashboardStyles.inactiveLink}`;
 
         return (
           <Link
-            aria-current={item.key === activeItem ? "page" : undefined}
+            aria-current={isActive ? "page" : undefined}
             className={className}
             key={item.key}
             onClick={onNavigate}
@@ -48,4 +72,5 @@ function DashboardNavigation({ activeItem, onNavigate }: DashboardNavigationProp
 }
 
 export default DashboardNavigation;
+
 export type { DashboardNavigationItemKey };

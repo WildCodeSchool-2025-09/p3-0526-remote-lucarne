@@ -1,6 +1,12 @@
 import { API_V1_PATH, type ApiErrorDetail, type ApiErrorResponse } from "@lucarne/shared";
 import { apiUrl } from "../config/environment";
-import { clearAccessToken, getAccessToken } from "./authToken";
+import {
+  assertSessionRevision,
+  clearAccessToken,
+  getAccessToken,
+  getSessionRevision,
+  registerSessionRequest,
+} from "./authToken";
 
 type QueryValue = boolean | number | string | null | undefined;
 type QueryParameters = Record<string, QueryValue | QueryValue[]>;
@@ -109,7 +115,7 @@ async function request<T>(
   path: string,
   options: HttpRequestOptions = {},
 ): Promise<T> {
-  const { body, headers: initialHeaders, json, query, ...requestOptions } = options;
+  const { body, headers: initialHeaders, json, query, signal, ...requestOptions } = options;
 
   if (body !== undefined && json !== undefined) {
     throw new TypeError("An HTTP request cannot define both body and json");
@@ -119,6 +125,7 @@ async function request<T>(
   headers.set("accept", "application/json");
 
   const accessToken = getAccessToken();
+  const sessionRevision = getSessionRevision();
 
   if (accessToken !== null && !headers.has("authorization")) {
     headers.set("authorization", `Bearer ${accessToken}`);
@@ -128,23 +135,49 @@ async function request<T>(
     headers.set("content-type", "application/json");
   }
 
-  const response = await fetch(createUrl(path, query), {
-    ...requestOptions,
-    body: json === undefined ? body : JSON.stringify(json),
-    headers,
-    method,
-  });
-  const payload = await parseResponse(response);
+  const controller = new AbortController();
+  const unregister = registerSessionRequest(controller);
+  const onAbort = () => controller.abort(signal?.reason);
+  if (signal?.aborted) onAbort();
+  else signal?.addEventListener("abort", onAbort, { once: true });
+  let clearedRejectedSession = false;
 
-  if (!response.ok) {
-    if (response.status === 401) {
-      clearAccessToken();
-      window.dispatchEvent(new Event("lucarne:session-expired"));
+  try {
+    const response = await fetch(createUrl(path, query), {
+      ...requestOptions,
+      body: json === undefined ? body : JSON.stringify(json),
+      headers,
+      method,
+      signal: controller.signal,
+    });
+    const payload = await parseResponse(response);
+    // Some transports ignore abort, or finish parsing after it. Never deliver
+    // an earlier session's response to query/mutation success callbacks.
+    assertSessionRevision(sessionRevision);
+
+    if (!response.ok) {
+      if (
+        response.status === 401
+        && getApiError(payload)?.code !== "INVALID_CREDENTIALS"
+        && accessToken !== null
+        && headers.get("authorization") === `Bearer ${accessToken}`
+        && getAccessToken() === accessToken
+      ) {
+        clearedRejectedSession = true;
+        clearAccessToken();
+        window.dispatchEvent(new Event("lucarne:session-expired"));
+      }
+      throw new HttpError(response, payload);
     }
-    throw new HttpError(response, payload);
-  }
 
-  return payload as T;
+    return payload as T;
+  } catch (error) {
+    if (!clearedRejectedSession) assertSessionRevision(sessionRevision);
+    throw error;
+  } finally {
+    unregister();
+    signal?.removeEventListener("abort", onAbort);
+  }
 }
 
 const httpClient = {

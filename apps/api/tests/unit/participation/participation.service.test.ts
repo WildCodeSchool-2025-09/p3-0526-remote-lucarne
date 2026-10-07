@@ -14,7 +14,7 @@ const preview = vi.mocked(getParticipationWithdrawalPreview);
 const withdraw = vi.mocked(withdrawParticipation);
 const participation = {
   teamId: "team-id",
-  seasonId: "season-id",
+  leagueSeasonId: "season-id",
   registrationAt: new Date("2026-08-01T00:00:00.000Z"),
   points: 0,
   rank: null,
@@ -51,5 +51,10 @@ describe("participation services", () => {
       statusCode: 409,
       code: "PARTICIPATION_CONFLICT",
     });
+  });
+
+  it("maps registration serialization conflicts to the same business error", async () => {
+    create.mockRejectedValue(new Prisma.PrismaClientKnownRequestError("conflict", { code: "P2034", clientVersion: "7" }));
+    await expect(createParticipationService("season-id", { teamId: "team-id" })).rejects.toMatchObject({ statusCode: 409, code: "PARTICIPATION_CONFLICT" });
   });
 });

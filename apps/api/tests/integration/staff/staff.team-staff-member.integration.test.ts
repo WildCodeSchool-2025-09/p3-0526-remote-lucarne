@@ -83,7 +83,7 @@ describe("team_staff_member source of truth migration", () => {
 });
 
 describe("team_staff_member integrity", () => {
-  it("retains history while allowing only one open assignment", async () => {
+  it("retains history and prevents overlapping assignment periods", async () => {
     const [firstTeam, secondTeam, staffMember] = await Promise.all([
       createTeam(),
       createTeam(),
@@ -115,7 +115,7 @@ describe("team_staff_member integrity", () => {
         jobTitle: "COACH",
         joinedAt: date("2026-02-01"),
       },
-    })).rejects.toMatchObject({ code: "P2002" });
+    })).rejects.toMatchObject({ code: "P2039" });
     await expect(prisma.teamStaffMember.count({
       where: { staffMemberId: staffMember.id },
     })).resolves.toBe(2);

@@ -20,6 +20,7 @@
     "clean": "node ./bin/clean",
     "db:migrate": "npm run db:migrate --workspace=@lucarne/api",
     "db:seed": "npm run db:seed --workspace=@lucarne/api",
+    "seed": "npm run db:seed",
     "dev": "concurrently -c green,yellow -t \"HH:mm:ss\" -p \"{name} {time}\" \"npm:dev:*\"",
     "dev:web": "npm run dev --workspace=@lucarne/web",
     "dev:api": "npm run dev --workspace=@lucarne/api",

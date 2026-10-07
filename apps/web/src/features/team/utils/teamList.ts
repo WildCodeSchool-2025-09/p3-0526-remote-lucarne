@@ -13,13 +13,20 @@ function parseParams(searchParams: URLSearchParams): ListTeamsParams {
     page: Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1,
     pageSize: PAGE_SIZE,
     search: searchParams.get("search") ?? undefined,
-    status: STATUS_VALUES.includes(rawStatus as TeamStatusFilter) ? rawStatus as TeamStatusFilter : "ALL",
-    sortBy: SORT_FIELDS.includes(rawSortBy as TeamSortField) ? rawSortBy as TeamSortField : "name",
+    status: STATUS_VALUES.includes(rawStatus as TeamStatusFilter)
+      ? (rawStatus as TeamStatusFilter)
+      : "ALL",
+    sortBy: SORT_FIELDS.includes(rawSortBy as TeamSortField)
+      ? (rawSortBy as TeamSortField)
+      : "name",
     sortOrder: searchParams.get("sortOrder") === "desc" ? "desc" : "asc",
   };
 }
 
-function updateParams(current: URLSearchParams, changes: Partial<ListTeamsParams>): URLSearchParams {
+function updateParams(
+  current: URLSearchParams,
+  changes: Partial<ListTeamsParams>,
+): URLSearchParams {
   const next = new URLSearchParams(current);
 
   if ("search" in changes) {
@@ -28,11 +35,13 @@ function updateParams(current: URLSearchParams, changes: Partial<ListTeamsParams
   }
   if ("status" in changes) {
     next.delete("status");
-    if (changes.status != null && changes.status !== "ALL") next.set("status", changes.status);
+    if (changes.status != null && changes.status !== "ALL")
+      next.set("status", changes.status);
   }
   if ("sortBy" in changes) {
     next.delete("sortBy");
-    if (changes.sortBy != null && changes.sortBy !== "name") next.set("sortBy", changes.sortBy);
+    if (changes.sortBy != null && changes.sortBy !== "name")
+      next.set("sortBy", changes.sortBy);
   }
   if ("sortOrder" in changes) {
     next.delete("sortOrder");

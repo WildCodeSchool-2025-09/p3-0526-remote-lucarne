@@ -13,4 +13,5 @@ function useLeagueDetail(id: string) {
 }
 
 export { useLeagueDetail };
+
 export type { HttpError };

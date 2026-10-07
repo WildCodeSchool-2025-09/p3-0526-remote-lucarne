@@ -13,6 +13,9 @@ services:
       CLIENT_URL: ""
       DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
       VITE_API_URL: ""
+      UPLOAD_DIRECTORY: /var/lib/lucarne/player-photos
+    volumes:
+      - player_photos:/var/lib/lucarne/player-photos
     depends_on:
       db:
         condition: service_healthy
@@ -55,3 +58,4 @@ networks:
 
 volumes:
   postgres_data:
+  player_photos:

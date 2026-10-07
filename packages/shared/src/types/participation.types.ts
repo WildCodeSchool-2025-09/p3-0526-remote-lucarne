@@ -2,7 +2,7 @@ type ParticipationStatus = "REGISTERED" | "WITHDRAWN";
 
 type Participation = {
   teamId: string;
-  seasonId: string;
+  leagueSeasonId: string;
   registrationAt: string;
   points: number;
   rank: number | null;
@@ -15,7 +15,7 @@ type CreateParticipationInput = {
 
 type ParticipationWithdrawalPreview = {
   teamId: string;
-  seasonId: string;
+  leagueSeasonId: string;
   scheduledMatchCount: number;
 };
 

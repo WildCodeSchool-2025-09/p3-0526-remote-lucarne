@@ -1,3 +1,5 @@
+import { teamStyles } from "../teamStyles";
+import DashboardPageHeader from "../../../components/dashboard/DashboardPageHeader";
 import type { Team } from "@lucarne/shared";
 import { useState } from "react";
 import { useNavigate } from "react-router";
@@ -9,22 +11,25 @@ function CreateTeamPage() {
   const [createdTeam, setCreatedTeam] = useState<Team | null>(null);
 
   return (
-    <section className="create-team-page" aria-labelledby="create-team-page-title">
-      <div className="create-team-page__container">
+    <section className={teamStyles.formPage} aria-labelledby="create-team-page-title">
+      <div className={teamStyles.container}>
         <Button
-          className="create-team-page__back"
+          className="min-h-9! justify-self-start px-3!"
           onClick={() => {
-            void navigate(-1);
+            void navigate("/dashboard/teams");
           }}
           variant="ghost"
         >
-          ← Retour
+          ← Retour à la liste
         </Button>
 
-        <header className="create-team-page__header">
-          <h1 id="create-team-page-title">Créer une équipe</h1>
-          <p>Ajoutez les informations principales de l’équipe.</p>
-        </header>
+        <DashboardPageHeader
+          resource="teams"
+          mode="create"
+          headingId="create-team-page-title"
+          title="Créer une équipe"
+          description="Ajoutez les informations principales de l’équipe."
+        />
 
         {createdTeam ? (
           <Alert variant="success">

@@ -1,5 +1,5 @@
 import type { ListSeasonsParams } from "@lucarne/shared";
-import { Button, FormField, Input, Select } from "../../../ui";
+import { Button, FormField, Input } from "../../../ui";
 
 interface SeasonFiltersProps {
   onChange: (changes: Partial<ListSeasonsParams>) => void;
@@ -9,7 +9,14 @@ interface SeasonFiltersProps {
 
 function SeasonFilters({ onChange, onReset, params }: SeasonFiltersProps) {
   return (
-    <div className="dashboard-list__filters" role="search">
+    <div
+      className={`
+        flex flex-wrap items-end gap-4 rounded-[var(--radius-surface)] border
+        border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-5
+        season-mobile:flex-col season-mobile:items-stretch season-mobile:p-4
+      `}
+      role="search"
+    >
       <FormField htmlFor="season-search" label="Rechercher">
         <Input
           id="season-search"
@@ -18,18 +25,13 @@ function SeasonFilters({ onChange, onReset, params }: SeasonFiltersProps) {
           value={params.search ?? ""}
         />
       </FormField>
-      <FormField htmlFor="season-status" label="État">
-        <Select
-          id="season-status"
-          onChange={(event) => onChange({ status: event.target.value as ListSeasonsParams["status"] })}
-          value={params.status ?? "ALL"}
-        >
-          <option value="ALL">Toutes</option>
-          <option value="CURRENT">Courantes</option>
-          <option value="INACTIVE">Inactives</option>
-        </Select>
-      </FormField>
-      <Button onClick={onReset} variant="outline">Réinitialiser</Button>
+      <Button
+        className="min-w-[120px] flex-none self-end! whitespace-nowrap season-mobile:order-5 season-mobile:w-full"
+        onClick={onReset}
+        variant="outline"
+      >
+        Réinitialiser
+      </Button>
     </div>
   );
 }

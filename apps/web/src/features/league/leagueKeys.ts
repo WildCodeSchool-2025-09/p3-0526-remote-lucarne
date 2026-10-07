@@ -13,7 +13,8 @@ const leagueKeys = {
   details: () => [...leagueKeys.all, "detail"] as const,
   detail: (leagueId: string) => [...leagueKeys.details(), leagueId] as const,
   lists: () => [...leagueKeys.all, "list"] as const,
-  list: (params: ListLeaguesParams) => [...leagueKeys.lists(), listParams(params)] as const,
+  list: (params: ListLeaguesParams) =>
+    [...leagueKeys.lists(), listParams(params)] as const,
 };
 
 export { leagueKeys };

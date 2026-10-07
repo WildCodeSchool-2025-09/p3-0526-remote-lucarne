@@ -1,3 +1,4 @@
+import { getTeamRoster } from "./team.repository";
 import type { Team as PrismaTeam } from "../../generated/prisma/client";
 import { Prisma } from "../../generated/prisma/client";
 import type { CreateTeamInput, ListTeamsParams, TeamDeletionDependencies, TeamDeletionPreview, UpdateTeamInput } from "@lucarne/shared";
@@ -50,4 +51,5 @@ const deleteTeamService = async (id: string, role: string) => {
   }
 };
 
-export { createTeamService, deleteTeamService, getTeamDeletionPreviewService, getTeamService, listTeamsService, updateTeamService };
+const getTeamRosterService = async (id: string) => { await getTeamService(id); return getTeamRoster(id); };
+export { getTeamRosterService, createTeamService, deleteTeamService, getTeamDeletionPreviewService, getTeamService, listTeamsService, updateTeamService };

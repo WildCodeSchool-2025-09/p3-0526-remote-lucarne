@@ -29,6 +29,12 @@ describe("app", () => {
     consoleError.mockRestore();
   });
 
+  it("does not expose bug reports outside development", async () => {
+    const response = await request(app).get("/api/v1/bug-reports");
+
+    expect(response.status).toBe(404);
+  });
+
   it("returns 400 for malformed JSON", async () => {
     const response = await request(app)
       .post("/api/v1/auth/login")

@@ -1,4 +1,9 @@
-import type { LeagueSortField, LeagueStatusFilter, ListLeaguesParams } from "@lucarne/shared";
+import { leagueStyles } from "../leagueStyles";
+import type {
+  LeagueSortField,
+  LeagueStatusFilter,
+  ListLeaguesParams,
+} from "@lucarne/shared";
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
 import DashboardListFilters from "../../../components/dashboard/DashboardListFilters";
@@ -13,7 +18,14 @@ interface LeagueFiltersProps {
   leagueNames: string[];
 }
 
-function LeagueFilters({ canCreate, countries, params, onChange, onReset, leagueNames }: LeagueFiltersProps) {
+function LeagueFilters({
+  canCreate,
+  countries,
+  params,
+  onChange,
+  onReset,
+  leagueNames,
+}: LeagueFiltersProps) {
   const [countryInput, setCountryInput] = useState("");
   const [isLeagueSuggestionsOpen, setIsLeagueSuggestionsOpen] = useState(false);
   const [isCountrySuggestionsOpen, setIsCountrySuggestionsOpen] = useState(false);
@@ -36,6 +48,7 @@ function LeagueFilters({ canCreate, countries, params, onChange, onReset, league
 
     if (!country || params.countries?.includes(country)) {
       setCountryInput("");
+
       return;
     }
 
@@ -45,21 +58,41 @@ function LeagueFilters({ canCreate, countries, params, onChange, onReset, league
 
   return (
     <DashboardListFilters
-      activeCount={Number(Boolean(params.search)) + Number((params.countries?.length ?? 0) > 0) + Number(params.status !== "ALL")}
+      activeCount={
+        Number(Boolean(params.search)) +
+        Number((params.countries?.length ?? 0) > 0) +
+        Number(params.status !== "ALL")
+      }
       label="Filtres des ligues"
-      mobileAction={canCreate ? (
-        <Link className="lucarne-button lucarne-button--primary lucarne-button--xl dashboard-list__mobile-create" to="/dashboard/leagues/new">
-          Ajouter une ligue
-        </Link>
-      ) : undefined}
+      mobileAction={
+        canCreate ? (
+          <Link
+            className={`
+              lucarne-button lucarne-button--primary lucarne-button--xl hidden!
+              league-mobile:inline-flex! league-mobile:w-full league-mobile:self-stretch!
+              league-mobile:justify-center league-mobile:order-6
+            `}
+            to="/dashboard/leagues/new"
+          >
+            Ajouter une ligue
+          </Link>
+        ) : undefined
+      }
     >
-      <div className="dashboard-list__field dashboard-list__autocomplete dashboard-list__field--name">
+      <div className={`${leagueStyles.autocomplete} league-mobile:order-2`}>
         <label htmlFor="league-name-filter">Nom de la ligue</label>
-        <div className="dashboard-list__autocomplete-control">
-          <SearchIcon aria-hidden="true" className="dashboard-list__filter-icon" size={18} />
+        <div className={leagueStyles.autocompleteControl}>
+          <SearchIcon
+            aria-hidden="true"
+            className="shrink-0 text-[var(--color-text-muted)]"
+            size={18}
+          />
           <Input
+            className="min-h-[34px]! min-w-[120px]! w-auto! flex-1 border-0! bg-transparent! px-1!"
             aria-autocomplete="list"
-            aria-controls={isLeagueSuggestionsOpen ? "league-name-suggestions" : undefined}
+            aria-controls={
+              isLeagueSuggestionsOpen ? "league-name-suggestions" : undefined
+            }
             aria-expanded={isLeagueSuggestionsOpen}
             aria-label="Rechercher une ligue par nom"
             id="league-name-filter"
@@ -82,46 +115,71 @@ function LeagueFilters({ canCreate, countries, params, onChange, onReset, league
           />
         </div>
         {isLeagueSuggestionsOpen ? (
-          <div aria-label="Suggestions de ligues" className="dashboard-list__suggestions" id="league-name-suggestions" role="listbox">
+          <div
+            aria-label="Suggestions de ligues"
+            className={leagueStyles.suggestions}
+            id="league-name-suggestions"
+            role="listbox"
+          >
             {leagueSuggestions.length === 0 ? (
-              <span className="dashboard-list__suggestions-empty" role="status">Non disponible</span>
-            ) : leagueSuggestions.map((name) => (
-              <button
-                aria-selected={params.search === name}
-                className="dashboard-list__suggestion"
-                key={name}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  onChange({ search: name });
-                  setIsLeagueSuggestionsOpen(false);
-                }}
-                role="option"
-                type="button"
+              <span
+                className="px-3 py-2.5 text-[13px] text-[var(--color-text-muted)]"
+                role="status"
               >
-                {name}
-              </button>
-            ))}
+                Non disponible
+              </span>
+            ) : (
+              leagueSuggestions.map((name) => (
+                <button
+                  aria-selected={params.search === name}
+                  className={leagueStyles.suggestion}
+                  key={name}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    onChange({ search: name });
+                    setIsLeagueSuggestionsOpen(false);
+                  }}
+                  role="option"
+                  type="button"
+                >
+                  {name}
+                </button>
+              ))
+            )}
           </div>
         ) : null}
       </div>
 
-      <div className="dashboard-list__field dashboard-list__autocomplete dashboard-list__field--country">
+      <div className={`${leagueStyles.autocomplete} league-mobile:order-3`}>
         <label htmlFor="league-country-filter">Pays</label>
-        <div className="dashboard-list__autocomplete-control">
+        <div className={leagueStyles.autocompleteControl}>
           {(params.countries ?? []).map((country) => (
             <button
               aria-label={`Retirer ${country}`}
-              className="dashboard-list__tag"
+              className={`
+                cursor-pointer rounded-full border border-[var(--color-border-default)]
+                bg-[var(--color-bg-subtle)] px-2 py-1 text-[13px]
+                text-[var(--color-text-primary)] focus-visible:outline-2
+                focus-visible:outline-offset-2
+                focus-visible:outline-[var(--color-action-primary)]
+              `}
               key={country}
-              onClick={() => onChange({ countries: params.countries?.filter((item) => item !== country) })}
+              onClick={() =>
+                onChange({
+                  countries: params.countries?.filter((item) => item !== country),
+                })
+              }
               type="button"
             >
               {country} ×
             </button>
           ))}
           <Input
+            className="min-h-[34px]! min-w-[120px]! w-auto! flex-1 border-0! bg-transparent! px-1!"
             aria-autocomplete="list"
-            aria-controls={isCountrySuggestionsOpen ? "league-country-suggestions" : undefined}
+            aria-controls={
+              isCountrySuggestionsOpen ? "league-country-suggestions" : undefined
+            }
             aria-expanded={isCountrySuggestionsOpen}
             aria-label="Ajouter un pays"
             id="league-country-filter"
@@ -144,34 +202,52 @@ function LeagueFilters({ canCreate, countries, params, onChange, onReset, league
           />
         </div>
         {isCountrySuggestionsOpen ? (
-          <div aria-label="Suggestions de pays" className="dashboard-list__suggestions" id="league-country-suggestions" role="listbox">
+          <div
+            aria-label="Suggestions de pays"
+            className={leagueStyles.suggestions}
+            id="league-country-suggestions"
+            role="listbox"
+          >
             {countrySuggestions.length === 0 ? (
-              <span className="dashboard-list__suggestions-empty" role="status">Non disponible</span>
-            ) : countrySuggestions.map((country) => (
-              <button
-                aria-selected={params.countries?.includes(country) ?? false}
-                className="dashboard-list__suggestion"
-                key={country}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  addCountry(country);
-                  setIsCountrySuggestionsOpen(false);
-                }}
-                role="option"
-                type="button"
+              <span
+                className="px-3 py-2.5 text-[13px] text-[var(--color-text-muted)]"
+                role="status"
               >
-                {country}
-              </button>
-            ))}
+                Non disponible
+              </span>
+            ) : (
+              countrySuggestions.map((country) => (
+                <button
+                  aria-selected={params.countries?.includes(country) ?? false}
+                  className={leagueStyles.suggestion}
+                  key={country}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    addCountry(country);
+                    setIsCountrySuggestionsOpen(false);
+                  }}
+                  role="option"
+                  type="button"
+                >
+                  {country}
+                </button>
+              ))
+            )}
           </div>
         ) : null}
       </div>
 
-      <label className="dashboard-list__field dashboard-list__field--status">
-        <span><FilterIcon aria-hidden="true" size={16} />Statut</span>
+      <label className={`${leagueStyles.filterField} league-mobile:order-1`}>
+        <span>
+          <FilterIcon aria-hidden="true" size={16} />
+          Statut
+        </span>
         <Select
+          className="min-w-0 px-[10px]!"
           aria-label="Filtrer par statut"
-          onChange={(event) => onChange({ status: event.target.value as LeagueStatusFilter })}
+          onChange={(event) =>
+            onChange({ status: event.target.value as LeagueStatusFilter })
+          }
           value={params.status}
         >
           <option value="ALL">Tous</option>
@@ -180,13 +256,18 @@ function LeagueFilters({ canCreate, countries, params, onChange, onReset, league
         </Select>
       </label>
 
-      <label className="dashboard-list__field dashboard-list__field--sort">
+      <label className={`${leagueStyles.filterField} league-mobile:order-4`}>
         <span>Tri</span>
         <Select
+          className="min-w-0 px-[10px]!"
           aria-label="Trier les ligues"
           onChange={(event) => {
             const [sortBy, sortOrder] = event.target.value.split(":");
-            onChange({ sortBy: sortBy as LeagueSortField, sortOrder: sortOrder as "asc" | "desc" });
+
+            onChange({
+              sortBy: sortBy as LeagueSortField,
+              sortOrder: sortOrder as "asc" | "desc",
+            });
           }}
           value={`${params.sortBy}:${params.sortOrder}`}
         >
@@ -196,7 +277,16 @@ function LeagueFilters({ canCreate, countries, params, onChange, onReset, league
           <option value="createdAt:desc">Date de création : décroissante</option>
         </Select>
       </label>
-      <Button className="dashboard-list__reset" onClick={onReset} variant="outline">Réinitialiser</Button>
+      <Button
+        className={`
+          min-w-[120px] flex-none self-end! whitespace-nowrap league-mobile:order-5
+          league-mobile:w-full
+        `}
+        onClick={onReset}
+        variant="outline"
+      >
+        Réinitialiser
+      </Button>
     </DashboardListFilters>
   );
 }

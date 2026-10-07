@@ -182,7 +182,7 @@ describe("League access security", () => {
     const league = await createLeague(false);
     await prisma.season.create({
       data: {
-        leagueId: league.id,
+        leagueSeasons: { create: { leagueId: league.id } },
         name: "2026-2027",
         startDate: new Date("2026-08-01"),
         endDate: new Date("2027-05-31"),

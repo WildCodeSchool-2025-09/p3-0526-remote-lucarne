@@ -1,3 +1,4 @@
+import { leagueStyles } from "../leagueStyles";
 import type { League } from "@lucarne/shared";
 import { Link } from "react-router";
 import { EntityLogo } from "../../../ui";
@@ -15,8 +16,8 @@ interface LeagueTableProps {
 
 function LeagueTable({ canDelete, canEdit, leagues, onAction }: LeagueTableProps) {
   return (
-    <div className="dashboard-list__table-wrapper">
-      <table className="dashboard-list__table">
+    <div className={leagueStyles.tableWrapper}>
+      <table className={leagueStyles.table}>
         <caption className="sr-only">Liste des ligues</caption>
         <thead>
           <tr>
@@ -24,22 +25,32 @@ function LeagueTable({ canDelete, canEdit, leagues, onAction }: LeagueTableProps
             <th scope="col">Pays</th>
             <th scope="col">Statut</th>
             <th scope="col">Créée le</th>
-            <th scope="col"><span className="sr-only">Actions</span></th>
+            <th scope="col">
+              <span className="sr-only">Actions</span>
+            </th>
           </tr>
         </thead>
         <tbody>
           {leagues.map((league) => {
             const status = getStatus(league);
+
             return (
               <tr key={league.id}>
                 <td data-label="Ligue">
-                  <div className="dashboard-list__resource-cell">
+                  <div className="flex items-center gap-3">
                     <EntityLogo logoUrl={league.logoUrl} name={league.name} />
-                    <Link className="dashboard-list__name" to={`/dashboard/leagues/${league.id}`}>{league.name}</Link>
+                    <Link
+                      className={leagueStyles.nameLink}
+                      to={`/dashboard/leagues/${league.id}`}
+                    >
+                      {league.name}
+                    </Link>
                   </div>
                 </td>
                 <td data-label="Pays">{league.country}</td>
-                <td data-label="Statut"><LeagueStatusBadge status={status} /></td>
+                <td data-label="Statut">
+                  <LeagueStatusBadge status={status} />
+                </td>
                 <td data-label="Créée le">{formatDate(league.createdAt)}</td>
                 <td data-label="Actions">
                   <LeagueRowActions

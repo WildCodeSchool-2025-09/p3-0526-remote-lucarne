@@ -1,7 +1,12 @@
+import { dashboardStyles } from "./dashboardStyles";
+import type { ReactNode } from "react";
 import { Link } from "react-router";
+import DashboardPageHeader from "./DashboardPageHeader";
+import { dashboardResources } from "./dashboardResources";
 import type { LucideIcon } from "../../ui";
 
 interface DashboardListPageHeaderProps {
+  breadcrumb?: ReactNode;
   canCreate: boolean;
   count: number;
   countLabel: string;
@@ -14,6 +19,7 @@ interface DashboardListPageHeaderProps {
 }
 
 function DashboardListPageHeader({
+  breadcrumb,
   canCreate,
   count,
   countLabel,
@@ -24,25 +30,34 @@ function DashboardListPageHeader({
   icon: Icon,
   title,
 }: DashboardListPageHeaderProps) {
+  const resource = Object.entries(dashboardResources).find(
+    ([, item]) => `${item.path}/new` === createHref,
+  )?.[0] as keyof typeof dashboardResources | undefined;
+
   return (
-    <header className="dashboard-list-page__header">
-      <div>
-        <p className="dashboard-list-page__breadcrumb"><span>Administration</span> / <strong>{title}</strong></p>
-        <h1 aria-label={title} id={headingId}>
-          <Icon aria-hidden="true" className="dashboard-list-page__title-icon" size={28} />
-          {title}
-          <span className="dashboard-list-page__count">{count} {countLabel}</span>
-        </h1>
-        <p>{description}</p>
-      </div>
-      {canCreate ? (
-        <Link className="lucarne-button lucarne-button--primary lucarne-button--xl dashboard-list__create" to={createHref}>
-          {createLabel}
-        </Link>
-      ) : null}
-    </header>
+    <DashboardPageHeader
+      resource={resource}
+      breadcrumb={breadcrumb}
+      title={title}
+      headingId={headingId}
+      icon={Icon}
+      description={description}
+      badge={
+        <span className={dashboardStyles.count}>
+          {count} {countLabel}
+        </span>
+      }
+      actions={
+        canCreate ? (
+          <Link className={dashboardStyles.createLink} to={createHref}>
+            {createLabel}
+          </Link>
+        ) : null
+      }
+    />
   );
 }
 
 export default DashboardListPageHeader;
+
 export type { DashboardListPageHeaderProps };

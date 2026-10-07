@@ -13,6 +13,7 @@ function useUpdateSeason(seasonId: string) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: seasonKeys.detail(season.id) }),
         queryClient.invalidateQueries({ queryKey: seasonKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: seasonKeys.leagueLists() }),
       ]);
     },
     retry: false,

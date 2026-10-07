@@ -1,4 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import os from "node:os";
+import path from "node:path";
 
 const originalEnvironment = process.env;
 
@@ -73,6 +75,43 @@ describe("environment", () => {
     const { environment } = await import("../../../src/config/environment");
 
     expect(environment.jwt.accessTokenTtlSeconds).toBe(900);
+  });
+
+  it("uses an external default path for development bug reports", async () => {
+    const { environment } = await import("../../../src/config/environment");
+
+    expect(environment.bugReports.filePath).toBe(
+      path.join(os.homedir(), ".lucarne", "bug-reports.json"),
+    );
+  });
+
+  it("uses the configured absolute bug reports path", async () => {
+    process.env.BUG_REPORTS_FILE_PATH = path.join(
+      os.tmpdir(),
+      "lucarne",
+      "bug-reports.json",
+    );
+
+    const { environment } = await import("../../../src/config/environment");
+
+    expect(environment.bugReports.filePath).toBe(process.env.BUG_REPORTS_FILE_PATH);
+  });
+
+  it("rejects a relative bug reports path", async () => {
+    process.env.BUG_REPORTS_FILE_PATH = "tmp/bug-reports.json";
+
+    await expect(import("../../../src/config/environment")).rejects.toThrow();
+  });
+
+  it("uses the configured absolute upload directory", async () => {
+    process.env.UPLOAD_DIRECTORY = path.join(os.tmpdir(), "lucarne-upload");
+    const { environment } = await import("../../../src/config/environment");
+    expect(environment.upload.directory).toBe(process.env.UPLOAD_DIRECTORY);
+  });
+
+  it("rejects a relative upload directory", async () => {
+    process.env.UPLOAD_DIRECTORY = "tmp/upload";
+    await expect(import("../../../src/config/environment")).rejects.toThrow();
   });
 
   it("rejects an invalid access token TTL", async () => {

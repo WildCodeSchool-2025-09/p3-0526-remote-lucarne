@@ -43,8 +43,8 @@ jobs:
       - name: Validate Prisma schema and migration state
         run: |
           npm run prisma:validate
-          npm exec --workspace=@lucarne/api -- prisma migrate status
           npm exec --workspace=@lucarne/api -- prisma migrate deploy
+          npm exec --workspace=@lucarne/api -- prisma migrate status
           npm exec --workspace=@lucarne/api -- prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
         env:
           DATABASE_URL: postgresql://test_user:test_password@localhost:5436/lucarne_test

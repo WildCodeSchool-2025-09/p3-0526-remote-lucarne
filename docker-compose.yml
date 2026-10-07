@@ -4,6 +4,7 @@ services:
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
+      - bug_reports_data:/var/lib/lucarne
     ports:
       - "3310:3310"
       - "3000:3000"
@@ -15,6 +16,8 @@ services:
       CLIENT_URL: "http://localhost:3000"
       DATABASE_URL: "postgresql://${DB_USER:-user}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-lucarne}"
       VITE_API_URL: "http://localhost:3310"
+      BUG_REPORTS_FILE_PATH: "/var/lib/lucarne/bug-reports.json"
+      UPLOAD_DIRECTORY: "/var/lib/lucarne/player-photos"
     command: sh -c "npm run prisma:generate && npm run dev"
     depends_on:
       db:
@@ -73,3 +76,4 @@ services:
 volumes:
   postgres_data:
   postgres_test_data:
+  bug_reports_data:

@@ -1,3 +1,4 @@
+import { createSeasonForLeague } from "../../helpers/season";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import prisma from "../../../database/prisma";
@@ -6,15 +7,7 @@ const createLeague = () => prisma.league.create({
   data: { name: `League ${randomUUID()}`, country: "France", isActive: true },
 });
 
-const createSeason = (leagueId: string) => prisma.season.create({
-  data: {
-    leagueId,
-    name: `Future season ${randomUUID()}`,
-    startDate: new Date("2030-08-01"),
-    endDate: new Date("2031-06-30"),
-    isActive: false,
-  },
-});
+const createSeason = createSeasonForLeague;
 
 describe("participation database constraints", () => {
   it("allows registration in a future season and rejects a duplicate", async () => {
@@ -23,17 +16,17 @@ describe("participation database constraints", () => {
     const team = await prisma.team.create({ data: { name: `Active team ${randomUUID()}` } });
 
     await expect(prisma.participation.create({
-      data: { teamId: team.id, seasonId: season.id },
+      data: { teamId: team.id, leagueSeasonId: season.leagueSeasonId },
     })).resolves.toMatchObject({
       teamId: team.id,
-      seasonId: season.id,
+      leagueSeasonId: season.leagueSeasonId,
       points: 0,
       rank: null,
       status: "REGISTERED",
     });
 
     await expect(prisma.participation.create({
-      data: { teamId: team.id, seasonId: season.id },
+      data: { teamId: team.id, leagueSeasonId: season.leagueSeasonId },
     })).rejects.toBeDefined();
   });
 
@@ -45,7 +38,7 @@ describe("participation database constraints", () => {
     });
 
     await expect(prisma.participation.create({
-      data: { teamId: team.id, seasonId: season.id },
+      data: { teamId: team.id, leagueSeasonId: season.leagueSeasonId },
     })).rejects.toBeDefined();
   });
 
@@ -58,7 +51,7 @@ describe("participation database constraints", () => {
     const participation = await prisma.participation.create({
       data: {
         teamId: team.id,
-        seasonId: season.id,
+        leagueSeasonId: season.leagueSeasonId,
         registrationAt,
         points: 7,
         rank: 2,
@@ -66,23 +59,23 @@ describe("participation database constraints", () => {
     });
 
     await prisma.participation.update({
-      where: { teamId_seasonId: { teamId: team.id, seasonId: season.id } },
+      where: { teamId_leagueSeasonId: { teamId: team.id, leagueSeasonId: season.leagueSeasonId } },
       data: { status: "WITHDRAWN" },
     });
     const restored = await prisma.participation.update({
-      where: { teamId_seasonId: { teamId: team.id, seasonId: season.id } },
+      where: { teamId_leagueSeasonId: { teamId: team.id, leagueSeasonId: season.leagueSeasonId } },
       data: { status: "REGISTERED" },
     });
 
     expect(restored).toMatchObject({
       teamId: participation.teamId,
-      seasonId: participation.seasonId,
+      leagueSeasonId: participation.leagueSeasonId,
       registrationAt,
       points: 7,
       rank: 2,
       status: "REGISTERED",
     });
-    await expect(prisma.participation.count({ where: { teamId: team.id, seasonId: season.id } })).resolves.toBe(1);
+    await expect(prisma.participation.count({ where: { teamId: team.id, leagueSeasonId: season.leagueSeasonId } })).resolves.toBe(1);
   });
 
   it("keeps existing matches but blocks new matches after withdrawal", async () => {
@@ -91,16 +84,16 @@ describe("participation database constraints", () => {
     const homeTeam = await prisma.team.create({ data: { name: `Home team ${randomUUID()}` } });
     const awayTeam = await prisma.team.create({ data: { name: `Away team ${randomUUID()}` } });
     const matchday = await prisma.matchday.create({
-      data: { seasonId: season.id, number: 1, startDate: new Date("2030-08-15"), endDate: new Date("2030-08-16") },
+      data: { leagueSeasonId: season.leagueSeasonId, number: 1, startDate: new Date("2030-08-15"), endDate: new Date("2030-08-16") },
     });
     const secondMatchday = await prisma.matchday.create({
-      data: { seasonId: season.id, number: 2, startDate: new Date("2030-08-22"), endDate: new Date("2030-08-23") },
+      data: { leagueSeasonId: season.leagueSeasonId, number: 2, startDate: new Date("2030-08-22"), endDate: new Date("2030-08-23") },
     });
 
     await prisma.participation.createMany({
       data: [
-        { teamId: homeTeam.id, seasonId: season.id },
-        { teamId: awayTeam.id, seasonId: season.id },
+        { teamId: homeTeam.id, leagueSeasonId: season.leagueSeasonId },
+        { teamId: awayTeam.id, leagueSeasonId: season.leagueSeasonId },
       ],
     });
 
@@ -116,19 +109,20 @@ describe("participation database constraints", () => {
     });
     const completedMatch = await prisma.gameMatch.create({
       data: {
-        matchdayId: matchday.id,
+        matchdayId: secondMatchday.id,
         homeTeamId: homeTeam.id,
         awayTeamId: awayTeam.id,
         matchDate: new Date("2030-08-16"),
         startTime: new Date("1970-01-01T18:00:00.000Z"),
         status: "COMPLETED",
+        isPublished: true,
         homeScore: 1,
         awayScore: 0,
       },
     });
 
     await prisma.participation.update({
-      where: { teamId_seasonId: { teamId: homeTeam.id, seasonId: season.id } },
+      where: { teamId_leagueSeasonId: { teamId: homeTeam.id, leagueSeasonId: season.leagueSeasonId } },
       data: { status: "WITHDRAWN" },
     });
 

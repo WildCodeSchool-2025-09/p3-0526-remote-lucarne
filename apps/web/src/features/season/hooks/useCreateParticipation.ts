@@ -4,13 +4,13 @@ import type { HttpError } from "../../../lib/httpClient";
 import { createParticipation } from "../../../services/participation.service";
 import { seasonKeys } from "../seasonKeys";
 
-function useCreateParticipation(seasonId: string) {
+function useCreateParticipation(leagueSeasonId: string) {
   const queryClient = useQueryClient();
 
   return useMutation<Participation, HttpError, CreateParticipationInput>({
-    mutationFn: (input) => createParticipation(seasonId, input),
+    mutationFn: (input) => createParticipation(leagueSeasonId, input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: seasonKeys.detail(seasonId) });
+      await queryClient.invalidateQueries({ queryKey: seasonKeys.all });
     },
     retry: false,
   });

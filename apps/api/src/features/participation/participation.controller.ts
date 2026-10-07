@@ -14,14 +14,14 @@ import {
 
 const toParticipationResponse = (participation: {
   teamId: string;
-  seasonId: string;
+  leagueSeasonId: string;
   registrationAt: Date;
   points: number;
   rank: number | null;
   status: string;
 }): Participation => ({
   teamId: participation.teamId,
-  seasonId: participation.seasonId,
+  leagueSeasonId: participation.leagueSeasonId,
   registrationAt: participation.registrationAt.toISOString(),
   points: participation.points,
   rank: participation.rank,
@@ -29,31 +29,31 @@ const toParticipationResponse = (participation: {
 });
 
 const createParticipation: RequestHandler<
-  { seasonId: string },
+  { leagueSeasonId: string },
   Participation,
   CreateParticipationInput
 > = asyncHandler(async (request, response) => {
-  const participation = await createParticipationService(request.params.seasonId, request.body);
+  const participation = await createParticipationService(request.params.leagueSeasonId, request.body);
   response.status(201).json(toParticipationResponse(participation));
 });
 
 const getParticipationWithdrawalPreview: RequestHandler<
-  { seasonId: string; teamId: string },
+  { leagueSeasonId: string; teamId: string },
   ParticipationWithdrawalPreview
 > = asyncHandler(async (request, response) => {
-  const result = await getParticipationWithdrawalPreviewService(request.params.seasonId, request.params.teamId);
+  const result = await getParticipationWithdrawalPreviewService(request.params.leagueSeasonId, request.params.teamId);
   response.json({
     teamId: result.participation.teamId,
-    seasonId: result.participation.seasonId,
+    leagueSeasonId: result.participation.leagueSeasonId,
     scheduledMatchCount: result.scheduledMatchCount,
   });
 });
 
 const withdrawParticipation: RequestHandler<
-  { seasonId: string; teamId: string },
+  { leagueSeasonId: string; teamId: string },
   WithdrawParticipationResponse
 > = asyncHandler(async (request, response) => {
-  const result = await withdrawParticipationService(request.params.seasonId, request.params.teamId);
+  const result = await withdrawParticipationService(request.params.leagueSeasonId, request.params.teamId);
   response.json({
     participation: toParticipationResponse(result.participation),
     scheduledMatchCount: result.scheduledMatchCount,

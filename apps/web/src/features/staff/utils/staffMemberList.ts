@@ -15,21 +15,48 @@ function parseParams(searchParams: URLSearchParams): ListStaffMembersParams {
     pageSize: PAGE_SIZE,
     search: searchParams.get("search") ?? undefined,
     teamName: searchParams.get("teamName") ?? undefined,
-    status: STATUS_VALUES.includes(rawStatus as StaffMemberStatusFilter) ? rawStatus as StaffMemberStatusFilter : "ALL",
-    sortBy: SORT_FIELDS.includes(rawSortBy as StaffSortField) ? rawSortBy as StaffSortField : "lastName",
+    status: STATUS_VALUES.includes(rawStatus as StaffMemberStatusFilter)
+      ? (rawStatus as StaffMemberStatusFilter)
+      : "ALL",
+    sortBy: SORT_FIELDS.includes(rawSortBy as StaffSortField)
+      ? (rawSortBy as StaffSortField)
+      : "lastName",
     sortOrder: searchParams.get("sortOrder") === "desc" ? "desc" : "asc",
   };
 }
 
-function updateParams(current: URLSearchParams, changes: Partial<ListStaffMembersParams>): URLSearchParams {
+function updateParams(
+  current: URLSearchParams,
+  changes: Partial<ListStaffMembersParams>,
+): URLSearchParams {
   const next = new URLSearchParams(current);
 
-  if ("search" in changes) { next.delete("search"); if (changes.search?.trim()) next.set("search", changes.search.trim()); }
-  if ("teamName" in changes) { next.delete("teamName"); if (changes.teamName?.trim()) next.set("teamName", changes.teamName.trim()); }
-  if ("status" in changes) { next.delete("status"); if (changes.status != null && changes.status !== "ALL") next.set("status", changes.status); }
-  if ("sortBy" in changes) { next.delete("sortBy"); if (changes.sortBy != null && changes.sortBy !== "lastName") next.set("sortBy", changes.sortBy); }
-  if ("sortOrder" in changes) { next.delete("sortOrder"); if (changes.sortOrder === "desc") next.set("sortOrder", "desc"); }
-  if ("page" in changes) { next.delete("page"); if (changes.page != null && changes.page > 1) next.set("page", String(changes.page)); }
+  if ("search" in changes) {
+    next.delete("search");
+    if (changes.search?.trim()) next.set("search", changes.search.trim());
+  }
+  if ("teamName" in changes) {
+    next.delete("teamName");
+    if (changes.teamName?.trim()) next.set("teamName", changes.teamName.trim());
+  }
+  if ("status" in changes) {
+    next.delete("status");
+    if (changes.status != null && changes.status !== "ALL")
+      next.set("status", changes.status);
+  }
+  if ("sortBy" in changes) {
+    next.delete("sortBy");
+    if (changes.sortBy != null && changes.sortBy !== "lastName")
+      next.set("sortBy", changes.sortBy);
+  }
+  if ("sortOrder" in changes) {
+    next.delete("sortOrder");
+    if (changes.sortOrder === "desc") next.set("sortOrder", "desc");
+  }
+  if ("page" in changes) {
+    next.delete("page");
+    if (changes.page != null && changes.page > 1) next.set("page", String(changes.page));
+  }
 
   return next;
 }

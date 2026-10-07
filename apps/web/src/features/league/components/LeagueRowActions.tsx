@@ -12,10 +12,16 @@ interface LeagueRowActionsProps {
   onAction: (action: LeagueActionType) => void;
 }
 
-function LeagueRowActions({ canDelete, canEdit, league, onAction }: LeagueRowActionsProps) {
+function LeagueRowActions({
+  canDelete,
+  canEdit,
+  league,
+  onAction,
+}: LeagueRowActionsProps) {
   if (!canEdit) return null;
 
-  const actionType: LeagueActionType = getStatus(league) === "ACTIVE" ? "deactivate" : "activate";
+  const actionType: LeagueActionType =
+    getStatus(league) === "ACTIVE" ? "deactivate" : "activate";
   const actions: ResourceAction[] = [
     {
       href: `/dashboard/leagues/${league.id}/edit`,
@@ -28,12 +34,14 @@ function LeagueRowActions({ canDelete, canEdit, league, onAction }: LeagueRowAct
       onSelect: () => onAction(actionType),
     },
     ...(canDelete
-      ? [{
-        key: "delete",
-        label: "Supprimer",
-        onSelect: () => onAction("delete"),
-        tone: "danger" as const,
-      }]
+      ? [
+        {
+          key: "delete",
+          label: "Supprimer",
+          onSelect: () => onAction("delete"),
+          tone: "danger" as const,
+        },
+      ]
       : []),
   ];
 
@@ -46,4 +54,5 @@ function LeagueRowActions({ canDelete, canEdit, league, onAction }: LeagueRowAct
 }
 
 export default LeagueRowActions;
+
 export type { LeagueActionType };

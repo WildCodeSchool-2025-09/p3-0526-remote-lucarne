@@ -108,7 +108,7 @@ describe("LeagueListPage", () => {
     expect(screen.getAllByLabelText("Initiale de Ligue de France")[0]).toHaveTextContent("L");
     expect(screen.getAllByAltText("Logo de Liga España")[0]).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "Liste des ligues sous forme de cartes" })).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    expect(within(screen.getByRole("list", { name: "Liste des ligues sous forme de cartes" })).getAllByRole("listitem")).toHaveLength(2);
   });
 
   it("updates search, multi-country filter, status and sort, then resets criteria", async () => {

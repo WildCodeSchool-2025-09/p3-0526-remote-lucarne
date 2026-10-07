@@ -1,5 +1,6 @@
 import {
   BriefcaseBusiness,
+  Bug,
   CalendarDays,
   ChevronDown,
   Ellipsis,
@@ -38,6 +39,7 @@ const temporaryIcons = {
   chevron: ChevronDown,
   actions: Ellipsis,
   ball: Volleyball,
+  bug: Bug,
 } as const satisfies Record<string, LucideIcon>;
 
 export { temporaryIcons };

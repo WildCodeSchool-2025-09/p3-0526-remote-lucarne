@@ -1,6 +1,7 @@
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import prisma from "../../../database/prisma";
+import { resetAndSeedDatabase } from "../../../database/resetAndSeed";
 import app from "../../../src/app";
 import { APP_ROLES } from "../../../src/auth/appRole";
 import { verifyAccessToken } from "../../../src/auth/jwt";
@@ -43,9 +44,23 @@ beforeEach(async () => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 describe("POST /api/v1/auth/login", () => {
+  it("loads seasons with a fresh login after reset and rejects the previous session", async () => {
+    const previousLogin = await request(app).post("/api/v1/auth/login").send({ email, password }).expect(200);
+    const previousToken = (previousLogin.body as { accessToken: string }).accessToken;
+    vi.stubEnv("DEMO_ADMIN_PASSWORD", password);
+    await resetAndSeedDatabase(prisma);
+
+    const freshLogin = await request(app).post("/api/v1/auth/login").send({ email, password }).expect(200);
+    const freshToken = (freshLogin.body as { accessToken: string }).accessToken;
+    expect((await verifyAccessToken(freshToken)).sub).not.toBe(userId);
+    await request(app).get("/api/v1/seasons").set("Authorization", `Bearer ${previousToken}`).expect(401);
+    const seasons = await request(app).get("/api/v1/seasons").set("Authorization", `Bearer ${freshToken}`).expect(200);
+    expect(seasons.body).toMatchObject({ data: [], pagination: { totalItems: 0 } });
+  });
   it("returns an access token for valid credentials", async () => {
     const response = await request(app)
       .post("/api/v1/auth/login")

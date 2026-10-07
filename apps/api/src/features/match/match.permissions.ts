@@ -1,0 +1,4 @@
+import { APP_ROLES } from "../../auth/appRole";
+const MATCH_VIEW_ROLES = [APP_ROLES.ADMIN, APP_ROLES.MODERATOR, APP_ROLES.EDITOR] as const;
+const MATCH_WRITE_ROLES = [APP_ROLES.ADMIN] as const;
+export { MATCH_VIEW_ROLES, MATCH_WRITE_ROLES };

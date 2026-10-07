@@ -15,7 +15,7 @@ describe("CreateSeasonForm", () => {
   });
 
   it("renders season fields", () => {
-    render(<CreateSeasonForm leagueId="league-id" />);
+    render(<CreateSeasonForm />);
 
     expect(screen.getByLabelText("Nom *")).toBeInTheDocument();
     expect(screen.getByLabelText("Date de début *")).toBeInTheDocument();
@@ -24,7 +24,7 @@ describe("CreateSeasonForm", () => {
 
   it("rejects an invalid period and submits a valid payload", async () => {
     const user = userEvent.setup();
-    render(<CreateSeasonForm leagueId="league-id" />);
+    render(<CreateSeasonForm />);
 
     await user.type(screen.getByLabelText("Nom *"), "2026-2027");
     await user.type(screen.getByLabelText("Date de début *"), "2027-06-30");

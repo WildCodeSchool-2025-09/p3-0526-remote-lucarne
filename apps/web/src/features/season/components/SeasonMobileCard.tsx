@@ -1,24 +1,60 @@
-import type { Season } from "@lucarne/shared";
+import { seasonStyles } from "../seasonStyles";
+import type { SeasonListItem } from "@lucarne/shared";
 import { Link } from "react-router";
 import { formatDate } from "../../../lib/dateFormat";
-import { Button } from "../../../ui";
-import SeasonStatusBadge from "./SeasonStatusBadge";
+import { formatDateTime } from "../../../lib/dateTimeFormat";
 
 interface SeasonMobileCardProps {
-  canSetCurrent: boolean;
   canUpdate: boolean;
-  onSetCurrent: (season: Season) => void;
-  season: Season;
+  season: SeasonListItem;
 }
 
-function SeasonMobileCard({ canSetCurrent, canUpdate, onSetCurrent, season }: SeasonMobileCardProps) {
+function SeasonMobileCard({ canUpdate, season }: SeasonMobileCardProps) {
   return (
-    <article className="dashboard-list-card" role="listitem">
-      <header><h2><Link className="dashboard-list__name" to={`/dashboard/seasons/${season.id}`}>{season.name}</Link></h2><SeasonStatusBadge status={season.status} /></header>
-      <p>{formatDate(season.startDate)} – {formatDate(season.endDate)}</p>
-      <div className="dashboard-list-card__actions">
-        {canUpdate ? <Link className="lucarne-button lucarne-button--outline" to={`/dashboard/seasons/${season.id}/edit`}>Modifier</Link> : null}
-        {canSetCurrent && season.status !== "CURRENT" ? <Button onClick={() => onSetCurrent(season)} variant="outline">Définir courante</Button> : null}
+    <article
+      className="grid gap-4 rounded-[10px] bg-[var(--color-bg-subtle)] p-3"
+      role="listitem"
+    >
+      <header>
+        <h2>
+          <Link className={seasonStyles.nameLink} to={`/dashboard/seasons/${season.id}`}>
+            {season.name}
+          </Link>
+        </h2>
+      </header>
+      <dl
+        className={`
+          grid gap-3 m-0 [&_div]:grid [&_div]:gap-1 [&_dt]:text-[0.75rem] [&_dt]:font-bold
+          [&_dt]:text-[var(--color-text-secondary)] [&_dt]:uppercase [&_dd]:m-0
+        `}
+      >
+        <div>
+          <dt>Ligues</dt>
+          <dd>
+            {season.leagueSeasons.map((edition) => edition.league.name).join(", ") ||
+              "Aucune ligue"}
+          </dd>
+        </div>
+        <div>
+          <dt>Période</dt>
+          <dd>
+            {formatDate(season.startDate)} – {formatDate(season.endDate)}
+          </dd>
+        </div>
+        <div>
+          <dt>Création</dt>
+          <dd>{formatDateTime(season.createdAt)}</dd>
+        </div>
+      </dl>
+      <div>
+        {canUpdate ? (
+          <Link
+            className="lucarne-button lucarne-button--outline"
+            to={`/dashboard/seasons/${season.id}/edit`}
+          >
+            Modifier
+          </Link>
+        ) : null}
       </div>
     </article>
   );

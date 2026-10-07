@@ -1,3 +1,4 @@
+import { createSeasonForLeague } from "../../helpers/season";
 import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -9,9 +10,7 @@ const createLeague = () => prisma.league.create({
   data: { name: `League ${randomUUID()}`, country: "France", isActive: true },
 });
 
-const createSeason = (leagueId: string, name: string) => prisma.season.create({
-  data: { leagueId, name, startDate: new Date("2026-08-01"), endDate: new Date("2027-06-30") },
-});
+const createSeason = createSeasonForLeague;
 
 describe("PATCH /api/v1/leagues/:leagueId/seasons/:seasonId/current", () => {
   beforeEach(() => {
@@ -40,8 +39,8 @@ describe("PATCH /api/v1/leagues/:leagueId/seasons/:seasonId/current", () => {
       .set("Authorization", `Bearer ${admin.accessToken}`);
 
     expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({ id: target.id, status: "CURRENT", version: 1 });
-    await expect(prisma.season.findUnique({ where: { id: target.id } })).resolves.toMatchObject({ isActive: true, version: 1 });
+    expect(response.body).toMatchObject({ seasonId: target.id, leagueId: league.id, isCurrent: true });
+    await expect(prisma.leagueSeason.findUnique({ where: { id: target.leagueSeasonId } })).resolves.toMatchObject({ isCurrent: true });
   });
 
   it("keeps exactly one current season per league and is idempotent", async () => {
@@ -54,8 +53,8 @@ describe("PATCH /api/v1/leagues/:leagueId/seasons/:seasonId/current", () => {
     await request(app).patch(`/api/v1/leagues/${league.id}/seasons/${second.id}/current`).set("Authorization", `Bearer ${admin.accessToken}`).expect(200);
     await request(app).patch(`/api/v1/leagues/${league.id}/seasons/${second.id}/current`).set("Authorization", `Bearer ${admin.accessToken}`).expect(200);
 
-    await expect(prisma.season.count({ where: { leagueId: league.id, isActive: true } })).resolves.toBe(1);
-    await expect(prisma.season.findUnique({ where: { id: first.id } })).resolves.toMatchObject({ isActive: false, version: 2 });
-    await expect(prisma.season.findUnique({ where: { id: second.id } })).resolves.toMatchObject({ isActive: true, version: 1 });
+    await expect(prisma.leagueSeason.count({ where: { leagueId: league.id, isCurrent: true } })).resolves.toBe(1);
+    await expect(prisma.leagueSeason.findUnique({ where: { id: first.leagueSeasonId } })).resolves.toMatchObject({ isCurrent: false });
+    await expect(prisma.leagueSeason.findUnique({ where: { id: second.leagueSeasonId } })).resolves.toMatchObject({ isCurrent: true });
   });
 });

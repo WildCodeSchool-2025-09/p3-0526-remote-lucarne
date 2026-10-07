@@ -1,4 +1,6 @@
 import { z } from "zod";
+import os from "node:os";
+import path from "node:path";
 
 const optionalUrlSchema = z.preprocess(
   (value) => value === "" ? undefined : value,
@@ -11,6 +13,14 @@ const databaseUrlSchema = z.url().refine((value) => {
   return ["postgres:", "postgresql:"].includes(url.protocol)
     && url.pathname.length > 1;
 }, "Must be a PostgreSQL URL containing a database name");
+
+const absolutePathSchema = z.preprocess(
+  (value) => value === "" ? undefined : value,
+  z.string()
+    .trim()
+    .min(1)
+    .refine((value) => path.isAbsolute(value), "Must be an absolute path"),
+);
 
 const environmentSchema = z.object({
   NODE_ENV: z
@@ -37,6 +47,9 @@ const environmentSchema = z.object({
   LOGIN_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1_000).max(3_600_000).default(60_000),
 
   CLIENT_URL: optionalUrlSchema,
+
+  BUG_REPORTS_FILE_PATH: absolutePathSchema.optional(),
+  UPLOAD_DIRECTORY: absolutePathSchema.optional(),
 
   DATABASE_URL: databaseUrlSchema,
   TEST_DATABASE_URL: databaseUrlSchema.optional(),
@@ -99,6 +112,14 @@ const environment = Object.freeze({
   database: {
     connectionString: databaseUrl,
     name: databaseName,
+  },
+  bugReports: {
+    filePath: parsedEnvironment.BUG_REPORTS_FILE_PATH
+      ?? path.join(os.homedir(), ".lucarne", "bug-reports.json"),
+  },
+  upload: {
+    directory: parsedEnvironment.UPLOAD_DIRECTORY
+      ?? path.join(os.homedir(), ".lucarne", "upload"),
   },
 });
 

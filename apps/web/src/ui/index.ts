@@ -8,6 +8,7 @@ export * from "./EntityLogo";
 export * from "./EntityAvatar";
 export * from "./FormField";
 export * from "./Input";
+export * from "./ImagePicker";
 export * from "./icons";
 export * from "./LoadingState";
 export * from "./Pagination";

@@ -1,6 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { HttpError } from "../../../lib/httpClient";
-import { activateLeague, deactivateLeague, deleteLeague } from "../../../services/league.service";
+import {
+  activateLeague,
+  deactivateLeague,
+  deleteLeague,
+} from "../../../services/league.service";
 import { leagueKeys } from "../leagueKeys";
 
 interface LeagueMutationInput {
@@ -11,7 +15,11 @@ interface LeagueMutationInput {
 function useLeagueMutation() {
   const queryClient = useQueryClient();
 
-  return useMutation<Awaited<ReturnType<typeof activateLeague>> | void, HttpError, LeagueMutationInput>({
+  return useMutation<
+    Awaited<ReturnType<typeof activateLeague>> | void,
+    HttpError,
+    LeagueMutationInput
+  >({
     mutationFn: async ({ action, id }) => {
       if (action === "activate") {
         return activateLeague(id);
@@ -29,6 +37,7 @@ function useLeagueMutation() {
       } else if (league !== undefined) {
         queryClient.setQueryData(leagueKeys.detail(variables.id), league);
       }
+
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: leagueKeys.lists() }),
         queryClient.invalidateQueries({ queryKey: leagueKeys.countries() }),

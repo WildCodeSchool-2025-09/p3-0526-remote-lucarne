@@ -11,16 +11,42 @@ interface PlayerRowActionsProps {
   player: Player;
 }
 
-function PlayerRowActions({ canDelete, canEdit, onAction, player }: PlayerRowActionsProps) {
+function PlayerRowActions({
+  canDelete,
+  canEdit,
+  onAction,
+  player,
+}: PlayerRowActionsProps) {
   if (!canEdit) return null;
+
   const actionType: PlayerActionType = player.isActive ? "deactivate" : "activate";
   const actions: ResourceAction[] = [
     { href: `/dashboard/players/${player.id}/edit`, key: "edit", label: "Modifier" },
-    { key: actionType, label: actionType === "deactivate" ? "Désactiver" : "Activer", onSelect: () => onAction(actionType) },
-    ...(canDelete ? [{ key: "delete", label: "Supprimer", onSelect: () => onAction("delete"), tone: "danger" as const }] : []),
+    {
+      key: actionType,
+      label: actionType === "deactivate" ? "Désactiver" : "Activer",
+      onSelect: () => onAction(actionType),
+    },
+    ...(canDelete
+      ? [
+        {
+          key: "delete",
+          label: "Supprimer",
+          onSelect: () => onAction("delete"),
+          tone: "danger" as const,
+        },
+      ]
+      : []),
   ];
-  return <ResourceActionsPopover actions={actions} triggerLabel={`Ouvrir les actions de ${player.firstName} ${player.lastName}`} />;
+
+  return (
+    <ResourceActionsPopover
+      actions={actions}
+      triggerLabel={`Ouvrir les actions de ${player.firstName} ${player.lastName}`}
+    />
+  );
 }
 
 export default PlayerRowActions;
+
 export type { PlayerActionType };

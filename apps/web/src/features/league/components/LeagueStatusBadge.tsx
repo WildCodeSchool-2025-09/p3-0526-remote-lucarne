@@ -6,7 +6,11 @@ interface LeagueStatusBadgeProps {
 }
 
 function LeagueStatusBadge({ status }: LeagueStatusBadgeProps) {
-  return <StatusBadge variant={status === "ACTIVE" ? "active" : "inactive"}>{status === "ACTIVE" ? "Active" : "Inactive"}</StatusBadge>;
+  return (
+    <StatusBadge variant={status === "ACTIVE" ? "active" : "inactive"}>
+      {status === "ACTIVE" ? "Active" : "Inactive"}
+    </StatusBadge>
+  );
 }
 
 export default LeagueStatusBadge;

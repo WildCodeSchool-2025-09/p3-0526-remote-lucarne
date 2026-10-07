@@ -1,3 +1,4 @@
+import { leagueStyles } from "../leagueStyles";
 import type { League } from "@lucarne/shared";
 import { Link } from "react-router";
 import { EntityLogo } from "../../../ui";
@@ -12,19 +13,33 @@ interface LeagueMobileCardProps {
   onAction: (league: League, action: LeagueActionType) => void;
 }
 
-function LeagueMobileCard({ canDelete, canEdit, league, onAction }: LeagueMobileCardProps) {
+function LeagueMobileCard({
+  canDelete,
+  canEdit,
+  league,
+  onAction,
+}: LeagueMobileCardProps) {
   const status = getStatus(league);
 
   return (
-    <article className="dashboard-list-card" role="listitem">
-      <div className="dashboard-list-card__main">
+    <article
+      className="grid gap-4 rounded-[10px] bg-[var(--color-bg-subtle)] p-3"
+      role="listitem"
+    >
+      <div
+        className={
+          "flex items-center gap-3 [&_p]:mt-1 [&_p]:mb-0 [&_p]:text-[13px] [&_p]:text-[var(--color-text-secondary)]"
+        }
+      >
         <EntityLogo logoUrl={league.logoUrl} name={league.name} />
         <div>
-          <Link className="dashboard-list__name" to={`/dashboard/leagues/${league.id}`}>{league.name}</Link>
+          <Link className={leagueStyles.nameLink} to={`/dashboard/leagues/${league.id}`}>
+            {league.name}
+          </Link>
           <p>{league.country}</p>
         </div>
       </div>
-      <div className="dashboard-list-card__footer">
+      <div className={leagueStyles.cardFooter}>
         <LeagueStatusBadge status={status} />
         <LeagueRowActions
           canDelete={canDelete}

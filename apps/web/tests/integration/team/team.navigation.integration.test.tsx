@@ -48,8 +48,8 @@ describe("Team navigation through the application routes", () => {
 
         expect(await screen.findByRole("heading", { name: "Créer une équipe" })).toBeInTheDocument();
         expect(router.state.location.pathname).toBe("/dashboard/teams/new");
-        expect(screen.queryByRole("navigation", { name: "Navigation du dashboard" })).not.toBeInTheDocument();
-        expect(screen.getByText("Lucarnes", { selector: "header" })).toBeInTheDocument();
+        expect(screen.getByRole("navigation", { name: "Navigation du dashboard" })).toBeInTheDocument();
+        expect(screen.queryByText("Lucarnes", { selector: "header" })).not.toBeInTheDocument();
         expect(screen.getByLabelText("Nom de l’équipe *")).toBeInTheDocument();
         expect(screen.getByRole("button", { name: "Créer l’équipe" })).toBeEnabled();
         expect(screen.queryByRole("alert")).not.toBeInTheDocument();

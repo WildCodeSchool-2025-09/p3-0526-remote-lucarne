@@ -128,20 +128,22 @@ describe("team_player integrity and player deactivation", () => {
     await expect(prisma.team.delete({ where: { id: secondTeam.id } })).rejects.toMatchObject({ code: "P2003" });
   });
 
-  it("schedules a future assignment, closes the current assignment on that date, and rejects a second planned assignment", async () => {
+  it("schedules a future assignment, closes the predecessor the day before, and accepts successive planned assignments", async () => {
     const [currentTeam, futureTeam, anotherFutureTeam, player] = await Promise.all([createTeam(), createTeam(), createTeam(), createPlayer()]);
+    const currentLogoUrl = "https://example.com/club-logo.png";
+    await prisma.team.update({ where: { id: currentTeam.id }, data: { logoUrl: currentLogoUrl } });
     await prisma.teamPlayer.create({ data: { teamId: currentTeam.id, playerId: player.id, joinedAt: date("2026-01-01") } });
 
     const scheduled = await createPlayerAssignmentService(player.id, { teamId: futureTeam.id, joinedAt: "2099-01-01" });
 
     expect(scheduled.activeTeam).toMatchObject({ id: currentTeam.id });
     expect(scheduled.assignments).toEqual(expect.arrayContaining([
-      expect.objectContaining({ team: { id: currentTeam.id, name: currentTeam.name }, leftAt: "2099-01-01", state: "CURRENT" }),
-      expect.objectContaining({ team: { id: futureTeam.id, name: futureTeam.name }, leftAt: null, state: "PLANNED" }),
+      expect.objectContaining({ team: { id: currentTeam.id, name: currentTeam.name, logoUrl: currentLogoUrl }, leftAt: "2098-12-31", state: "CURRENT" }),
+      expect.objectContaining({ team: { id: futureTeam.id, name: futureTeam.name, logoUrl: null }, leftAt: null, state: "PLANNED" }),
     ]));
-    await expect(createPlayerAssignmentService(player.id, { teamId: anotherFutureTeam.id, joinedAt: "2099-02-01" }))
-      .rejects.toMatchObject({ code: "ASSIGNMENT_ALREADY_PLANNED" });
-    expect(assignmentState({ joinedAt: date("2026-01-01"), leftAt: date("2099-01-01") }, date("2099-01-01"))).toBe("HISTORICAL");
+    const second = await createPlayerAssignmentService(player.id, { teamId: anotherFutureTeam.id, joinedAt: "2099-02-01" });
+    expect(second.assignments).toEqual(expect.arrayContaining([expect.objectContaining({ team: { id: futureTeam.id, name: futureTeam.name, logoUrl: null }, leftAt: "2099-01-31" })]));
+    expect(assignmentState({ joinedAt: date("2026-01-01"), leftAt: date("2098-12-31") }, date("2099-01-01"))).toBe("HISTORICAL");
     expect(assignmentState({ joinedAt: date("2099-01-01"), leftAt: null }, date("2099-01-01"))).toBe("CURRENT");
   });
 
@@ -163,14 +165,14 @@ describe("team_player integrity and player deactivation", () => {
     const duplicate = await request(app)
       .post(`/api/v1/players/${player.id}/assignments`)
       .set("Authorization", `Bearer ${editor.accessToken}`)
-      .send({ teamId: anotherTeam.id, joinedAt: "2099-02-01" });
+      .send({ teamId: anotherTeam.id, joinedAt: "2099-01-01" });
 
     expect(forbidden.status).toBe(403);
     expect(invalid.status).toBe(400);
     expect(created.status).toBe(201);
     expect(created.body).toMatchObject({ assignments: [{ team: { id: team.id }, state: "PLANNED", shirtNumber: 8 }] });
     expect(duplicate.status).toBe(409);
-    expect(duplicate.body).toMatchObject({ error: { code: "ASSIGNMENT_ALREADY_PLANNED" } });
+    expect(duplicate.body).toMatchObject({ error: { code: "ASSIGNMENT_PERIOD_CONFLICT" } });
     await expect(prisma.teamPlayer.count({ where: { playerId: player.id } })).resolves.toBe(1);
   });
 
@@ -201,7 +203,7 @@ describe("team_player integrity and player deactivation", () => {
     expect(all.data).toHaveLength(2);
   });
 
-  it("closes the current assignment, preserves a planned assignment, and is idempotent", async () => {
+  it("preserves current and planned assignment dates and is idempotent", async () => {
     const [currentTeam, futureTeam, currentPlayer, futurePlayer] = await Promise.all([createTeam(), createTeam(), createPlayer(), createPlayer()]);
     await prisma.teamPlayer.create({ data: { teamId: currentTeam.id, playerId: currentPlayer.id, joinedAt: date("2026-01-01") } });
     await prisma.teamPlayer.create({ data: { teamId: futureTeam.id, playerId: futurePlayer.id, joinedAt: date("2099-01-01") } });
@@ -209,14 +211,14 @@ describe("team_player integrity and player deactivation", () => {
     const result = await deactivatePlayerService(currentPlayer.id);
     const repeated = await deactivatePlayerService(currentPlayer.id);
     const plannedResult = await deactivatePlayerService(futurePlayer.id);
-    expect(result).toMatchObject({ isActive: false, assignments: [{ team: { id: currentTeam.id }, state: "HISTORICAL" }] });
+    expect(result).toMatchObject({ isActive: false, activeTeam: null, isSelectable: false, assignments: [{ team: { id: currentTeam.id }, state: "CURRENT", joinedAt: "2026-01-01", leftAt: null }] });
     expect(repeated.version).toBe(result.version);
     expect(plannedResult).toMatchObject({ isActive: false, assignments: [{ team: { id: futureTeam.id }, state: "PLANNED", leftAt: null }] });
   });
 
   it("makes deactivation idempotent through the HTTP API while retaining a planned assignment", async () => {
     const [editor, currentTeam, futureTeam, player] = await Promise.all([createEditor(), createTeam(), createTeam(), createPlayer()]);
-    await prisma.teamPlayer.create({ data: { teamId: currentTeam.id, playerId: player.id, joinedAt: date("2026-01-01"), leftAt: date("2099-01-01") } });
+    await prisma.teamPlayer.create({ data: { teamId: currentTeam.id, playerId: player.id, joinedAt: date("2026-01-01"), leftAt: date("2098-12-31") } });
     await prisma.teamPlayer.create({ data: { teamId: futureTeam.id, playerId: player.id, joinedAt: date("2099-01-01") } });
 
     const first = await request(app)
@@ -230,18 +232,17 @@ describe("team_player integrity and player deactivation", () => {
 
     expect(first.status).toBe(200);
     expect(firstBody).toMatchObject({ isActive: false });
-    expect(firstBody.assignments.some((assignment) => assignment.team.id === currentTeam.id && assignment.state === "HISTORICAL")).toBe(true);
+    expect(firstBody.assignments.some((assignment) => assignment.team.id === currentTeam.id && assignment.state === "CURRENT" && assignment.leftAt === "2098-12-31")).toBe(true);
     expect(firstBody.assignments.some((assignment) => assignment.team.id === futureTeam.id && assignment.state === "PLANNED" && assignment.leftAt === null)).toBe(true);
     expect(repeated.status).toBe(200);
     expect(repeatedBody.version).toBe(firstBody.version);
     const assignments = await prisma.teamPlayer.findMany({ where: { playerId: player.id }, orderBy: { joinedAt: "asc" } });
     expect(assignments).toHaveLength(2);
-    expect(assignments[0]).toMatchObject({ teamId: currentTeam.id });
-    expect(assignments[0]?.leftAt).toBeInstanceOf(Date);
+    expect(assignments[0]).toMatchObject({ teamId: currentTeam.id, joinedAt: date("2026-01-01"), leftAt: date("2098-12-31") });
     expect(assignments[1]).toMatchObject({ teamId: futureTeam.id, leftAt: null });
   });
 
-  it("rolls back the assignment closure when the player status update fails", async () => {
+  it("retains assignment dates and active status when the player status update fails", async () => {
     const [team, player] = await Promise.all([createTeam(), createPlayer()]);
     await prisma.teamPlayer.create({ data: { teamId: team.id, playerId: player.id, joinedAt: date("2026-01-01") } });
     await client.query(`

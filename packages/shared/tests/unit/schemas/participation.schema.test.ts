@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   createParticipationInputSchema,
   participationStatusSchema,
-  seasonParticipationParamsSchema,
+  leagueSeasonParticipationParamsSchema,
 } from "@lucarne/shared/schemas";
 
 const teamId = "11111111-1111-4111-8111-111111111111";
-const seasonId = "22222222-2222-4222-8222-222222222222";
+const leagueSeasonId = "22222222-2222-4222-8222-222222222222";
 
 describe("createParticipationInputSchema", () => {
   it("accepts a valid team identifier", () => {
@@ -22,13 +22,13 @@ describe("createParticipationInputSchema", () => {
   });
 });
 
-describe("seasonParticipationParamsSchema", () => {
+describe("leagueSeasonParticipationParamsSchema", () => {
   it("accepts valid season and team identifiers", () => {
-    expect(seasonParticipationParamsSchema.parse({ seasonId, teamId })).toEqual({ seasonId, teamId });
+    expect(leagueSeasonParticipationParamsSchema.parse({ leagueSeasonId, teamId })).toEqual({ leagueSeasonId, teamId });
   });
 
   it("rejects invalid identifiers", () => {
-    expect(seasonParticipationParamsSchema.safeParse({ seasonId, teamId: "invalid" }).success).toBe(false);
+    expect(leagueSeasonParticipationParamsSchema.safeParse({ leagueSeasonId, teamId: "invalid" }).success).toBe(false);
   });
 });
 

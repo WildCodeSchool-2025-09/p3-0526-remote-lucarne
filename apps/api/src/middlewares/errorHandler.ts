@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler } from "express";
 import { mapErrorToAppError } from "../errors/mapErrorToAppError";
+import { AppError } from "../errors/AppError";
 import type { ApiErrorResponse } from "@lucarne/shared";
 
 const errorHandler: ErrorRequestHandler = (error, request, response, next) => {
@@ -9,47 +10,35 @@ const errorHandler: ErrorRequestHandler = (error, request, response, next) => {
     ? (error as { status?: unknown }).status
     : undefined;
   const safeStatus = typeof status === "number" ? status : undefined;
+  let appError = mapErrorToAppError(error);
+  if (appError == null && error instanceof SyntaxError && safeStatus === 400) {
+    appError = new AppError(400, "INVALID_JSON", "Request body contains invalid JSON");
+  }
+  if (appError == null && error instanceof Error && error.name === "PayloadTooLargeError") {
+    appError = new AppError(413, "PAYLOAD_TOO_LARGE", "Request body is too large");
+  }
+  appError ??= new AppError(500, "INTERNAL_SERVER_ERROR", "An unexpected error occurred");
+
+  // Route patterns omit user-controlled URL segments, query strings and bodies.
+  const route: unknown = request.route;
+  const routePattern = typeof route === "object" && route != null
+    && "path" in route && typeof route.path === "string" ? route.path : "unmatched";
   console.error(JSON.stringify({
     event: "request_error",
     method: request.method,
-    path: request.path,
-    status: safeStatus,
-    code: error instanceof Error ? error.name : "UNKNOWN_ERROR",
+    route: routePattern,
+    status: appError.statusCode,
+    code: appError.code,
   }));
 
-  const appError = mapErrorToAppError(error);
-
-  if (appError != null) {
-    const payload: ApiErrorResponse = {
-      error: {
-        code: appError.code,
-        message: appError.message,
-        ...(appError.details == null
-          ? {}
-          : { details: appError.details }),
-      },
-    };
-
-    response.status(appError.statusCode).json(payload);
-    return;
-  }
-
-  if (error instanceof SyntaxError && safeStatus === 400) {
-    response.status(400).json({ error: { code: "INVALID_JSON", message: "Request body contains invalid JSON" } });
-    return;
-  }
-
-  if (error instanceof Error && error.name === "PayloadTooLargeError") {
-    response.status(413).json({ error: { code: "PAYLOAD_TOO_LARGE", message: "Request body is too large" } });
-    return;
-  }
-
-  response.status(500).json({
+  const payload: ApiErrorResponse = {
     error: {
-      code: "INTERNAL_SERVER_ERROR",
-      message: "An unexpected error occurred",
+      code: appError.code,
+      message: appError.message,
+      ...(appError.details == null ? {} : { details: appError.details }),
     },
-  });
+  };
+  response.status(appError.statusCode).json(payload);
 };
 
 export { errorHandler };

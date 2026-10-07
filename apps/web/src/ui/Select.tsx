@@ -8,7 +8,7 @@ function Select({ className = "", ...props }: SelectProps) {
 
   return (
     <div className="lucarne-select-control">
-      <select className={`lucarne-select ${className}`.trim()} {...props} />
+      <select className={`lucarne-input lucarne-select ${className}`.trim()} {...props} />
       <ChevronIcon aria-hidden="true" className="lucarne-select-icon" size={16} />
     </div>
   );

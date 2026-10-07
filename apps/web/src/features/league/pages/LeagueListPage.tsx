@@ -1,9 +1,23 @@
+import { leagueStyles } from "../leagueStyles";
 import type { League, ListLeaguesParams } from "@lucarne/shared";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
-import { canCreateLeague, canDeleteLeague, canViewLeague, getCurrentAppRole } from "../../../auth/authRole";
+import {
+  canCreateLeague,
+  canDeleteLeague,
+  canViewLeague,
+  getCurrentAppRole,
+} from "../../../auth/authRole";
 import DashboardListPageHeader from "../../../components/dashboard/DashboardListPageHeader";
-import { Alert, Button, ConfirmDialog, EmptyState, LoadingState, Pagination, temporaryIcons } from "../../../ui";
+import {
+  Alert,
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  LoadingState,
+  Pagination,
+  temporaryIcons,
+} from "../../../ui";
 import { HttpError } from "../../../lib/httpClient";
 import LeagueFilters from "../components/LeagueFilters";
 import LeagueMobileCard from "../components/LeagueMobileCard";
@@ -20,7 +34,11 @@ interface PendingAction {
 }
 
 function getFriendlyError(error: unknown, fallback: string): string {
-  if (error instanceof HttpError && error.status === 404 && error.code === "RESOURCE_NOT_FOUND") {
+  if (
+    error instanceof HttpError &&
+    error.status === 404 &&
+    error.code === "RESOURCE_NOT_FOUND"
+  ) {
     return "Cette ligue n’existe plus ou a déjà été supprimée.";
   }
 
@@ -29,8 +47,10 @@ function getFriendlyError(error: unknown, fallback: string): string {
   }
 
   if (error instanceof HttpError && error.code === "LEAGUE_DELETION_BLOCKED") {
-    return error.details?.map((detail) => detail.message).join(" ")
-      || "La suppression est bloquée par des dépendances.";
+    return (
+      error.details?.map((detail) => detail.message).join(" ") ||
+      "La suppression est bloquée par des dépendances."
+    );
   }
 
   return fallback;
@@ -43,25 +63,38 @@ function LeagueListPage() {
   const countriesQuery = useLeagueCountries();
   const mutation = useLeagueMutation();
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
-  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
   const role = getCurrentAppRole();
   const canDelete = canDeleteLeague(role);
   const canCreate = canCreateLeague(role);
   const canEdit = canViewLeague(role);
 
   const countryOptions = useMemo(() => {
-    const countries = new Set([...(params.countries ?? []), ...(countriesQuery.data ?? [])]);
+    const countries = new Set([
+      ...(params.countries ?? []),
+      ...(countriesQuery.data ?? []),
+    ]);
 
     return [...countries].sort((left, right) => left.localeCompare(right, "fr"));
   }, [countriesQuery.data, params.countries]);
 
-  const setCriteria = (changes: Partial<ListLeaguesParams> & { countries?: string[] }) => {
-    setSearchParams((current) => updateParams(current, { ...changes, page: changes.page ?? 1 }));
+  const setCriteria = (
+    changes: Partial<ListLeaguesParams> & { countries?: string[] },
+  ) => {
+    setSearchParams((current) =>
+      updateParams(current, { ...changes, page: changes.page ?? 1 }),
+    );
   };
 
   const resetCriteria = () => setSearchParams(new URLSearchParams());
   const totalPages = query.data?.pagination.totalPages ?? 0;
-  const isFiltered = Boolean(params.search) || params.status !== "ALL" || (params.countries?.length ?? 0) > 0;
+  const isFiltered =
+    Boolean(params.search) ||
+    params.status !== "ALL" ||
+    (params.countries?.length ?? 0) > 0;
   const leagueNames = query.data?.data.map((league) => league.name) ?? [];
 
   useEffect(() => {
@@ -79,19 +112,22 @@ function LeagueListPage() {
     if (pendingAction == null) return;
 
     const action = pendingAction;
+
     try {
       await mutation.mutateAsync({ action: action.type, id: action.league.id });
       setPendingAction(null);
       setFeedback({
         type: "success",
-        message: action.type === "deactivate"
-          ? "La ligue a été désactivée."
-          : action.type === "activate"
-            ? "La ligue a été activée."
-            : "La ligue a été supprimée.",
+        message:
+          action.type === "deactivate"
+            ? "La ligue a été désactivée."
+            : action.type === "activate"
+              ? "La ligue a été activée."
+              : "La ligue a été supprimée.",
       });
 
       const currentPage = params.page ?? 1;
+
       if (action.type === "delete" && query.data?.data.length === 1 && currentPage > 1) {
         setSearchParams((current) => updateParams(current, { page: currentPage - 1 }));
       }
@@ -99,14 +135,17 @@ function LeagueListPage() {
       setPendingAction(null);
       setFeedback({
         type: "error",
-        message: getFriendlyError(error, "La ligue n’a pas pu être modifiée. Veuillez réessayer."),
+        message: getFriendlyError(
+          error,
+          "La ligue n’a pas pu être modifiée. Veuillez réessayer.",
+        ),
       });
     }
   };
 
   return (
-    <section className="dashboard-list-page" aria-labelledby="league-list-title">
-      <div className="dashboard-list-page__container">
+    <section className={leagueStyles.detailPage} aria-labelledby="league-list-title">
+      <div className={leagueStyles.container}>
         <DashboardListPageHeader
           canCreate={canCreate}
           count={query.data?.pagination.totalItems ?? 0}
@@ -119,7 +158,11 @@ function LeagueListPage() {
           title="Ligues"
         />
 
-        {feedback ? <Alert variant={feedback.type === "error" ? "danger" : "success"}>{feedback.message}</Alert> : null}
+        {feedback ? (
+          <Alert variant={feedback.type === "error" ? "danger" : "success"}>
+            {feedback.message}
+          </Alert>
+        ) : null}
 
         <LeagueFilters
           canCreate={canCreate}
@@ -132,22 +175,41 @@ function LeagueListPage() {
 
         {query.isPending ? <LoadingState>Chargement des ligues…</LoadingState> : null}
         {query.isError ? (
-          <div className="dashboard-list__state">
+          <div className="grid items-center justify-items-center gap-4 px-4 py-12 text-center">
             <Alert>Impossible de charger les ligues. Veuillez réessayer.</Alert>
             <Button onClick={() => void query.refetch()}>Réessayer</Button>
           </div>
         ) : null}
 
         {query.isSuccess && query.data.data.length === 0 ? (
-          <EmptyState action={isFiltered ? <Button onClick={resetCriteria} variant="outline">Réinitialiser les critères</Button> : undefined}>
-            {isFiltered ? "Aucune ligue ne correspond à vos critères." : "Aucune ligue n’est disponible."}
+          <EmptyState
+            action={
+              isFiltered ? (
+                <Button onClick={resetCriteria} variant="outline">
+                  Réinitialiser les critères
+                </Button>
+              ) : undefined
+            }
+          >
+            {isFiltered
+              ? "Aucune ligue ne correspond à vos critères."
+              : "Aucune ligue n’est disponible."}
           </EmptyState>
         ) : null}
 
         {query.isSuccess && query.data.data.length > 0 ? (
           <>
-            <LeagueTable canDelete={canDelete} canEdit={canEdit} leagues={query.data.data} onAction={requestAction} />
-            <div aria-label="Liste des ligues sous forme de cartes" className="dashboard-list-cards" role="list">
+            <LeagueTable
+              canDelete={canDelete}
+              canEdit={canEdit}
+              leagues={query.data.data}
+              onAction={requestAction}
+            />
+            <div
+              aria-label="Liste des ligues sous forme de cartes"
+              className="hidden gap-3 league-compact:grid"
+              role="list"
+            >
               {query.data.data.map((league) => (
                 <LeagueMobileCard
                   canDelete={canDelete}
@@ -177,11 +239,13 @@ function LeagueListPage() {
         onConfirm={() => void confirmAction()}
         open={pendingAction != null}
         pending={mutation.isPending}
-        title={pendingAction?.type === "deactivate"
-          ? "Désactiver la ligue ?"
-          : pendingAction?.type === "activate"
-            ? "Activer la ligue ?"
-            : "Supprimer définitivement la ligue ?"}
+        title={
+          pendingAction?.type === "deactivate"
+            ? "Désactiver la ligue ?"
+            : pendingAction?.type === "activate"
+              ? "Activer la ligue ?"
+              : "Supprimer définitivement la ligue ?"
+        }
         variant={pendingAction?.type === "delete" ? "danger" : "primary"}
       >
         {pendingAction?.type === "deactivate"

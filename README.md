@@ -8,17 +8,23 @@ Les packages partagés et les applications sont pilotés depuis la racine.
 ## Fonctionnalités et utilisation
 
 - Dashboard avec listes, recherche, filtres, tri et pagination des ligues,
-  équipes, joueuses et membres du staff ; présentation en tableaux ou cartes
+  équipes, joueuses, membres du staff, saisons et matchs ; présentation en tableaux ou cartes
   selon la largeur de l'écran.
 - Création, consultation, modification, activation/désactivation et suppression
   sous conditions de dépendances et de droits. La création d'une ligue ne crée
   ni saison ni participation ; elle est inactive par défaut.
 - Affectations des joueuses et du staff aux équipes : affectation initiale
   facultative, planification, équipe courante et historique conservé. Les dates
-  d'affectation sont interprétées en UTC ; désactiver une personne clôture son
-  affectation courante et conserve ses affectations planifiées.
+  d'affectation sont des dates civiles inclusives ; aujourd'hui est calculé en
+  Europe/Paris. Désactiver une joueuse conserve toutes ses périodes ; désactiver
+  le staff clôt son affectation courante la veille, sous contrôle de cohérence.
 - Contrôle de version pour les modifications des ligues, joueuses et membres du
-  staff : une modification devenue obsolète reçoit un conflit HTTP 409.
+  staff, saisons et matchs : une modification devenue obsolète reçoit un conflit HTTP 409.
+- Saisons globales réutilisées par plusieurs ligues via `LeagueSeason` ; gestion
+  des participations par édition et génération atomique des journées et emplacements.
+- Programmation, publication, états et résultats des matchs administrés par ADMIN ;
+  calendrier public `/matches`, limité aux matchs actifs et publiés. La suppression
+  d'un match conserve ses résultats et événements, et libère ses réservations.
 - Authentification API par mot de passe et jeton Bearer ; droits contrôlés côté
   serveur avec relecture du compte et de son rôle à chaque requête protégée.
 
@@ -26,7 +32,8 @@ Après installation et chargement du seed facultatif, ouvrir
 <http://localhost:3000/dev/login> en développement et utiliser le compte
 `admin@lucarne.test` avec le mot de passe choisi dans `DEMO_ADMIN_PASSWORD`.
 La page donne accès à `/dashboard/leagues`, `/dashboard/teams`,
-`/dashboard/players` et `/dashboard/staff-members`. Sans seed, un compte actif
+`/dashboard/players`, `/dashboard/staff-members`, `/dashboard/seasons` et
+`/dashboard/matches`. Sans seed, un compte actif
 doit déjà exister dans la base ; aucune inscription n'est implémentée.
 
 Les rôles `ADMIN`, `MODERATOR` et `EDITOR` accèdent au dashboard et aux opérations
@@ -56,9 +63,9 @@ route/contrôleur Express → service métier → repository → Prisma/PostgreS
 le préfixe `/api/v1` et un format commun d'erreur
 `{ "error": { "code": "...", "message": "..." } }`.
 
-Les pages métier actuelles utilisent `/dashboard/...` et des UUID. Les saisons,
-participations, journées, matchs et événements existent dans le modèle de
-données, mais n'ont pas de parcours de gestion dédié dans l'API et le Web.
+Les pages administratives utilisent `/dashboard/...` et des UUID internes.
+Les matchs publics utilisent un `matchPublicId` UUID distinct et immuable.
+Les événements existent dans le modèle, sans parcours de gestion dédié.
 
 ## Prérequis
 
@@ -67,10 +74,10 @@ données, mais n'ont pas de parcours de gestion dédié dans l'API et le Web.
 - Docker Desktop avec Docker Compose (méthode recommandée), ou PostgreSQL 17 pour
   une installation entièrement locale.
 
-**État du dépôt :** les deux logos importés par le dashboard résident dans
-`apps/web/docs/images`, un répertoire ignoré et non suivi par Git. Un clone seul
-ne fournit donc pas tous les fichiers nécessaires au build Web. Voir les
-[limitations confirmées](#limitations-confirmées) avant une première installation.
+Les deux PNG importés par le dashboard résident dans `apps/web/docs/images`.
+Les règles Git incluent ces deux fichiers précisément ; les autres documents
+locaux de ce répertoire restent ignorés. Les assets doivent faire partie du
+commit livré, comme les sources, pour être présents dans un clone.
 
 ## Initialisation avec Docker
 
@@ -158,6 +165,7 @@ docker compose exec web npm run db:migrate
    DATABASE_URL=postgresql://user:password@localhost:5435/lucarne
    TEST_DATABASE_URL=postgresql://test_user:test_password@localhost:5436/lucarne_test
    CLIENT_URL=http://localhost:3000
+   BUG_REPORTS_FILE_PATH=C:\\Users\\<user>\\.lucarne\\bug-reports.json
    ```
 
    Vérifier également que `VITE_API_URL` dans `apps/web/.env` contient une URL
@@ -174,9 +182,15 @@ docker compose exec web npm run db:migrate
    npm run dev
    ```
 
-   Le seed est réservé au développement/test et peut réinitialiser des valeurs de
-   démonstration. Lire [le modèle de données](apps/api/docs/DATA_MODEL.md#seeds)
-   avant de le relancer sur une base existante.
+   Le seed crée uniquement le compte administrateur `admin@lucarne.test` et les
+   rôles de référence nécessaires à l’application. Il ne crée aucune donnée métier.
+   `npm run seed` et `npm run db:seed` vident d’abord toutes les données
+   applicatives, comptes et associations inclus, puis recréent ce compte avec le
+   mot de passe fourni par `DEMO_ADMIN_PASSWORD`. Le schéma et l’historique des
+   migrations sont conservés.
+   Le reset et le chargement sont atomiques : un échec restaure les données
+   précédentes. Ces commandes sont interdites en production. Lire
+   [le modèle de données](apps/api/docs/DATA_MODEL.md#seeds) avant de les lancer.
 
 ## Communication et environnement
 
@@ -203,10 +217,37 @@ n'a pas de couche serveur propre. La valeur VITE_API_URL est intégrée au build
 | `DATABASE_URL` | URL PostgreSQL obligatoire |
 | `TEST_DATABASE_URL` | Obligatoire en mode test ; base dédiée au préfixe `lucarne_test`, distincte de la base de développement |
 | `CLIENT_URL` | Origine CORS autorisée ; facultative, vide en production de même origine |
+| `BUG_REPORTS_FILE_PATH` | Chemin absolu du fichier de bug reports de développement ; par défaut `~/.lucarne/bug-reports.json` ; ne jamais le placer dans le dépôt |
+| `UPLOAD_DIRECTORY` | Répertoire absolu des images téléversées ; défaut `~/.lucarne/upload`. Prévoir un stockage persistant ; les configurations Compose le placent dans un volume |
 | `JWT_ACCESS_TOKEN_TTL_SECONDS` | Durée du jeton ; défaut `900`, maximum `86400` secondes |
 | `LOGIN_RATE_LIMIT_MAX_ATTEMPTS` | Tentatives par couple IP/email ; défaut `5`, `0` désactive la limite |
 | `LOGIN_RATE_LIMIT_WINDOW_MS` | Fenêtre de limitation ; défaut `60000` millisecondes |
 | `DEMO_ADMIN_PASSWORD` | Mot de passe du compte de démonstration, utilisé uniquement par le seed |
+
+Le limiteur conserve au plus 10 000 compteurs IP/email à clés hachées de taille
+fixe. Chaque requête évince les entrées expirées. À capacité pleine, une nouvelle
+clé reçoit 429 avec `Retry-After` ; les compteurs actifs sont conservés pour
+éviter qu'un afflux de clés réinitialise les tentatives bloquées. La limitation
+reste locale au processus ; aucun nouvel arbitrage par IP seule ni configuration
+de proxys de confiance n'est ajouté. `LOGIN_RATE_LIMIT_MAX_ATTEMPTS=0` la désactive.
+
+Un changement de jeton ou une déconnexion vide les caches Query/Mutation et annule
+les requêtes HTTP en cours. Une révision de session empêche aussi leurs réponses
+tardives d'être rendues au compte suivant, même si le transport ignore l'annulation.
+Une tentative de connexion échouée ne remplace pas la session existante.
+
+Les formulaires de création et de modification des joueuses, du staff, des équipes
+et des ligues utilisent le composant commun `ImagePicker` pour choisir une photo ou
+un logo JPEG, PNG ou WebP de 5 Mo maximum. Le fichier est envoyé à l'enregistrement ;
+son URL est ensuite sauvegardée dans `pictureUrl` ou `logoUrl`.
+Le téléversement authentifié `POST /api/v1/uploads/photos` reçoit le fichier binaire ;
+l'API contrôle sa taille et sa signature de format, puis attribue un nom UUID.
+La lecture `GET /api/v1/uploads/photos/:photoId` sert l'image sans jeton.
+L'ancienne lecture `GET /api/v1/players/photos/:photoId` est conservée pour les URL
+permanentes déjà enregistrées. L'ancienne route d'envoi `POST /api/v1/players/photos`
+a été supprimée. Les images restent sur le disque de l'API : sauvegarder le
+répertoire ou volume correspondant. Les volumes Compose existants conservent leur
+nom et leur chemin de stockage.
 
 Après démarrage, la page d'accueil affiche l'état de santé et ses états
 chargement/erreur. Vérification manuelle :
@@ -282,36 +323,30 @@ le SHA validé à un script VPS externe, absent du dépôt. Voir
 
 ## Limitations confirmées
 
-Constats sur l'état de travail audité le 15 septembre 2026 ; ils ne sont pas
-corrigés par cette mise à jour documentaire.
+État actuel vérifié lors des corrections de l'audit du 6 octobre 2026.
+L'[audit initial](AUDIT-2026-10-06.md) décrit un état antérieur ; le
+[bilan des corrections](AUDIT-2026-10-06-CORRECTIONS.md) distingue les vérifications
+locales, en export propre et les limites concernant la CI réelle.
 
-- **Reproductibilité :** les logos `logo-blanc-sans-fond.png` et
-  `logo-sans-texte-blanc.png`, importés par le dashboard, sont ignorés et absents
-  de Git. Les documents sous `docs`, `apps/api/docs` et `apps/web/docs` ainsi que
+- **Documentation locale :** les documents sous `docs`, `apps/api/docs` et `apps/web/docs` ainsi que
   les fichiers `AGENTS.md` sont également locaux et absents de l'index Git ; les
   liens vers ces documents supposent leur présence dans l'espace de travail.
-- **CI :** `prisma migrate status` précède `prisma migrate deploy` sur la base
-  éphémère vierge. Son échec lorsque des migrations sont en attente interrompt
-  la préparation avant leur application.
-- **Lint :** huit erreurs de conventions dans `player.permissions.ts` et
-  `staff.permissions.ts` font échouer `npm run check` et `npm run validate`.
 - **Migration du staff :** la migration `20260914110000_staff_member_crud`
   impose une nationalité non nulle sans reprise des anciennes valeurs nulles.
   Une base contenant ces valeurs nécessite une décision de reprise des données
   avant cette migration ; aucune nationalité ne doit être inventée.
-- **Affectations après minuit UTC :** les inclusions des listes player/staff
-  conservent la date calculée au chargement du module, alors que les filtres
-  utilisent la date de la requête. L'équipe courante affichée peut devenir
-  incohérente avec la fiche et les critères de recherche.
-- **Planification Web :** les formulaires de nouvelle affectation player/staff
-  ne proposent que les vingt premières équipes actives, sans pagination.
 - **Connexion :** aucun parcours Web de connexion en production ni mécanisme de
-  renouvellement du jeton n'est implémenté. Le limiteur de connexion reste en
-  mémoire du processus et ne purge pas les anciennes clés IP/email.
+  renouvellement du jeton n'est implémenté. Le limiteur borné reste local à
+  chaque processus ; une stratégie multi-instance et par IP seule reste à décider.
+- **Images externes :** la CSP actuelle autorise seulement la même origine et
+  `data:` pour les images, malgré les URLs externes acceptées par les formulaires.
+  Les origines HTTPS autorisées restent à définir avant de modifier cette politique.
+- **Exploitation :** quotas/rétention des photos locales, limites opérationnelles
+  de génération de calendriers et readiness PostgreSQL restent à préciser.
 - **Accessibilité :** `AlertModal` ne gère pas le placement, le confinement ni
   la restitution du focus. Une vérification clavier en navigateur reste nécessaire.
 
-Lors de cet audit, `npm test` a réussi (137 tests shared, 121 API unitaires/HTTP,
+Lors de l'audit historique du 15 septembre 2026, `npm test` avait réussi (137 tests shared, 121 API unitaires/HTTP,
 172 Web), ainsi que les 139 tests PostgreSQL, les types et la validation Prisma.
 Le build local a réussi avec un avertissement de bundle principal supérieur à
 500 kB et deux avertissements Rollup sur des annotations de Zod. Ce résultat

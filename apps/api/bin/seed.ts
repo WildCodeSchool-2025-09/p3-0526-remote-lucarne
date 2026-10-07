@@ -1,23 +1,15 @@
 import "dotenv/config";
 import client from "../database/client";
 import prisma from "../database/prisma";
-import { runSeeders } from "../database/seeders";
+import { resetAndSeedDatabase } from "../database/resetAndSeed";
 import { environment } from "../src/config/environment";
 
 const seed = async (): Promise<void> => {
   try {
-    if (environment.nodeEnv === "production") {
-      throw new Error(
-        "Database seeding is forbidden in production",
-      );
-    }
-
-    await prisma.$transaction(async (database) => {
-      await runSeeders(database);
-    });
+    await resetAndSeedDatabase(prisma);
 
     console.info(
-      `Database '${environment.database.name}' seeded successfully`,
+      `Database '${environment.database.name}' reset and seeded successfully`,
     );
   } catch (error) {
     const message = error instanceof Error

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createParticipationInputSchema, seasonIdParamsSchema, seasonParticipationParamsSchema } from "@lucarne/shared";
+import { createParticipationInputSchema, leagueSeasonIdParamsSchema, leagueSeasonParticipationParamsSchema } from "@lucarne/shared";
 import { authenticate } from "../../middlewares/authenticate";
 import { requireRoles } from "../../middlewares/requireRoles";
 import { validateRequest } from "../../middlewares/validateRequest";
@@ -13,26 +13,26 @@ import { PARTICIPATION_WRITE_ROLES } from "./participation.permissions";
 const participationRouter = Router();
 
 participationRouter.post(
-  "/seasons/:seasonId/participations",
+  "/league-seasons/:leagueSeasonId/participations",
   authenticate,
   requireRoles(...PARTICIPATION_WRITE_ROLES),
-  validateRequest({ params: seasonIdParamsSchema, body: createParticipationInputSchema }),
+  validateRequest({ params: leagueSeasonIdParamsSchema, body: createParticipationInputSchema }),
   createParticipation,
 );
 
 participationRouter.get(
-  "/seasons/:seasonId/participations/:teamId/withdrawal-preview",
+  "/league-seasons/:leagueSeasonId/participations/:teamId/withdrawal-preview",
   authenticate,
   requireRoles(...PARTICIPATION_WRITE_ROLES),
-  validateRequest({ params: seasonParticipationParamsSchema }),
+  validateRequest({ params: leagueSeasonParticipationParamsSchema }),
   getParticipationWithdrawalPreview,
 );
 
 participationRouter.delete(
-  "/seasons/:seasonId/participations/:teamId",
+  "/league-seasons/:leagueSeasonId/participations/:teamId",
   authenticate,
   requireRoles(...PARTICIPATION_WRITE_ROLES),
-  validateRequest({ params: seasonParticipationParamsSchema }),
+  validateRequest({ params: leagueSeasonParticipationParamsSchema }),
   withdrawParticipation,
 );
 

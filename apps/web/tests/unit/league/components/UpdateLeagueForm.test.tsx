@@ -1,6 +1,6 @@
 import type { League } from "@lucarne/shared";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UpdateLeagueForm } from "../../../../src/features/league/components/UpdateLeagueForm";
 
 const mutate = vi.fn();
@@ -34,19 +34,21 @@ function renderForm(canEditStatus = true) {
 }
 
 describe("UpdateLeagueForm", () => {
+  beforeEach(() => vi.clearAllMocks());
   it("prefills editable fields, keeps version hidden and hides status for non-admins", () => {
     renderForm(false);
 
     expect(screen.getByDisplayValue("Ligue Nationale")).toBeInTheDocument();
     expect(screen.getByDisplayValue("France")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("https://example.com/logo.png")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Logo de Ligue Nationale" })).toHaveAttribute("src", league.logoUrl);
+    expect(screen.getByLabelText("Fichier logo")).toBeInTheDocument();
     expect(screen.queryByLabelText("Ligue active")).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue("3")).not.toBeInTheDocument();
   });
 
   it("sends only changed fields with the current version and maps empty logo to null", async () => {
     renderForm();
-    fireEvent.change(screen.getByLabelText("URL du logo"), { target: { value: "" } });
+    fireEvent.click(screen.getByRole("button", { name: "Supprimer le logo actuel" }));
     fireEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
     await waitFor(() => expect(mutate).toHaveBeenCalledWith(

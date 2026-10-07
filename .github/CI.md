@@ -9,7 +9,9 @@ lint, typecheck, les tests shared/API/web/intégration PostgreSQL, le build et
 Les intégrations utilisent uniquement le service PostgreSQL éphémère
 `lucarne_test`. Les URL de développement et de test sont volontairement
 distinctes. Les migrations sont appliquées à ce service avant les tests ; aucune
-base externe n'est ciblée.
+base externe n'est ciblée. Sur la base vierge, l'ordre est validation du schéma,
+`migrate deploy`, `migrate status`, puis comparaison `migrate diff` avec le schéma.
+Un contrôle local de cet ordre ne constitue pas une exécution réelle de GitHub Actions.
 
 Le déploiement staging est déclenché par la fin réussie de `CI`, uniquement pour
 un push sur `staging`. Il transmet le SHA validé au script VPS externe

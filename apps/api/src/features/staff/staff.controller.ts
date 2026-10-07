@@ -1,3 +1,5 @@
+import type { UpdateStaffAssignmentInput } from "@lucarne/shared";
+import { updateStaffAssignmentService } from "./staff.service";
 import type { RequestHandler } from "express";
 import type { CreateStaffAssignmentInput, CreateStaffMemberInput, ListStaffMembersParams, PaginatedStaffMembersResponse, StaffMemberDetail, UpdateStaffMemberInput } from "@lucarne/shared";
 import { asyncHandler } from "../../utils/asyncHandler";
@@ -32,4 +34,7 @@ const deleteStaffMember: RequestHandler<{ staffMemberId: string }> = asyncHandle
   response.status(204).send();
 });
 
-export { activateStaffMember, createStaffAssignment, createStaffMember, deactivateStaffMember, deleteStaffMember, getStaffMember, listStaffMembers, updateStaffMember };
+const updateStaffAssignment: RequestHandler<{ staffMemberId: string; assignmentId: string }, StaffMemberDetail, UpdateStaffAssignmentInput> = asyncHandler(async (request, response) => {
+  response.json(await updateStaffAssignmentService(request.params.staffMemberId, request.params.assignmentId, request.body));
+});
+export { updateStaffAssignment, activateStaffMember, createStaffAssignment, createStaffMember, deactivateStaffMember, deleteStaffMember, getStaffMember, listStaffMembers, updateStaffMember };

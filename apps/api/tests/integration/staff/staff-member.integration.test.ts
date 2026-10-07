@@ -55,15 +55,15 @@ describe("staff member API", () => {
     const duplicate = await request(app)
       .post(`/api/v1/staff-members/${staffMember.id}/assignments`)
       .set("Authorization", `Bearer ${editor.accessToken}`)
-      .send({ teamId: anotherTeam.id, jobTitle: "COACH", joinedAt: "2099-02-01" });
+      .send({ teamId: anotherTeam.id, jobTitle: "COACH", joinedAt: "2099-01-01" });
     const plannedBody = planned.body as StaffMemberDetail;
 
     expect(planned.status).toBe(201);
     expect(plannedBody).toMatchObject({ activeTeam: { id: currentTeam.id } });
-    expect(plannedBody.assignments.some((assignment) => assignment.team.id === currentTeam.id && assignment.leftAt === "2099-01-01" && assignment.state === "CURRENT")).toBe(true);
+    expect(plannedBody.assignments.some((assignment) => assignment.team.id === currentTeam.id && assignment.leftAt === "2098-12-31" && assignment.state === "CURRENT")).toBe(true);
     expect(plannedBody.assignments.some((assignment) => assignment.team.id === futureTeam.id && assignment.jobTitle === "DIRECTOR" && assignment.state === "PLANNED")).toBe(true);
     expect(duplicate.status).toBe(409);
-    expect(duplicate.body).toMatchObject({ error: { code: "ASSIGNMENT_ALREADY_PLANNED" } });
+    expect(duplicate.body).toMatchObject({ error: { code: "ASSIGNMENT_PERIOD_CONFLICT" } });
   });
 
   it("enforces writer and administrator permissions", async () => {

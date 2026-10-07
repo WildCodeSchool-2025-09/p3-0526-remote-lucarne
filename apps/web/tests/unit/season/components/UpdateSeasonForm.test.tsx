@@ -8,11 +8,9 @@ vi.mock("../../../../src/features/season/hooks/useUpdateSeason", () => ({ useUpd
 
 const season: Season = {
   id: "season-id",
-  leagueId: "league-id",
   name: "2026-2027",
   startDate: "2026-08-01",
   endDate: "2027-06-30",
-  status: "INACTIVE",
   version: 3,
   createdAt: "2026-09-16T00:00:00.000Z",
 };

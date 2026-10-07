@@ -11,7 +11,7 @@ const useTeamMutationMock = vi.hoisted(() => vi.fn());
 const getCurrentAppRoleMock = vi.hoisted(() => vi.fn());
 const hasRoleMock = vi.hoisted(() => vi.fn());
 
-vi.mock("../../../../src/hooks/useTeamDetail", () => ({ useTeamDetail: useTeamDetailMock }));
+vi.mock("../../../../src/hooks/useTeamDetail", () => ({ useTeamDetail: useTeamDetailMock, useTeamRoster: () => ({ isPending: false, isError: false, data: { date: "2026-10-05", players: [], staffMembers: [] } }) }));
 vi.mock("../../../../src/features/team/hooks/useTeamMutation", () => ({ useTeamDeletionPreview: useTeamDeletionPreviewMock, useTeamMutation: useTeamMutationMock }));
 vi.mock("../../../../src/auth/authRole", () => ({ APP_ROLES: { ADMIN: "ADMIN" }, getCurrentAppRole: getCurrentAppRoleMock, hasRole: hasRoleMock, TEAM_EDIT_ROLES: ["ADMIN"] }));
 

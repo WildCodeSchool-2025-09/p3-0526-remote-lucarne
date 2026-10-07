@@ -1,3 +1,4 @@
+import { createSeasonForLeague } from "../../helpers/season";
 import { randomUUID } from "node:crypto";
 import type { ApiErrorResponse } from "@lucarne/shared";
 import request from "supertest";
@@ -10,9 +11,7 @@ const createLeague = () => prisma.league.create({
   data: { name: `League ${randomUUID()}`, country: "France", isActive: true },
 });
 
-const createSeason = (leagueId: string) => prisma.season.create({
-  data: { leagueId, name: "2026-2027", startDate: new Date("2026-08-01"), endDate: new Date("2027-06-30") },
-});
+const createSeason = createSeasonForLeague;
 
 describe("PATCH /api/v1/seasons/:seasonId", () => {
   beforeEach(() => {
@@ -62,11 +61,28 @@ describe("PATCH /api/v1/seasons/:seasonId", () => {
     await expect(prisma.season.findUnique({ where: { id: season.id } })).resolves.toMatchObject({ name: "First update", version: 1 });
   });
 
+  it("returns one success and one controlled conflict for simultaneous updates", async () => {
+    const user = await createAdmin();
+    const league = await createLeague();
+    const season = await createSeason(league.id);
+    const responses = await Promise.all(["Concurrent A", "Concurrent B"].map((name) =>
+      request(app).patch(`/api/v1/seasons/${season.id}`)
+        .set("Authorization", `Bearer ${user.accessToken}`).send({ name, version: 0 }),
+    ));
+    expect(responses.map((response) => response.status).sort()).toEqual([200, 409]);
+    const winner = responses.find((response) => response.status === 200)!;
+    const conflict = responses.find((response) => response.status === 409)!;
+    expect(conflict.body).toMatchObject({ error: { code: "RESOURCE_VERSION_CONFLICT" } });
+    expect(await prisma.season.findUnique({ where: { id: season.id } })).toMatchObject({
+      name: (winner.body as { name: string }).name, version: 1,
+    });
+  });
+
   it("rejects a new period that excludes an existing matchday", async () => {
     const user = await createAdmin();
     const league = await createLeague();
     const season = await createSeason(league.id);
-    await prisma.matchday.create({ data: { seasonId: season.id, number: 1, startDate: new Date("2026-08-15"), endDate: new Date("2026-08-16") } });
+    await prisma.matchday.create({ data: { leagueSeasonId: season.leagueSeasonId, number: 1, startDate: new Date("2026-08-15"), endDate: new Date("2026-08-16") } });
 
     const response = await request(app)
       .patch(`/api/v1/seasons/${season.id}`)

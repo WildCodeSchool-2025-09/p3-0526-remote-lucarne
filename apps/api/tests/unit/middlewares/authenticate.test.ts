@@ -108,4 +108,16 @@ describe("authenticate", () => {
 
     expect(response.status).toBe(401);
   });
+
+  it("rejects a still-valid token when its account was deleted by a database reset", async () => {
+    findUnique.mockResolvedValue(null);
+    const response = await request(createTestApp())
+      .get("/protected")
+      .set("authorization", "Bearer valid-token");
+
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({
+      error: { code: "AUTHENTICATION_REQUIRED", message: "Authentication required" },
+    });
+  });
 });

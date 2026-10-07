@@ -5,3 +5,6 @@ export * from "./team.schema";
 export * from "./staff.schema";
 export * from "./season.schema";
 export * from "./participation.schema";
+export * from "./bug-report.schema";
+export * from "./assignment.schema";
+export * from "./match.schema";

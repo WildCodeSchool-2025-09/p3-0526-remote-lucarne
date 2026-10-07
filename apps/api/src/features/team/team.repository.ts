@@ -1,6 +1,7 @@
+import { assignmentDate } from "../../utils/assignmentPeriod";
 import prisma from "../../../database/prisma";
 import type { Team as PrismaTeam } from "../../generated/prisma/client";
-import type { CreateTeamInput, ListTeamsParams, TeamDeletionDependencies, UpdateTeamInput } from "@lucarne/shared";
+import type { CreateTeamInput, ListTeamsParams, TeamDeletionDependencies, TeamRoster, UpdateTeamInput } from "@lucarne/shared";
 
 const listTeams = async (params: ListTeamsParams) => {
   const where = {
@@ -56,4 +57,17 @@ const createTeam = async (input: CreateTeamInput): Promise<PrismaTeam> =>
     },
   });
 
-export { createTeam, findTeamById, getTeamDeletionDependencies, hasDeletionDependencies, listTeams, permanentlyDeleteTeam, updateTeam };
+const getTeamRoster = async (teamId: string): Promise<TeamRoster> => {
+  const date = assignmentDate();
+  const where = { teamId, joinedAt: { lte: date }, OR: [{ leftAt: null }, { leftAt: { gte: date } }] };
+  const [players, staffMembers] = await Promise.all([
+    prisma.teamPlayer.findMany({ where, include: { player: true } }),
+    prisma.teamStaffMember.findMany({ where, include: { staffMember: true } }),
+  ]);
+  return {
+    date: date.toISOString().slice(0, 10),
+    players: players.map((assignment) => ({ id: assignment.player.id, assignmentId: assignment.id, firstName: assignment.player.firstName, lastName: assignment.player.lastName, position: assignment.player.position, pictureUrl: assignment.player.pictureUrl, shirtNumber: assignment.shirtNumber })),
+    staffMembers: staffMembers.map((assignment) => ({ id: assignment.staffMember.id, assignmentId: assignment.id, firstName: assignment.staffMember.firstName, lastName: assignment.staffMember.lastName, position: assignment.jobTitle, pictureUrl: assignment.staffMember.pictureUrl })),
+  };
+};
+export { getTeamRoster, createTeam, findTeamById, getTeamDeletionDependencies, hasDeletionDependencies, listTeams, permanentlyDeleteTeam, updateTeam };

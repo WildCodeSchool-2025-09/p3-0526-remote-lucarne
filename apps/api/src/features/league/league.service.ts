@@ -12,22 +12,13 @@ import {
   updateLeagueOptimistic,
 } from "./league.repository";
 import { AppError } from "../../errors/AppError";
-import { APP_ROLES } from "../../auth/appRole";
 import { RESOURCE_VERSION_CONFLICT } from "@lucarne/shared";
 import type {
   ConditionalLeagueUpdateInput,
-  LeaguePermissions,
   ListLeaguesParams,
 } from "@lucarne/shared";
 import type { AppRole } from "../../auth/appRole";
 import type { CreateLeagueInput } from "./league.schema";
-
-const getLeaguePermissions = (role: AppRole): LeaguePermissions => ({
-  canView: role === APP_ROLES.ADMIN
-    || role === APP_ROLES.MODERATOR
-    || role === APP_ROLES.EDITOR,
-  canDelete: role === APP_ROLES.ADMIN,
-});
 
 const createLeagueService = (input: CreateLeagueInput): Promise<League> =>
   createLeague({
@@ -147,7 +138,6 @@ export {
   createLeagueService,
   deactivateLeagueService,
   getLeagueService,
-  getLeaguePermissions,
   listLeagueCountriesService,
   listLeaguesService,
   permanentlyDeleteLeagueService,

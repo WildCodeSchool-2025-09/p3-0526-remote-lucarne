@@ -1,3 +1,5 @@
+import { updateStaffAssignmentInputSchema, staffAssignmentParamsSchema } from "@lucarne/shared";
+import { updateStaffAssignment } from "./staff.controller";
 import { Router } from "express";
 import { createStaffAssignmentInputSchema, createStaffMemberInputSchema, deleteStaffMemberBodySchema, staffMemberIdParamsSchema, staffMemberListQuerySchema, updateStaffMemberInputSchema } from "@lucarne/shared";
 import { authenticate } from "../../middlewares/authenticate";
@@ -17,4 +19,5 @@ staffRouter.post("/:staffMemberId/deactivate", authenticate, requireRoles(...STA
 staffRouter.post("/:staffMemberId/activate", authenticate, requireRoles(...STAFF_MEMBER_WRITE_ROLES), validateRequest({ params: staffMemberIdParamsSchema }), activateStaffMember);
 staffRouter.delete("/:staffMemberId", authenticate, requireRoles(...STAFF_MEMBER_DELETE_ROLES), validateRequest({ params: staffMemberIdParamsSchema, body: deleteStaffMemberBodySchema }), deleteStaffMember);
 
+staffRouter.patch("/:staffMemberId/assignments/:assignmentId", authenticate, requireRoles(...STAFF_MEMBER_WRITE_ROLES), validateRequest({ params: staffAssignmentParamsSchema, body: updateStaffAssignmentInputSchema }), updateStaffAssignment);
 export default staffRouter;

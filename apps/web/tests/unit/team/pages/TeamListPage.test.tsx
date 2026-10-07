@@ -80,14 +80,14 @@ describe("TeamListPage", () => {
   });
 
   it("uses the shared list layout and renders table and card representations", () => {
-    const { container } = renderPage();
+    renderPage();
 
     expect(screen.getByRole("heading", { name: "Équipes" })).toBeInTheDocument();
     expect(screen.getByText("2 équipes")).toBeInTheDocument();
-    expect(container.querySelector(".dashboard-list-page")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Équipes" })).toBeInTheDocument();
     expect(within(screen.getByRole("table")).getByRole("link", { name: "Les Lionnes" })).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "Liste des équipes sous forme de cartes" })).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    expect(within(screen.getByRole("list", { name: "Liste des équipes sous forme de cartes" })).getAllByRole("listitem")).toHaveLength(2);
     expect(screen.getAllByText("Stade des Lumières")).toHaveLength(2);
     expect(screen.getByText("11/09/2026")).toBeInTheDocument();
     expect(screen.getAllByLabelText("Initiale de Les Lionnes")).toHaveLength(2);

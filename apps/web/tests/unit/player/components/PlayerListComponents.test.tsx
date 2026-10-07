@@ -39,7 +39,7 @@ describe("Player list components", () => {
     renderInRouter(<PlayerTable canDelete={false} canEdit={false} onAction={() => undefined} players={[player]} />);
 
     expect(screen.getByRole("table", { name: "Liste des joueuses" })).toBeInTheDocument();
-    expect(screen.getByRole("columnheader", { name: "Joueur" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Joueuse" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ada Lovelace" })).toHaveAttribute("href", "/dashboard/players/player-1");
     expect(screen.getByText("Active")).toHaveClass("lucarne-status-badge--active");
   });

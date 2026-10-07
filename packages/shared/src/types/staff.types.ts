@@ -1,3 +1,5 @@
+import type { z } from "zod";
+import type { assignmentDatesSchema } from "../schemas/assignment.schema";
 import type { PaginatedResponse } from "./pagination.types";
 
 type StaffMemberStatus = "ACTIVE" | "INACTIVE";
@@ -43,12 +45,15 @@ type CreateStaffMemberInput = {
   teamId?: string;
   jobTitle?: string;
   joinedAt?: string;
+  leftAt?: string | null;
 };
-type CreateStaffAssignmentInput = { teamId: string; jobTitle: string; joinedAt: string };
-type UpdateStaffMemberInput = Partial<Omit<CreateStaffMemberInput, "teamId" | "jobTitle" | "joinedAt">> & { isActive?: boolean; version: number };
+type CreateStaffAssignmentInput = { teamId: string; jobTitle: string; joinedAt: string; leftAt?: string | null };
+type UpdateStaffMemberInput = Partial<Omit<CreateStaffMemberInput, "teamId" | "jobTitle" | "joinedAt" | "leftAt">> & { isActive?: boolean; version: number };
 type PaginatedStaffMembersResponse = PaginatedResponse<StaffMember>;
 
+type UpdateStaffAssignmentInput = z.infer<typeof assignmentDatesSchema>;
 export type {
+  UpdateStaffAssignmentInput,
   CreateStaffAssignmentInput,
   CreateStaffMemberInput,
   ListStaffMembersParams,

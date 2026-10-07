@@ -70,7 +70,7 @@ describe("DevLoginPage", () => {
   });
 
   it.each([APP_ROLES.ADMIN, APP_ROLES.MODERATOR, APP_ROLES.EDITOR, APP_ROLES.USER])(
-    "stores and displays the %s role after login",
+    "stores the %s session and redirects to the dashboard after login",
     async (role) => {
       const user = userEvent.setup();
       const token = createToken(role);
@@ -78,18 +78,18 @@ describe("DevLoginPage", () => {
         setAccessToken(token);
         return Promise.resolve({ accessToken: token });
       });
-      renderPage();
+      render(
+        <MemoryRouter initialEntries={["/dev/login"]}>
+          <DevLoginPage />
+          <CurrentPath />
+        </MemoryRouter>,
+      );
 
       await user.type(screen.getByLabelText("Mot de passe *"), "Lucarne-Test-2026!");
       await user.click(screen.getByRole("button", { name: "Se connecter" }));
 
-      expect(await screen.findByRole("alert")).toHaveTextContent(`rôle : ${role}`);
+      await waitFor(() => expect(screen.getByTestId("current-path")).toHaveTextContent(/^\/dashboard$/));
       expect(getAccessToken()).toBe(token);
-      expect(screen.getByRole("button", { name: "Ligue" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Équipe" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Joueur" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Staff" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Se déconnecter" })).toBeInTheDocument();
     },
   );
 

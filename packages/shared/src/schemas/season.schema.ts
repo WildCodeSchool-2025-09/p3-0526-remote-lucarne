@@ -7,7 +7,7 @@ const seasonNameSchema = z.string({ error: "Nom requis" })
   .max(100, { error: "Le nom ne peut pas dépasser 100 caractères" });
 
 const seasonDateSchema = z.string({ error: "Date requise" })
-  .regex(/^\d{4}-\d{2}-\d{2}$/, { error: "La date doit être au format AAAA-MM-JJ" });
+  .pipe(z.iso.date({ error: "La date doit être une date valide au format AAAA-MM-JJ" }));
 
 const seasonStatusSchema = z.enum(["CURRENT", "INACTIVE"]);
 const seasonStatusFilterSchema = z.enum(["ALL", "CURRENT", "INACTIVE"]);
@@ -62,7 +62,6 @@ const seasonListQuerySchema = z.object({
     (value) => typeof value === "string" ? value.trim() || undefined : value,
     z.string().max(MAX_SEARCH_LENGTH).optional(),
   ),
-  status: seasonStatusFilterSchema.default("ALL"),
   sortBy: z.enum(["name", "startDate", "endDate", "createdAt"]).default("startDate"),
   sortOrder: z.enum(["asc", "desc"]).default("asc"),
 }).strict();
@@ -70,6 +69,20 @@ const seasonListQuerySchema = z.object({
 const seasonIdParamsSchema = z.object({
   seasonId: z.string().uuid(),
 }).strict();
+
+const deleteSeasonInputSchema = z.object({ confirm: z.literal(true) }).strict();
+// PostgreSQL INTEGER is signed 32-bit; keep request validation within its range.
+const leagueSeasonCountSchema = z.number({ error: "Un nombre est requis" })
+  .int({ error: "La valeur doit être un entier" })
+  .min(1, { error: "La valeur doit être strictement positive" })
+  .max(2_147_483_647, { error: "La valeur ne peut pas dépasser 2147483647" });
+
+const assignLeagueSeasonInputSchema = z.object({
+  seasonId: z.string().uuid(),
+  matchdayCount: leagueSeasonCountSchema,
+  matchesPerMatchday: leagueSeasonCountSchema,
+}).strict();
+const listLeagueSeasonsQuerySchema = seasonListQuerySchema.omit({ leagueId: true });
 
 const leagueIdParamsSchema = z.object({
   leagueId: z.string().uuid(),
@@ -81,6 +94,9 @@ const leagueSeasonParamsSchema = z.object({
 }).strict();
 
 export {
+  deleteSeasonInputSchema,
+  assignLeagueSeasonInputSchema,
+  listLeagueSeasonsQuerySchema,
   createSeasonInputSchema,
   leagueIdParamsSchema,
   leagueSeasonParamsSchema,

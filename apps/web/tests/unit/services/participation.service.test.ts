@@ -10,15 +10,15 @@ describe("participation service", () => {
 
     await createParticipation("season-id", { teamId: "team-id" });
 
-    expect(post).toHaveBeenCalledWith("/seasons/season-id/participations", { json: { teamId: "team-id" } });
+    expect(post).toHaveBeenCalledWith("/league-seasons/season-id/participations", { json: { teamId: "team-id" } });
   });
 
   it("loads the withdrawal preview", async () => {
-    const get = vi.spyOn(httpClient, "get").mockResolvedValue({ teamId: "team-id", seasonId: "season-id", scheduledMatchCount: 2 });
+    const get = vi.spyOn(httpClient, "get").mockResolvedValue({ teamId: "team-id", leagueSeasonId: "season-id", scheduledMatchCount: 2 });
 
     await getParticipationWithdrawalPreview("season-id", "team-id");
 
-    expect(get).toHaveBeenCalledWith("/seasons/season-id/participations/team-id/withdrawal-preview");
+    expect(get).toHaveBeenCalledWith("/league-seasons/season-id/participations/team-id/withdrawal-preview");
   });
 
   it("withdraws a participation", async () => {
@@ -26,6 +26,6 @@ describe("participation service", () => {
 
     await withdrawParticipation("season-id", "team-id");
 
-    expect(remove).toHaveBeenCalledWith("/seasons/season-id/participations/team-id");
+    expect(remove).toHaveBeenCalledWith("/league-seasons/season-id/participations/team-id");
   });
 });

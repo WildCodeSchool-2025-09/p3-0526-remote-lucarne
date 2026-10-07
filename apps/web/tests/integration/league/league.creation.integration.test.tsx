@@ -167,5 +167,6 @@ describe("League creation frontend integration", () => {
       headers: { "content-type": "application/json" },
       status: 201,
     }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("La ligue a été créée avec succès."));
   });
 });

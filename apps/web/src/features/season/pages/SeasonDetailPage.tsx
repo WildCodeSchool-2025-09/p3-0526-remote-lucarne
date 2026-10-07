@@ -1,29 +1,188 @@
+import { seasonStyles } from "../seasonStyles";
+import DashboardPageHeader from "../../../components/dashboard/DashboardPageHeader";
 import { Link, useNavigate, useParams } from "react-router";
-import { APP_ROLES, getCurrentAppRole } from "../../../auth/authRole";
+import { getCurrentAppRole, hasRole, SEASON_MANAGE_ROLES } from "../../../auth/authRole";
 import { HttpError } from "../../../lib/httpClient";
 import { formatDate } from "../../../lib/dateFormat";
-import { AlertModal, Button } from "../../../ui";
-import { useSetCurrentSeason } from "../hooks/useSetCurrentSeason";
+import { formatDateTime } from "../../../lib/dateTimeFormat";
+import { AlertModal } from "../../../ui";
 import { useSeasonDetail } from "../hooks/useSeasonDetail";
-import SeasonStatusBadge from "../components/SeasonStatusBadge";
-import SeasonParticipations from "../components/SeasonParticipations";
+import { ParticipationList } from "../components/SeasonParticipations";
 
 function SeasonDetailPage() {
   const navigate = useNavigate();
   const { seasonId = "" } = useParams();
   const query = useSeasonDetail(seasonId);
-  const season = query.data;
   const role = getCurrentAppRole();
-  const setCurrent = useSetCurrentSeason();
+  const navigation = (
+    <>
+      <Link className="lucarne-button lucarne-button--ghost" to="/dashboard/seasons">
+        ← Retour à la liste
+      </Link>
+    </>
+  );
 
-  if (query.isPending) return <section className="league-detail-page"><div className="league-detail-page__container"><p role="status">Chargement de la saison…</p></div></section>;
-  if (query.isError) return <section className="league-detail-page"><div className="league-detail-page__container"><AlertModal onClose={() => void navigate(-1)}>{query.error instanceof HttpError && query.error.status === 404 ? "Cette saison est introuvable." : "Impossible de charger cette saison."}</AlertModal></div></section>;
-  if (!season) return null;
+  const pageName = query.data?.name ?? "Saison";
+  const pageHeader = (
+    <DashboardPageHeader
+      resource="seasons"
+      mode="detail"
+      resourceId={seasonId}
+      resourceName={pageName}
+      headingId="season-detail-title"
+      title={pageName}
+    />
+  );
 
-  const canUpdate = role === APP_ROLES.ADMIN || role === APP_ROLES.EDITOR;
-  const canSetCurrent = role === APP_ROLES.ADMIN && season.status !== "CURRENT";
+  if (query.isPending)
+    return (
+      <section className={seasonStyles.detailPage}>
+        <div className={seasonStyles.detailContainer}>
+          {pageHeader}
+          {navigation}
+          <p role="status">Chargement de la saison…</p>
+        </div>
+      </section>
+    );
 
-  return <section className="league-detail-page" aria-labelledby="season-detail-title"><div className="league-detail-page__container"><Button onClick={() => void navigate(-1)} variant="ghost">← Retour à la liste</Button><article className="league-detail-card"><header><p className="league-list-page__eyebrow">Détail d’une saison</p><h1 id="season-detail-title">{season.name}</h1><SeasonStatusBadge status={season.status} /></header><div className="league-detail-card__content"><dl><div><dt>Ligue</dt><dd><Link to={`/dashboard/leagues/${season.league.id}`}>{season.league.name}</Link></dd></div><div><dt>Période</dt><dd>{formatDate(season.startDate)} – {formatDate(season.endDate)}</dd></div><div><dt>Équipes participantes</dt><dd>{season.participatingTeams.length}</dd></div><div><dt>Journées</dt><dd>{season.matchdays.length}</dd></div></dl></div><div className="league-detail-card__actions">{canUpdate ? <Link className="lucarne-button lucarne-button--outline" to={`/dashboard/seasons/${season.id}/edit`}>Modifier</Link> : null}{canSetCurrent ? <Button disabled={setCurrent.isPending} onClick={() => void setCurrent.mutateAsync({ leagueId: season.leagueId, seasonId: season.id })} variant="outline">Définir comme courante</Button> : null}</div></article><SeasonParticipations season={season} /><section className="league-detail-card"><h2>Journées</h2>{season.matchdays.length === 0 ? <p>Aucune journée.</p> : <ul>{season.matchdays.map((matchday) => <li key={matchday.id}>Journée {matchday.number}{matchday.name ? ` — ${matchday.name}` : ""} ({matchday.matchCount} match(s))</li>)}</ul>}</section></div></section>;
+  if (query.isError)
+    return (
+      <section className={seasonStyles.detailPage}>
+        <div className={seasonStyles.detailContainer}>
+          {pageHeader}
+          {navigation}
+          <AlertModal onClose={() => void navigate("/dashboard/seasons")}>
+            {query.error instanceof HttpError && query.error.status === 404
+              ? "Cette saison est introuvable."
+              : "Impossible de charger cette saison."}
+          </AlertModal>
+        </div>
+      </section>
+    );
+
+  const season = query.data;
+
+  if (!season)
+    return (
+      <section className={seasonStyles.detailPage}>
+        <div className={seasonStyles.detailContainer}>
+          {pageHeader}
+          <AlertModal>Ressource introuvable.</AlertModal>
+          <Link to="/dashboard/seasons">Retour à la liste</Link>
+        </div>
+      </section>
+    );
+
+  const canUpdate = hasRole(role, SEASON_MANAGE_ROLES);
+
+  return (
+    <section className={seasonStyles.detailPage} aria-labelledby="season-detail-title">
+      <div className={seasonStyles.detailContainer}>
+        {pageHeader}
+        {navigation}
+        <article className={seasonStyles.detailCard}>
+          <dl>
+            <div>
+              <dt>Période</dt>
+              <dd>
+                {formatDate(season.startDate)} – {formatDate(season.endDate)}
+              </dd>
+            </div>
+            <div>
+              <dt>Date de création</dt>
+              <dd>{formatDateTime(season.createdAt)}</dd>
+            </div>
+          </dl>
+          <p>Cette période est commune à toutes les ligues associées.</p>
+          {canUpdate ? (
+            <Link
+              className="lucarne-button lucarne-button--outline"
+              to={`/dashboard/seasons/${season.id}/edit`}
+            >
+              Modifier
+            </Link>
+          ) : null}
+        </article>
+        {season.leagueSeasons.length === 0 ? (
+          <p>Aucune ligue associée.</p>
+        ) : (
+          season.leagueSeasons.map((edition) => (
+            <section key={edition.id}>
+              <header className={seasonStyles.detailCard}>
+                <h2>
+                  <Link to={`/dashboard/leagues/${edition.leagueId}`}>
+                    {edition.league.name}
+                  </Link>
+                </h2>
+                <Link
+                  className="lucarne-button lucarne-button--outline"
+                  to={`/dashboard/matches?seasonId=${season.id}&leagueId=${edition.leagueId}`}
+                >
+                  Voir les matchs de cette ligue
+                </Link>
+                <dl>
+                  <div>
+                    <dt>Pays</dt>
+                    <dd>{edition.league.country || "Non renseigné"}</dd>
+                  </div>
+                  <div>
+                    <dt>Statut de la saison dans cette ligue</dt>
+                    <dd>
+                      {edition.isCurrent ? "Saison courante" : "Saison non courante"}
+                    </dd>
+                  </div>
+                </dl>
+              </header>
+              <ParticipationList season={edition} />
+              <section className={seasonStyles.detailCard}>
+                <h3>Journées</h3>
+                {edition.matchdays.length === 0 ? (
+                  <p>Aucune journée.</p>
+                ) : (
+                  <ul>
+                    {edition.matchdays.map((day) => (
+                      <li key={day.id}>
+                        <h4>Journée {day.number}</h4>
+                        <Link
+                          to={`/dashboard/matches?seasonId=${season.id}&leagueId=${edition.leagueId}&matchdayId=${day.id}`}
+                        >
+                          Voir les matchs de la journée {day.number}
+                        </Link>
+                        <dl>
+                          <div>
+                            <dt>Nom</dt>
+                            <dd>{day.name || "Non renseigné"}</dd>
+                          </div>
+                          <div>
+                            <dt>Date de début</dt>
+                            <dd>
+                              {day.startDate
+                                ? formatDate(day.startDate)
+                                : "Non renseignée"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Date de fin</dt>
+                            <dd>
+                              {day.endDate ? formatDate(day.endDate) : "Non renseignée"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Nombre de matchs</dt>
+                            <dd>{day.matchCount}</dd>
+                          </div>
+                        </dl>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </section>
+          ))
+        )}
+      </div>
+    </section>
+  );
 }
 
 export default SeasonDetailPage;

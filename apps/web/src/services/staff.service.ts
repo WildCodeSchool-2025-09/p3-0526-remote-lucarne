@@ -1,4 +1,4 @@
-import type { CreateStaffAssignmentInput, CreateStaffMemberInput, ListStaffMembersParams, PaginatedStaffMembersResponse, StaffMemberDetail, UpdateStaffMemberInput } from "@lucarne/shared";
+import type { UpdateStaffAssignmentInput, CreateStaffAssignmentInput, CreateStaffMemberInput, ListStaffMembersParams, PaginatedStaffMembersResponse, StaffMemberDetail, UpdateStaffMemberInput } from "@lucarne/shared";
 import { httpClient } from "../lib/httpClient";
 
 const createStaffMember = (input: CreateStaffMemberInput) => httpClient.post<StaffMemberDetail>("/staff-members", { json: input });
@@ -10,4 +10,5 @@ const activateStaffMember = (id: string) => httpClient.post<StaffMemberDetail>(`
 const deactivateStaffMember = (id: string) => httpClient.post<StaffMemberDetail>(`/staff-members/${id}/deactivate`);
 const deleteStaffMember = (id: string) => httpClient.delete<void>(`/staff-members/${id}`, { json: { confirm: true } });
 
-export { activateStaffMember, createStaffAssignment, createStaffMember, deactivateStaffMember, deleteStaffMember, getStaffMember, listStaffMembers, updateStaffMember };
+const updateStaffAssignment = (id: string, assignmentId: string, input: UpdateStaffAssignmentInput) => httpClient.patch<StaffMemberDetail>(`/staff-members/${id}/assignments/${assignmentId}`, { json: input });
+export { updateStaffAssignment, activateStaffMember, createStaffAssignment, createStaffMember, deactivateStaffMember, deleteStaffMember, getStaffMember, listStaffMembers, updateStaffMember };

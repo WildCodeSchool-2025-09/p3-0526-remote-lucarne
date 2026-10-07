@@ -29,21 +29,25 @@ model AppUser {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model GameMatch {
   id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  matchPublicId String     @unique(map: "uq_match_public_id") @default(dbgenerated("gen_random_uuid()")) @map("match_public_id") @db.Uuid
   matchdayId  String       @map("matchday_id") @db.Uuid
-  homeTeamId  String       @map("home_team_id") @db.Uuid
-  awayTeamId  String       @map("away_team_id") @db.Uuid
-  matchDate   DateTime     @map("match_date") @db.Date
-  startTime   DateTime     @map("start_time") @db.Time(6)
+  homeTeamId  String?      @map("home_team_id") @db.Uuid
+  awayTeamId  String?      @map("away_team_id") @db.Uuid
+  matchDate   DateTime?    @map("match_date") @db.Date
+  startTime   DateTime?    @map("start_time") @db.Time(6)
   stadium     String?      @db.VarChar(150)
   homeScore   Int?         @map("home_score")
   awayScore   Int?         @map("away_score")
   status      String       @default("SCHEDULED") @db.VarChar(30)
+  isPublished Boolean      @default(false) @map("is_published")
   isActive    Boolean      @default(true) @map("is_active")
+  version     Int          @default(0)
   createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  awayTeam    Team         @relation("AwayTeamMatches", fields: [awayTeamId], references: [id], onUpdate: NoAction, map: "fk_match_away_team")
-  homeTeam    Team         @relation("HomeTeamMatches", fields: [homeTeamId], references: [id], onUpdate: NoAction, map: "fk_match_home_team")
+  awayTeam    Team?        @relation("AwayTeamMatches", fields: [awayTeamId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_match_away_team")
+  homeTeam    Team?        @relation("HomeTeamMatches", fields: [homeTeamId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_match_home_team")
   matchday    Matchday     @relation(fields: [matchdayId], references: [id], onUpdate: NoAction, map: "fk_match_matchday")
   matchEvents MatchEvent[]
+  teamReservations MatchTeamReservation[]
 
   @@index([awayTeamId], map: "idx_match_away_team")
   @@index([matchDate], map: "idx_match_date")
@@ -62,7 +66,7 @@ model League {
   isActive  Boolean  @default(false) @map("is_active")
   version   Int      @default(0)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  seasons   Season[]
+  leagueSeasons LeagueSeason[]
 
   @@unique([name, country], map: "uq_league_name_country")
   @@map("league")
@@ -87,7 +91,7 @@ model MatchEvent {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model Matchday {
   id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  seasonId    String      @map("season_id") @db.Uuid
+  leagueSeasonId String   @map("league_season_id") @db.Uuid
   number      Int
   name        String?     @db.VarChar(100)
   startDate   DateTime?   @map("start_date") @db.Date
@@ -95,27 +99,28 @@ model Matchday {
   isActive    Boolean     @default(true) @map("is_active")
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
   gameMatches GameMatch[]
-  season      Season      @relation(fields: [seasonId], references: [id], onUpdate: NoAction, map: "fk_matchday_season")
+  teamReservations MatchTeamReservation[]
+  leagueSeason LeagueSeason @relation(fields: [leagueSeasonId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_matchday_league_season")
 
-  @@unique([seasonId, number], map: "uq_matchday_season_number")
-  @@index([seasonId], map: "idx_matchday_season")
+  @@unique([leagueSeasonId, number], map: "uq_matchday_league_season_number")
+  @@index([leagueSeasonId], map: "idx_matchday_league_season")
   @@map("matchday")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model Participation {
   teamId         String   @map("team_id") @db.Uuid
-  seasonId       String   @map("season_id") @db.Uuid
+  leagueSeasonId String   @map("league_season_id") @db.Uuid
   registrationAt DateTime @default(now()) @map("registration_at") @db.Timestamptz(6)
   points         Int      @default(0)
   rank           Int?
   status         String   @default("REGISTERED") @db.VarChar(30)
-  season         Season   @relation(fields: [seasonId], references: [id], onUpdate: NoAction, map: "fk_participation_season")
+  leagueSeason   LeagueSeason @relation(fields: [leagueSeasonId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_participation_league_season")
   team           Team     @relation(fields: [teamId], references: [id], onUpdate: NoAction, map: "fk_participation_team")
 
-  @@id([teamId, seasonId], map: "pk_participation")
-  @@index([seasonId], map: "idx_participation_season")
-  @@index([seasonId, status], map: "idx_participation_season_status")
+  @@id([teamId, leagueSeasonId], map: "pk_participation")
+  @@index([leagueSeasonId], map: "idx_participation_league_season")
+  @@index([leagueSeasonId, status], map: "idx_participation_league_season_status")
   @@map("participation")
 }
 
@@ -165,20 +170,32 @@ model Role {
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model Season {
   id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  leagueId       String          @unique(map: "uq_active_season_per_league", where: raw("(is_active = true)")) @map("league_id") @db.Uuid
-  name           String          @db.VarChar(100)
+  name           String          @unique(map: "uq_season_name") @db.VarChar(100)
   startDate      DateTime        @map("start_date") @db.Date
   endDate        DateTime        @map("end_date") @db.Date
-  isActive       Boolean         @default(false) @map("is_active")
   version        Int             @default(0)
   createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  leagueSeasons  LeagueSeason[]
+
+  @@map("season")
+}
+
+model LeagueSeason {
+  id             String          @id(map: "pk_league_season") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  leagueId       String          @unique(map: "uq_current_season_per_league", where: raw("(is_current = true)")) @map("league_id") @db.Uuid
+  seasonId       String          @map("season_id") @db.Uuid
+  isCurrent      Boolean         @default(false) @map("is_current")
+  matchdayCount  Int?            @map("matchday_count")
+  matchesPerMatchday Int?        @map("matches_per_matchday")
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  league         League          @relation(fields: [leagueId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_league_season_league")
+  season         Season          @relation(fields: [seasonId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_league_season_season")
   matchdays      Matchday[]
   participations Participation[]
-  league         League          @relation(fields: [leagueId], references: [id], onUpdate: NoAction, map: "fk_season_league")
 
-  @@unique([leagueId, name], map: "uq_season_league_name")
-  @@index([leagueId], map: "idx_season_league")
-  @@map("season")
+  @@unique([leagueId, seasonId], map: "uq_league_season_pair")
+  @@index([seasonId], map: "idx_league_season_season")
+  @@map("league_season")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -199,7 +216,7 @@ model StaffMember {
 model TeamStaffMember {
   id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   teamId        String      @map("team_id") @db.Uuid
-  staffMemberId String      @unique(map: "uq_active_team_staff_member_per_staff_member", where: raw("(left_at IS NULL)")) @map("staff_member_id") @db.Uuid
+  staffMemberId String      @map("staff_member_id") @db.Uuid
   jobTitle      String      @map("job_title") @db.VarChar(100)
   joinedAt      DateTime    @map("joined_at") @db.Date
   leftAt        DateTime?   @map("left_at") @db.Date
@@ -220,10 +237,25 @@ model Team {
   isActive       Boolean         @default(true) @map("is_active")
   createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
   awayMatches    GameMatch[]     @relation("AwayTeamMatches")
+  matchReservations MatchTeamReservation[]
   homeMatches    GameMatch[]     @relation("HomeTeamMatches")
   participations Participation[]
   players        TeamPlayer[]
   staffMembers   TeamStaffMember[]
 
   @@map("team")
+}
+
+/// Derived from active GameMatch participants by SQL triggers; do not write directly.
+model MatchTeamReservation {
+  matchdayId String @map("matchday_id") @db.Uuid
+  teamId String @map("team_id") @db.Uuid
+  matchId String @map("match_id") @db.Uuid
+  matchday Matchday @relation(fields: [matchdayId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  gameMatch GameMatch @relation(fields: [matchId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([matchdayId, teamId], map: "pk_match_team_reservation")
+  @@index([matchId], map: "idx_match_team_reservation_match")
+  @@map("match_team_reservation")
 }

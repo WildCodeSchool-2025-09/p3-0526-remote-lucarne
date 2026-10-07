@@ -1,3 +1,4 @@
+import { getTeamRoster } from "./team.controller";
 import { Router } from "express";
 import { authenticate } from "../../middlewares/authenticate";
 import { requireRoles } from "../../middlewares/requireRoles";
@@ -24,4 +25,5 @@ teamRouter.post(
 teamRouter.patch("/:teamId", authenticate, requireRoles(...TEAM_EDIT_ROLES), validateRequest({ params: teamIdParamsSchema, body: updateTeamInputSchema }), updateTeam);
 teamRouter.delete("/:teamId", authenticate, requireRoles(APP_ROLES.ADMIN), validateRequest({ params: teamIdParamsSchema, body: deleteTeamInputSchema }), deleteTeam);
 
+teamRouter.get("/:teamId/roster", authenticate, requireRoles(...TEAM_VIEW_ROLES), validateRequest({ params: teamIdParamsSchema }), getTeamRoster);
 export default teamRouter;

@@ -1,25 +1,29 @@
 import type { Prisma } from "../../generated/prisma/client";
+import { assignmentDate } from "../../utils/assignmentPeriod";
 
-type AssignmentState = "HISTORICAL" | "CURRENT" | "PLANNED";
-
-const utcDate = (date = new Date()): Date => new Date(date.toISOString().slice(0, 10));
-
-const currentAssignmentWhere = (date = new Date()): Prisma.TeamPlayerWhereInput => ({
-  joinedAt: { lte: utcDate(date) },
-  OR: [{ leftAt: null }, { leftAt: { gt: utcDate(date) } }],
+const currentAssignmentWhere = (
+  date = assignmentDate(),
+): Prisma.TeamPlayerWhereInput => ({
+  joinedAt: { lte: date },
+  OR: [{ leftAt: null }, { leftAt: { gte: date } }],
 });
 
-const plannedAssignmentWhere = (date = new Date()): Prisma.TeamPlayerWhereInput => ({
-  leftAt: null,
-  joinedAt: { gt: utcDate(date) },
-});
+const plannedAssignmentWhere = (
+  date = assignmentDate(),
+): Prisma.TeamPlayerWhereInput => ({ joinedAt: { gt: date } });
 
 const assignmentState = (
   assignment: { joinedAt: Date; leftAt: Date | null },
-  date = new Date(),
-): AssignmentState => {
-  if (assignment.leftAt !== null && assignment.leftAt <= utcDate(date)) return "HISTORICAL";
-  return assignment.joinedAt > utcDate(date) ? "PLANNED" : "CURRENT";
+  date = assignmentDate(),
+): "HISTORICAL" | "CURRENT" | "PLANNED" => {
+  if (assignment.leftAt !== null && assignment.leftAt < date) return "HISTORICAL";
+
+  return assignment.joinedAt > date ? "PLANNED" : "CURRENT";
 };
 
-export { assignmentState, currentAssignmentWhere, plannedAssignmentWhere, utcDate };
+export {
+  assignmentState,
+  currentAssignmentWhere,
+  plannedAssignmentWhere,
+  assignmentDate,
+};

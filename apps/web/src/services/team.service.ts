@@ -1,3 +1,4 @@
+import type { TeamRoster } from "@lucarne/shared";
 import type { CreateTeamInput, ListTeamsParams, PaginatedTeamsResponse, Team, TeamDeletionPreview, UpdateTeamInput } from "@lucarne/shared";
 import { httpClient } from "../lib/httpClient";
 
@@ -19,4 +20,5 @@ async function updateTeam(id: string, input: UpdateTeamInput): Promise<Team> { r
 const getTeamDeletionPreview = (id: string) => httpClient.get<TeamDeletionPreview>(`/teams/${id}/deletion-preview`);
 async function deleteTeam(id: string): Promise<void> { await httpClient.delete<void>(`/teams/${id}`, { json: { confirm: true } }); }
 
-export { createTeam, deleteTeam, getTeam, getTeamDeletionPreview, listTeams, updateTeam };
+const getTeamRoster = (id: string) => httpClient.get<TeamRoster>(`/teams/${id}/roster`);
+export { getTeamRoster, createTeam, deleteTeam, getTeam, getTeamDeletionPreview, listTeams, updateTeam };

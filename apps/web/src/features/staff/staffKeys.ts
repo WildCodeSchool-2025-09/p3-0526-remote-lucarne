@@ -5,7 +5,8 @@ const staffKeys = {
   details: () => [...staffKeys.all, "detail"] as const,
   detail: (staffMemberId: string) => [...staffKeys.details(), staffMemberId] as const,
   lists: () => [...staffKeys.all, "list"] as const,
-  list: (params: ListStaffMembersParams) => [...staffKeys.lists(), { ...params }] as const,
+  list: (params: ListStaffMembersParams) =>
+    [...staffKeys.lists(), { ...params }] as const,
 };
 
 export { staffKeys };

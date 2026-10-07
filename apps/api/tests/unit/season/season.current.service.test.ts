@@ -8,14 +8,10 @@ vi.mock("../../../src/features/season/season.repository", () => ({
 
 const setCurrent = vi.mocked(setCurrentSeason);
 const currentSeason = {
-  id: "season-id",
-  leagueId: "league-id",
-  name: "2026-2027",
-  startDate: new Date("2026-08-01T00:00:00.000Z"),
-  endDate: new Date("2027-06-30T00:00:00.000Z"),
-  isActive: true,
-  version: 1,
+  id: "edition-id", leagueId: "league-id", seasonId: "season-id", isCurrent: true,
+  matchdayCount: null, matchesPerMatchday: null,
   createdAt: new Date("2026-09-16T00:00:00.000Z"),
+  league: { id: "league-id", name: "League", country: "France" },
 };
 
 describe("setCurrentSeasonService", () => {

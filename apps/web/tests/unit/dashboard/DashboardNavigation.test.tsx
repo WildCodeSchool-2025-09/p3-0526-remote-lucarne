@@ -18,7 +18,7 @@ describe("DashboardNavigation", () => {
     expect(screen.getByRole("link", { name: "Staff" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Tableau de bord" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Saisons" })).toHaveAttribute("href", "/dashboard/seasons");
-    expect(screen.queryByRole("link", { name: "Matchs" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Matchs" })).toHaveAttribute("href", "/dashboard/matches");
   });
 });
 

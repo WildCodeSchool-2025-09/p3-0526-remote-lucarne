@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpError } from "../../../../src/lib/httpClient";
@@ -32,7 +32,8 @@ describe("CreateLeagueForm", () => {
 
     expect(screen.getByLabelText("Nom *")).toBeInTheDocument();
     expect(screen.getByLabelText("Pays *")).toBeInTheDocument();
-    expect(screen.getByLabelText("URL du logo")).toBeInTheDocument();
+    expect(screen.getByLabelText("Fichier logo")).toBeInTheDocument();
+    expect(screen.queryByLabelText("URL du logo")).not.toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: "Ligue active" })).not.toBeChecked();
   });
 
@@ -47,16 +48,13 @@ describe("CreateLeagueForm", () => {
     expect(mutate).not.toHaveBeenCalled();
   });
 
-  it("shows an inline error for an invalid logo URL", async () => {
-    const user = userEvent.setup();
+  it("shows an inline error for an unsupported logo file", () => {
     render(<CreateLeagueForm />);
+    fireEvent.change(screen.getByLabelText("Fichier logo"), {
+      target: { files: [new File(["svg"], "logo.svg", { type: "image/svg+xml" })] },
+    });
 
-    await user.type(screen.getByLabelText("Nom *"), "Première Ligue");
-    await user.type(screen.getByLabelText("Pays *"), "France");
-    await user.type(screen.getByLabelText("URL du logo"), "not-a-url");
-    await user.click(screen.getByRole("button", { name: "Créer la ligue" }));
-
-    expect(await screen.findByText("L'URL du logo doit être une URL valide")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("JPEG, PNG ou WebP");
     expect(mutate).not.toHaveBeenCalled();
   });
 

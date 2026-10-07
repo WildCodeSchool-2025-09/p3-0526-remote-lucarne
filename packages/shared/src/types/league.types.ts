@@ -65,11 +65,6 @@ interface ListLeaguesParams extends LeagueSearchParams, CountryFilterParams, Lea
   status?: LeagueStatusFilter;
 }
 
-interface LeaguePermissions {
-  canView: boolean;
-  canDelete: boolean;
-}
-
 type PaginatedLeaguesResponse = PaginatedResponse<League>;
 
 export type {
@@ -79,7 +74,6 @@ export type {
   DeleteLeagueInput,
   League,
   LeagueUpdateFields,
-  LeaguePermissions,
   LeagueSearchParams,
   LeagueSortField,
   LeagueSortParams,

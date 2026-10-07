@@ -23,11 +23,23 @@ function TeamRowActions({ canDelete, canEdit, onAction, team }: TeamRowActionsPr
       onSelect: () => onAction(actionType),
     },
     ...(canDelete
-      ? [{ key: "delete", label: "Supprimer", onSelect: () => onAction("delete"), tone: "danger" as const }]
+      ? [
+        {
+          key: "delete",
+          label: "Supprimer",
+          onSelect: () => onAction("delete"),
+          tone: "danger" as const,
+        },
+      ]
       : []),
   ];
 
-  return <ResourceActionsPopover actions={actions} triggerLabel={`Ouvrir les actions de ${team.name}`} />;
+  return (
+    <ResourceActionsPopover
+      actions={actions}
+      triggerLabel={`Ouvrir les actions de ${team.name}`}
+    />
+  );
 }
 
 export default TeamRowActions;

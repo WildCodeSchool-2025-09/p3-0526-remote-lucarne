@@ -11,7 +11,7 @@ function parseParams(searchParams: URLSearchParams): ListLeaguesParams {
   const rawPage = Number(searchParams.get("page") ?? "1");
   const rawStatus = searchParams.get("status") ?? "ALL";
   const status = STATUS_VALUES.includes(rawStatus as LeagueStatusFilter)
-    ? rawStatus as LeagueStatusFilter
+    ? (rawStatus as LeagueStatusFilter)
     : "ALL";
   const sortBy = searchParams.get("sortBy") === "createdAt" ? "createdAt" : "name";
   const sortOrder = searchParams.get("sortOrder") === "desc" ? "desc" : "asc";
@@ -35,26 +35,39 @@ function updateParams(
 
   if ("search" in changes) {
     next.delete("search");
+
     if (changes.search?.trim()) next.set("search", changes.search.trim());
   }
+
   if ("status" in changes) {
     next.delete("status");
-    if (changes.status != null && changes.status !== "ALL") next.set("status", changes.status);
+
+    if (changes.status != null && changes.status !== "ALL")
+      next.set("status", changes.status);
   }
+
   if ("sortOrder" in changes) {
     next.delete("sortOrder");
+
     if (changes.sortOrder === "desc") next.set("sortOrder", "desc");
   }
+
   if ("sortBy" in changes) {
     next.delete("sortBy");
-    if (changes.sortBy != null && changes.sortBy !== "name") next.set("sortBy", changes.sortBy);
+
+    if (changes.sortBy != null && changes.sortBy !== "name")
+      next.set("sortBy", changes.sortBy);
   }
+
   if ("page" in changes) {
     next.delete("page");
+
     if (changes.page != null && changes.page > 1) next.set("page", String(changes.page));
   }
+
   if ("countries" in changes) {
     next.delete("country");
+
     for (const country of changes.countries ?? []) next.append("country", country);
   }
 

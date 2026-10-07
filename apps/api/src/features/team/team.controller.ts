@@ -1,3 +1,5 @@
+import type { TeamRoster } from "@lucarne/shared";
+import { getTeamRosterService } from "./team.service";
 import type { RequestHandler } from "express";
 import type { Team } from "@lucarne/shared";
 import { AppError } from "../../errors/AppError";
@@ -46,4 +48,5 @@ const createTeam: RequestHandler<
   response.status(201).json(toTeamResponse(team));
 });
 
-export { createTeam, deleteTeam, getTeam, getTeamDeletionPreview, listTeams, toTeamResponse, updateTeam };
+const getTeamRoster: RequestHandler<{ teamId: string }, TeamRoster> = asyncHandler(async (request, response) => response.json(await getTeamRosterService(request.params.teamId)));
+export { getTeamRoster, createTeam, deleteTeam, getTeam, getTeamDeletionPreview, listTeams, toTeamResponse, updateTeam };

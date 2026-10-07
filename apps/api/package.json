@@ -5,6 +5,7 @@
     "dev": "tsx watch --clear-screen=false ./src/server",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "tsx ./bin/seed",
+    "seed": "npm run db:seed",
     "build": "npm run check-types",
     "start": "tsx ./src/server",
     "test": "vitest run",

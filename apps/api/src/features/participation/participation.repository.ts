@@ -2,24 +2,24 @@ import prisma from "../../../database/prisma";
 import { Prisma } from "../../generated/prisma/client";
 import { AppError } from "../../errors/AppError";
 
-const findParticipation = (seasonId: string, teamId: string) => prisma.participation.findUnique({
-  where: { teamId_seasonId: { teamId, seasonId } },
+const findParticipation = (leagueSeasonId: string, teamId: string) => prisma.participation.findUnique({
+  where: { teamId_leagueSeasonId: { teamId, leagueSeasonId } },
 });
 
-const countScheduledMatches = (transaction: Prisma.TransactionClient, seasonId: string, teamId: string) =>
+const countScheduledMatches = (transaction: Prisma.TransactionClient, leagueSeasonId: string, teamId: string) =>
   transaction.gameMatch.count({
     where: {
       status: "SCHEDULED",
-      matchday: { seasonId },
+      matchday: { leagueSeasonId },
       OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }],
     },
   });
 
-const createOrRestoreParticipation = (seasonId: string, teamId: string) => prisma.$transaction(async (transaction) => {
+const createOrRestoreParticipation = (leagueSeasonId: string, teamId: string) => prisma.$transaction(async (transaction) => {
   const seasons = await transaction.$queryRaw<{ id: string }[]>`
-    SELECT id FROM season WHERE id = ${seasonId}::uuid FOR UPDATE
+    SELECT id FROM league_season WHERE id = ${leagueSeasonId}::uuid FOR UPDATE
   `;
-  if (!seasons[0]) throw new AppError(404, "RESOURCE_NOT_FOUND", "Season not found");
+  if (!seasons[0]) throw new AppError(404, "RESOURCE_NOT_FOUND", "League season not found");
 
   const teams = await transaction.$queryRaw<{ id: string; is_active: boolean }[]>`
     SELECT id, is_active FROM team WHERE id = ${teamId}::uuid FOR UPDATE
@@ -28,7 +28,7 @@ const createOrRestoreParticipation = (seasonId: string, teamId: string) => prism
   if (!teams[0].is_active) throw new AppError(409, "TEAM_INACTIVE", "The team is inactive");
 
   const existing = await transaction.participation.findUnique({
-    where: { teamId_seasonId: { teamId, seasonId } },
+    where: { teamId_leagueSeasonId: { teamId, leagueSeasonId } },
   });
 
   if (existing?.status === "REGISTERED") {
@@ -37,37 +37,37 @@ const createOrRestoreParticipation = (seasonId: string, teamId: string) => prism
 
   if (existing?.status === "WITHDRAWN") {
     return transaction.participation.update({
-      where: { teamId_seasonId: { teamId, seasonId } },
+      where: { teamId_leagueSeasonId: { teamId, leagueSeasonId } },
       data: { status: "REGISTERED" },
     });
   }
 
   return transaction.participation.create({
-    data: { teamId, seasonId, points: 0, rank: null, status: "REGISTERED" },
+    data: { teamId, leagueSeasonId, points: 0, rank: null, status: "REGISTERED" },
   });
 }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
-const getParticipationWithdrawalPreview = async (seasonId: string, teamId: string) => {
-  const participation = await findParticipation(seasonId, teamId);
+const getParticipationWithdrawalPreview = async (leagueSeasonId: string, teamId: string) => {
+  const participation = await findParticipation(leagueSeasonId, teamId);
   if (!participation) throw new AppError(404, "RESOURCE_NOT_FOUND", "Participation not found");
 
   return {
     participation,
-    scheduledMatchCount: await countScheduledMatches(prisma, seasonId, teamId),
+    scheduledMatchCount: await countScheduledMatches(prisma, leagueSeasonId, teamId),
   };
 };
 
-const withdrawParticipation = (seasonId: string, teamId: string) => prisma.$transaction(async (transaction) => {
+const withdrawParticipation = (leagueSeasonId: string, teamId: string) => prisma.$transaction(async (transaction) => {
   const participation = await transaction.participation.findUnique({
-    where: { teamId_seasonId: { teamId, seasonId } },
+    where: { teamId_leagueSeasonId: { teamId, leagueSeasonId } },
   });
   if (!participation) throw new AppError(404, "RESOURCE_NOT_FOUND", "Participation not found");
 
-  const scheduledMatchCount = await countScheduledMatches(transaction, seasonId, teamId);
+  const scheduledMatchCount = await countScheduledMatches(transaction, leagueSeasonId, teamId);
   const updatedParticipation = participation.status === "WITHDRAWN"
     ? participation
     : await transaction.participation.update({
-      where: { teamId_seasonId: { teamId, seasonId } },
+      where: { teamId_leagueSeasonId: { teamId, leagueSeasonId } },
       data: { status: "WITHDRAWN" },
     });
 

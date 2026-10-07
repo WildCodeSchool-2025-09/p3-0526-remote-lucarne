@@ -4,11 +4,11 @@ import type { HttpError } from "../../../lib/httpClient";
 import { createSeason } from "../../../services/season.service";
 import { seasonKeys } from "../seasonKeys";
 
-function useCreateSeason(leagueId: string) {
+function useCreateSeason() {
   const queryClient = useQueryClient();
 
   return useMutation<Season, HttpError, CreateSeasonInput>({
-    mutationFn: (input) => createSeason(leagueId, input),
+    mutationFn: (input) => createSeason(input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: seasonKeys.lists() });
     },

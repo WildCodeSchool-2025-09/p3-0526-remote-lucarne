@@ -1,8 +1,14 @@
-import { createSeasonInputSchema, updateSeasonInputSchema } from "@lucarne/shared";
+import { assignLeagueSeasonInputSchema, createSeasonInputSchema, updateSeasonInputSchema } from "@lucarne/shared";
 import type { CreateSeasonInput, UpdateSeasonInput } from "@lucarne/shared";
 import { z } from "zod";
 
 const createSeasonFormSchema = createSeasonInputSchema;
+
+const assignLeagueSeasonFormSchema = assignLeagueSeasonInputSchema
+  .pick({ matchdayCount: true, matchesPerMatchday: true })
+  .extend({ leagueId: z.string().min(1, { error: "Choisissez une ligue" }) });
+
+type AssignLeagueSeasonFormData = z.infer<typeof assignLeagueSeasonFormSchema>;
 
 const updateSeasonFormSchema = z.object({
   name: z.string({ error: "Nom requis" }).trim().min(1, { error: "Nom requis" }).max(100, { error: "Le nom ne peut pas dépasser 100 caractères" }),
@@ -43,10 +49,11 @@ function toUpdateSeasonInput(
 }
 
 export {
+  assignLeagueSeasonFormSchema,
   createSeasonDefaultValues,
   createSeasonFormSchema,
   toCreateSeasonInput,
   toUpdateSeasonInput,
   updateSeasonFormSchema,
 };
-export type { CreateSeasonFormData, CreateSeasonFormValues, UpdateSeasonFormData, UpdateSeasonFormValues };
+export type { AssignLeagueSeasonFormData, CreateSeasonFormData, CreateSeasonFormValues, UpdateSeasonFormData, UpdateSeasonFormValues };

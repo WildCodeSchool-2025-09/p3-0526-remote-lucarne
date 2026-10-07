@@ -14,16 +14,30 @@ describe("DashboardListFilters", () => {
         >
           <label>
             Statut
-            <select><option>Tous</option></select>
+            <select>
+              <option>Tous</option>
+            </select>
           </label>
         </DashboardListFilters>
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("group", { name: "Filtres des équipes" })).toContainElement(screen.getByLabelText("Statut"));
-    expect(screen.getByRole("link", { name: "Ajouter une équipe" })).toHaveAttribute("href", "/dashboard/teams/new");
-    expect(screen.getByRole("link", { name: "Ajouter une équipe" }).parentElement).toHaveClass("dashboard-list__filters");
-    expect(screen.getByLabelText("Statut").parentElement?.parentElement).toHaveClass("dashboard-list__filters-body");
+    expect(screen.getByRole("group", { name: "Filtres des équipes" })).toContainElement(
+      screen.getByLabelText("Statut"),
+    );
+    expect(screen.getByRole("link", { name: "Ajouter une équipe" })).toHaveAttribute(
+      "href",
+      "/dashboard/teams/new",
+    );
+    expect(
+      screen.getByRole("link", { name: "Ajouter une équipe" }).parentElement,
+    ).toBe(screen.getByRole("group", { name: "Filtres des équipes" }));
+    const toggle = screen.getByRole("button", { name: "Afficher les filtres, 2 actifs" });
+    const body = document.getElementById(toggle.getAttribute("aria-controls") ?? "");
+    expect(body).toContainElement(screen.getByLabelText("Statut"));
+    expect(body).not.toContainElement(
+      screen.getByRole("link", { name: "Ajouter une équipe" }),
+    );
   });
 
   it("opens and closes the mobile body while exposing its state", async () => {
@@ -37,22 +51,30 @@ describe("DashboardListFilters", () => {
     const toggle = screen.getByRole("button", { name: "Afficher les filtres" });
     const body = document.getElementById(toggle.getAttribute("aria-controls") ?? "");
     expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(body).not.toHaveClass("dashboard-list__filters-body--open");
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
 
     await user.click(toggle);
-    expect(screen.getByRole("button", { name: "Masquer les filtres" })).toHaveAttribute("aria-expanded", "true");
-    expect(body).toHaveClass("dashboard-list__filters-body--open");
+    expect(screen.getByRole("button", { name: "Masquer les filtres" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    expect(body).toContainElement(screen.getByRole("button", { name: "Réinitialiser" }));
 
     await user.keyboard("{Escape}");
     expect(screen.getByRole("button", { name: "Afficher les filtres" })).toHaveFocus();
-    expect(body).not.toHaveClass("dashboard-list__filters-body--open");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
   });
 
   it("announces the number of active criteria", () => {
-    render(<DashboardListFilters activeCount={2} label="Filtres"><span>Contenu</span></DashboardListFilters>);
+    render(
+      <DashboardListFilters activeCount={2} label="Filtres">
+        <span>Contenu</span>
+      </DashboardListFilters>,
+    );
 
-    expect(screen.getByRole("button", { name: "Afficher les filtres, 2 actifs" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Afficher les filtres, 2 actifs" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("2 actifs")).toBeInTheDocument();
   });
 });
