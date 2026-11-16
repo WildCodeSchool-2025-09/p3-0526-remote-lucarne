@@ -1,7 +1,7 @@
 import prisma from "../../../database/prisma";
 import type { League, Prisma } from "../../generated/prisma/client";
 import type { CreateLeagueInput } from "./league.schema";
-import type { LeagueUpdateFields, ListLeaguesParams } from "@lucarne/shared";
+import type { LeagueUpdateFields, ListLeaguesParams, PublicLeagueTeamsQuery } from "@lucarne/shared";
 
 interface LeagueListResult {
   data: League[];
@@ -90,6 +90,41 @@ const listLeagues = async (params: ListLeaguesParams): Promise<LeagueListResult>
 const findLeagueById = (id: string): Promise<League | null> =>
   prisma.league.findUnique({ where: { id } });
 
+const listPublicLeagueNavigation = () => prisma.league.findMany({
+  where: { isActive: true },
+  select: { id: true, slug: true, name: true, country: true, logoUrl: true },
+  orderBy: [{ name: "asc" }, { country: "asc" }, { id: "asc" }],
+});
+
+const findPublicLeagueBySlug = (slug: string) => prisma.league.findFirst({
+  where: { slug, isActive: true },
+  select: {
+    id: true, slug: true, name: true, country: true, logoUrl: true,
+    leagueSeasons: {
+      select: { isCurrent: true, season: { select: { id: true, name: true } } },
+      orderBy: [{ season: { startDate: "desc" } }, { seasonId: "asc" }],
+    },
+  },
+});
+
+const listPublicLeagueTeams = (slug: string, seasonId: string, query: PublicLeagueTeamsQuery) =>
+  prisma.$transaction(async (transaction) => {
+    const edition = await transaction.leagueSeason.findFirst({
+      where: { seasonId, league: { slug, isActive: true } }, select: { id: true },
+    });
+    if (edition == null) return null;
+    const where = { leagueSeasonId: edition.id, status: "REGISTERED", team: { isActive: true } };
+    const [participations, totalItems] = await Promise.all([
+      transaction.participation.findMany({
+        where, select: { team: { select: { id: true, name: true, logoUrl: true } } },
+        orderBy: [{ team: { name: "asc" } }, { teamId: "asc" }],
+        skip: (query.page - 1) * query.pageSize, take: query.pageSize,
+      }),
+      transaction.participation.count({ where }),
+    ]);
+    return { data: participations.map(({ team }) => team), totalItems };
+  }, { isolationLevel: "RepeatableRead" });
+
 const listLeagueCountries = async (): Promise<string[]> => {
   const countries = await prisma.league.findMany({
     distinct: ["country"],
@@ -133,8 +168,11 @@ export {
   createLeague,
   deactivateLeague,
   findLeagueById,
+  findPublicLeagueBySlug,
   getLeagueDeletionDependencies,
   listLeagueCountries,
+  listPublicLeagueNavigation,
+  listPublicLeagueTeams,
   listLeagues,
   permanentlyDeleteLeague,
   updateLeagueOptimistic,

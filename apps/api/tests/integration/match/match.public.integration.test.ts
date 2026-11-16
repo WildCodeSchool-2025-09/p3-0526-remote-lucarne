@@ -9,7 +9,7 @@ import { createSeasonForLeague } from "../../helpers/season";
 
 const base = "/api/v1/matches";
 const fixture = async () => {
-  const league = await prisma.league.create({ data: { name: `Public league ${randomUUID()}`, country: "France" } });
+  const league = await prisma.league.create({ data: { name: `Public league ${randomUUID()}`, country: "France", isActive: true } });
   const season = await createSeasonForLeague(league.id);
   const teams = await Promise.all(["Home", "Away"].map((name) => prisma.team.create({ data: { name, logoUrl: name === "Home" ? "https://example.com/home.png" : null } })));
   await prisma.participation.createMany({ data: teams.map((team) => ({ teamId: team.id, leagueSeasonId: season.leagueSeasonId })) });
@@ -30,22 +30,22 @@ const expectNotFound = async (publicId: string) => {
 };
 
 describe("MATCH public HTTP API", () => {
-  it("returns only the public contract without authentication or internal identifiers", async () => {
-    const { league, season, teams, match } = await fixture();
+  it("returns public resource links without authentication or internal match identifiers", async () => {
+    const { league, season, teams, match, day } = await fixture();
     const response = await request(app).get(`${base}/${match.matchPublicId}`).expect(200);
     const expected: PublicMatch = {
-      matchPublicId: match.matchPublicId, league: { name: league.name, country: "France" }, season: { name: season.name },
-      matchday: { number: 1, name: "Journée 1" },
-      homeTeam: { name: teams[0].name, logoUrl: teams[0].logoUrl }, awayTeam: { name: teams[1].name, logoUrl: null },
+      matchPublicId: match.matchPublicId, league: { id: league.id, slug: league.slug, name: league.name, country: "France" }, season: { id: season.id, name: season.name },
+      matchday: { id: day.id, number: 1, name: "Journée 1" },
+      homeTeam: { id: teams[0].id, name: teams[0].name, logoUrl: teams[0].logoUrl }, awayTeam: { id: teams[1].id, name: teams[1].name, logoUrl: null },
       matchDate: "2026-10-25", startTime: "02:30", timeZone: "Europe/Paris", stadium: null,
       status: "SCHEDULED", result: { homeScore: null, awayScore: null },
     };
     expect(response.body).toEqual(expected);
     const list = await readList();
     expect(list).toEqual({ data: [expected], pagination: { page: 1, pageSize: 20, totalItems: 1, totalPages: 1 } });
-    for (const id of [match.id, match.matchdayId, league.id, season.id, teams[0].id, teams[1].id]) {
-      expect(JSON.stringify(list)).not.toContain(id);
-    }
+    expect(JSON.stringify(list)).not.toContain(match.id);
+    expect(response.body).not.toHaveProperty("version");
+    expect(response.body).not.toHaveProperty("isPublished");
     await expectNotFound(match.id);
   });
 
@@ -77,6 +77,17 @@ describe("MATCH public HTTP API", () => {
     for (const publicId of [blank.matchPublicId, prepared.matchPublicId, deleted.matchPublicId]) {
       await request(app).get(`${base}/${publicId}`).set("Authorization", `Bearer ${admin.accessToken}`).expect(404);
     }
+  });
+
+  it.each(["league", "matchday", "homeTeam", "awayTeam"])("hides a published match when its %s becomes inactive", async (resource) => {
+    const { league, day, teams, match } = await fixture();
+    expect((await readList()).pagination.totalItems).toBe(1);
+    if (resource === "league") await prisma.league.update({ where: { id: league.id }, data: { isActive: false } });
+    else if (resource === "matchday") await prisma.matchday.update({ where: { id: day.id }, data: { isActive: false } });
+    else await prisma.team.update({ where: { id: teams[resource === "homeTeam" ? 0 : 1].id }, data: { isActive: false } });
+    expect((await readList()).pagination.totalItems).toBe(0);
+    expect((await readList()).data).toEqual([]);
+    await expectNotFound(match.matchPublicId);
   });
 
   it("combines every filter, checks either team side and includes both date boundaries", async () => {

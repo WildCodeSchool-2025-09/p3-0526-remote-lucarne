@@ -3,6 +3,7 @@ import type { HttpError } from "../../../lib/httpClient";
 import { deleteSeason } from "../../../services/season.service";
 import { leagueKeys } from "../../league/leagueKeys";
 import { seasonKeys } from "../seasonKeys";
+import { invalidatePublicPortal } from "../../../components/public/publicPortalCache";
 
 function useDeleteSeason() {
   const queryClient = useQueryClient();
@@ -13,6 +14,7 @@ function useDeleteSeason() {
       queryClient.removeQueries({ queryKey: seasonKeys.detail(seasonId) });
 
       await Promise.all([
+        invalidatePublicPortal(queryClient),
         queryClient.invalidateQueries({ queryKey: seasonKeys.lists() }),
         queryClient.invalidateQueries({ queryKey: leagueKeys.all }),
       ]);

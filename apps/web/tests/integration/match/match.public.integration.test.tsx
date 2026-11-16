@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearAccessToken, setAccessToken } from "../../../src/lib/authToken";
 import appRouter from "../../../src/router";
 import { matchKeys } from "../../../src/features/match/matchKeys";
+import { getCurrentAppRole } from "../../../src/auth/authRole";
 
 const publicId = "00000000-0000-4000-8000-000000000001";
 const first: PublicMatch = {
@@ -35,6 +36,9 @@ describe("Public MATCH pages", () => {
     fetchMock.mockImplementation(async (input) => {
       await Promise.resolve(); const url = requestUrl(input); const path = url.pathname.replace("/api/v1", "");
       if (path === "/health") return json({ status: "ok" });
+      if (path === "/leagues/navigation") return json([]);
+      if (path.endsWith("/events")) return json([]);
+      if (path === "/auth/me") return json({ id: "public-user", firstName: "Test", lastName: "User", email: "user@lucarne.test", role: getCurrentAppRole() });
       if (path === "/matches") {
         if (listStatus) return json({ error: { code: "INTERNAL_SERVER_ERROR", message: "Unavailable" } }, listStatus);
         const requestedPage = Number(url.searchParams.get("page") ?? 1);
@@ -55,14 +59,14 @@ describe("Public MATCH pages", () => {
     expect(within(list).getAllByText(/02:30 \(Paris\)/)).toHaveLength(2);
     expect(screen.queryByRole("button", { name: /Publier|Supprimer|Enregistrer/ })).not.toBeInTheDocument();
     for (const [input, options] of fetchMock.mock.calls) {
-      expect(requestUrl(input).pathname).toBe("/api/v1/matches"); expect(new Headers(options?.headers).has("authorization")).toBe(false);
+      expect(["/api/v1/matches", "/api/v1/leagues/navigation"]).toContain(requestUrl(input).pathname); expect(new Headers(options?.headers).has("authorization")).toBe(false);
     }
   });
   it.each(["USER", "EDITOR", "MODERATOR", "ADMIN"])("keeps %s on the same read-only public pages", async (role) => {
     mount(`/matches/${publicId}`, role); await screen.findByRole("heading", { name: "Paris FC – Lyon" });
     expect(screen.queryByRole("link", { name: /Modifier/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Publier|Supprimer|Enregistrer/ })).not.toBeInTheDocument();
-    expect(fetchMock.mock.calls.every(([input]) => requestUrl(input).pathname.startsWith("/api/v1/matches/"))).toBe(true);
+    expect(fetchMock.mock.calls.every(([input]) => requestUrl(input).pathname.startsWith("/api/v1/matches/") || requestUrl(input).pathname === "/api/v1/auth/me")).toBe(true);
   });
   it("opens the public immutable ID and returns to the canonical calendar", async () => {
     const user = userEvent.setup(); const { router } = mount(); await screen.findByRole("list", { name: "Matchs publiés" });
@@ -85,7 +89,7 @@ describe("Public MATCH pages", () => {
   });
   it("does not send invalid filters and allows recovering by reset", async () => {
     const user = userEvent.setup(); mount("/matches?dateFrom=2026-10-26&dateTo=2026-10-24");
-    expect(screen.getByRole("alert")).toHaveTextContent("Les filtres sont invalides"); expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("Les filtres sont invalides"); expect(fetchMock.mock.calls.some(([input]) => requestUrl(input).pathname === "/api/v1/matches")).toBe(false);
     await user.click(screen.getByRole("button", { name: "Réinitialiser" })); await screen.findByRole("list", { name: "Matchs publiés" });
   });
   it("shows an empty calendar", async () => {
@@ -105,7 +109,7 @@ describe("Public MATCH pages", () => {
     client.setQueryData(matchKeys.detail(publicId), { id: "private", isPublished: false, version: 8, homeTeamId: "private-home", awayTeamId: "private-away" });
     mount(`/matches/${publicId}`, undefined, client); await screen.findByRole("heading", { name: "Paris FC – Lyon" });
     expect(client.getQueryData(matchKeys.publicDetail(publicId))).toEqual(first);
-    expect(screen.queryByText(/private/)).not.toBeInTheDocument(); expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/private/)).not.toBeInTheDocument(); expect(fetchMock.mock.calls.filter(([input]) => requestUrl(input).pathname === `/api/v1/matches/${publicId}`)).toHaveLength(1);
   });
   it("links the home page to the public calendar", async () => {
     const user = userEvent.setup(); const { router } = mount("/"); await user.click(screen.getByRole("link", { name: "Consulter le calendrier des matchs" }));

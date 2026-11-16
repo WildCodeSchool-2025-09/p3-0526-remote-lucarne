@@ -120,6 +120,7 @@ describe("SeasonDetailPage", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(container.querySelector("form")).toBeNull();
     expect(useTeamList).not.toHaveBeenCalled();
+    expect(screen.queryAllByRole("button", { name: "Importer les matchs (JSON)" })).toHaveLength(role === APP_ROLES.ADMIN ? 2 : 0);
     // Mutation hooks require a QueryClientProvider; this read-only render needs none.
     expect(screen.getByRole("link", { name: "Modifier" })).toHaveAttribute("href", "/dashboard/seasons/season-id/edit");
   });

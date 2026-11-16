@@ -2,6 +2,7 @@ import { dashboardStyles } from "./dashboardStyles";
 import { useEffect, useRef, useState } from "react";
 import logoFull from "../../../docs/images/logo-blanc-sans-fond.png";
 import { temporaryIcons } from "../../ui";
+import DashboardExitLink from "./DashboardExitLink";
 import DashboardNavigation, {
   type DashboardNavigationItemKey,
 } from "./DashboardNavigation";
@@ -55,6 +56,9 @@ function DashboardMobileHeader({ activeItem }: DashboardMobileHeaderProps) {
           activeItem={activeItem}
           onNavigate={() => setIsOpen(false)}
         />
+        <div className="mx-1 border-t border-[#526472] pt-3 pb-4">
+          <DashboardExitLink onNavigate={() => setIsOpen(false)} />
+        </div>
       </div>
     </header>
   );

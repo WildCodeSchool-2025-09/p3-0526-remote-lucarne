@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { authenticationErrorMessage } from "@lucarne/shared";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation, useNavigate } from "react-router";
@@ -39,7 +40,7 @@ function getSessionState(): DevSessionState {
 function getDevLoginErrorMessage(error: unknown): string {
   if (error instanceof HttpError) {
     if (error.status === 401) {
-      return "Email ou mot de passe incorrect.";
+      return authenticationErrorMessage;
     }
 
     if (error.status >= 500) {

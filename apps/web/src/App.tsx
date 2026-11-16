@@ -1,37 +1,34 @@
-import { useEffect } from "react";
-import { Outlet, useMatches, useNavigate } from "react-router";
+import { Outlet, useMatches } from "react-router";
 import { BugReportWidget } from "./features/bug-report/components/BugReportWidget";
+import { AuthProvider } from "./features/auth/AuthProvider";
 
 interface AppRouteHandle {
   usesDashboardLayout?: boolean;
+  usesPublicLayout?: boolean;
 }
 
 function isAppRouteHandle(value: unknown): value is AppRouteHandle {
   return typeof value === "object" && value != null;
 }
 
-function App() {
-  const navigate = useNavigate();
+function AppContent() {
   const matches = useMatches();
   const usesDashboardLayout = matches.some(
     (match) => isAppRouteHandle(match.handle) && match.handle.usesDashboardLayout === true,
   );
-  useEffect(() => {
-    const onSessionExpired = () => void navigate(import.meta.env.DEV ? "/dev/login" : "/", {
-      replace: true,
-      state: { sessionExpired: true },
-    });
-    window.addEventListener("lucarne:session-expired", onSessionExpired);
-    return () => window.removeEventListener("lucarne:session-expired", onSessionExpired);
-  }, [navigate]);
+  const usesPublicLayout = matches.some(
+    (match) => isAppRouteHandle(match.handle) && match.handle.usesPublicLayout === true,
+  );
 
   return <>
-    {usesDashboardLayout ? null : <header>Lucarnes</header>}
-    <main>
-      <Outlet />
-    </main>
+    {usesDashboardLayout || usesPublicLayout ? null : <header>Lucarnes</header>}
+    {usesPublicLayout ? <Outlet /> : <main><Outlet /></main>}
     {import.meta.env.DEV ? <BugReportWidget /> : null}
   </>;
+}
+
+function App() {
+  return <AuthProvider><AppContent /></AuthProvider>;
 }
 
 export default App;

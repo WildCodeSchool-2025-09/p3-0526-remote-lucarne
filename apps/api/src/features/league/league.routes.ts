@@ -2,17 +2,37 @@ import { Router } from "express";
 import { authenticate } from "../../middlewares/authenticate";
 import { requireRoles } from "../../middlewares/requireRoles";
 import { validateRequest } from "../../middlewares/validateRequest";
-import { activateLeague, createLeague, deactivateLeague, deleteLeague, getLeague, listLeagueCountries, listLeagues, updateLeague } from "./league.controller";
+import { activateLeague, createLeague, deactivateLeague, deleteLeague, getLeague, getPublicLeague, listLeagueCountries, listLeagues, listPublicLeagueNavigation, listPublicLeagueTeamResponses, updateLeague } from "./league.controller";
 import {
   createLeagueBodySchema,
   deleteLeagueBodySchema,
   leagueIdParamsSchema,
   listLeaguesQuerySchema,
+  publicLeagueNavigationQuerySchema,
+  publicLeagueSlugParamsSchema,
+  publicLeagueTeamsParamsSchema,
+  publicLeagueTeamsQuerySchema,
   updateLeagueBodySchema,
 } from "./league.schema";
 import { LEAGUE_DELETE_ROLES, LEAGUE_VIEW_ROLES, LEAGUE_WRITE_ROLES } from "./league.permissions";
+import { listPublicMatchdayResponses } from "../season/season.public.controller";
+import { getPublicLeagueStatistics, getPublicStandings } from "../ranking/ranking.controller";
+import { publicStatisticsQuerySchema } from "@lucarne/shared";
 
 const leagueRouter = Router();
+leagueRouter.get("/by-slug/:leagueSlug/seasons/:seasonId/standings", validateRequest({ params: publicLeagueTeamsParamsSchema, query: publicLeagueNavigationQuerySchema }), getPublicStandings);
+leagueRouter.get("/by-slug/:leagueSlug/seasons/:seasonId/statistics", validateRequest({ params: publicLeagueTeamsParamsSchema, query: publicStatisticsQuerySchema }), getPublicLeagueStatistics);
+
+leagueRouter.get("/navigation", validateRequest({ query: publicLeagueNavigationQuerySchema }), listPublicLeagueNavigation);
+leagueRouter.get("/by-slug/:leagueSlug", validateRequest({
+  params: publicLeagueSlugParamsSchema, query: publicLeagueNavigationQuerySchema,
+}), getPublicLeague);
+leagueRouter.get("/by-slug/:leagueSlug/seasons/:seasonId/teams", validateRequest({
+  params: publicLeagueTeamsParamsSchema, query: publicLeagueTeamsQuerySchema,
+}), listPublicLeagueTeamResponses);
+leagueRouter.get("/by-slug/:leagueSlug/seasons/:seasonId/matchdays", validateRequest({
+  params: publicLeagueTeamsParamsSchema, query: publicLeagueNavigationQuerySchema,
+}), listPublicMatchdayResponses);
 
 leagueRouter.get(
   "/",

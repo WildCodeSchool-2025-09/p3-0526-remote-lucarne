@@ -3,6 +3,16 @@ import { advanceSessionRevision, assertSessionRevision, getSessionRevision } fro
 
 const accessTokenStorageKey = "lucarne.accessToken";
 const sessionRequests = new Set<AbortController>();
+const sessionListeners = new Set<() => void>();
+
+function subscribeSession(listener: () => void): () => void {
+  sessionListeners.add(listener);
+  return () => { sessionListeners.delete(listener); };
+}
+
+function notifySession(): void {
+  sessionListeners.forEach((listener) => listener());
+}
 
 function registerSessionRequest(controller: AbortController): () => void {
   sessionRequests.add(controller);
@@ -24,11 +34,13 @@ function setAccessToken(accessToken: string): void {
   if (getAccessToken() === accessToken) return;
   resetSessionData();
   sessionStorage.setItem(accessTokenStorageKey, accessToken);
+  notifySession();
 }
 
 function clearAccessToken(): void {
   sessionStorage.removeItem(accessTokenStorageKey);
   resetSessionData();
+  notifySession();
 }
 
 export {
@@ -37,5 +49,6 @@ export {
   getAccessToken,
   getSessionRevision,
   registerSessionRequest,
+  subscribeSession,
   setAccessToken,
 };

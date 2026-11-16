@@ -1,11 +1,13 @@
 import { Link } from "react-router";
+import { publicNavigation } from "../components/public/publicRoutes";
+import { publicStyles } from "../components/public/publicStyles";
 
 function NotFoundPage() {
   return (
-    <>
-      <h1 className="w-full bg-red-300">Lucarne NoFoundPage</h1>
-      <Link to="/">Return to home</Link>;
-    </>
+    <section className={publicStyles.page}>
+      <h1>Page introuvable</h1>
+      <Link className="lucarne-button lucarne-button--outline" to={publicNavigation.home}>Retour à l’accueil</Link>
+    </section>
   );
 }
 

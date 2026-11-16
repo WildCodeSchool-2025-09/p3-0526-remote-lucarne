@@ -119,4 +119,29 @@ describe("environment", () => {
 
     await expect(import("../../../src/config/environment")).rejects.toThrow();
   });
+
+  it("does not trust any proxy by default", async () => {
+    delete process.env.TRUSTED_PROXY_IPS;
+    const { environment } = await import("../../../src/config/environment");
+    expect(environment.trustedProxyIps).toEqual([]);
+  });
+
+  it("accepts an empty proxy list", async () => {
+    process.env.TRUSTED_PROXY_IPS = "  ";
+    const { environment } = await import("../../../src/config/environment");
+    expect(environment.trustedProxyIps).toEqual([]);
+  });
+
+  it("accepts explicit IPv4 and IPv6 proxy addresses", async () => {
+    process.env.TRUSTED_PROXY_IPS = "172.30.50.2, ::1";
+    const { environment } = await import("../../../src/config/environment");
+    expect(environment.trustedProxyIps).toEqual(["172.30.50.2", "::1"]);
+  });
+
+  it.each(["true", "1", "uniquelocal", "172.16.0.0/12", "proxy", "127.0.0.1,", "999.0.0.1"])(
+    "rejects an unsafe or invalid proxy configuration %s", async (value) => {
+      process.env.TRUSTED_PROXY_IPS = value;
+      await expect(import("../../../src/config/environment")).rejects.toThrow("TRUSTED_PROXY_IPS");
+    },
+  );
 });

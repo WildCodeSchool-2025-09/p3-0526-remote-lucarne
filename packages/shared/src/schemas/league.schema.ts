@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE, MAX_SEARCH_LENGTH } from "../constants/pagination";
+import { createTeamInputSchema, teamListQuerySchema } from "./team.schema";
 
 const leagueStatusSchema = z.enum(["ACTIVE", "INACTIVE"]);
 const leagueStatusFilterSchema = z.enum(["ALL", "ACTIVE", "INACTIVE"]);
@@ -12,6 +13,38 @@ const leagueCountrySchema = z.string({ error: "Pays requis" })
   .min(1, { error: "Pays requis" })
   .max(100, { error: "Le pays ne peut pas dépasser 100 caractères" });
 const leagueLogoUrlSchema = z.string().trim().pipe(z.url());
+
+const leagueSlugSchema = z.string().min(1).max(190).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+const publicLeagueNavigationItemSchema = z.object({
+  id: z.uuid(),
+  slug: leagueSlugSchema,
+  name: leagueNameSchema,
+  country: leagueCountrySchema,
+  logoUrl: z.string().nullable(),
+}).strict();
+const publicLeagueNavigationResponseSchema = z.array(publicLeagueNavigationItemSchema);
+const publicLeagueSeasonSchema = z.object({
+  id: z.uuid(),
+  name: z.string().trim().min(1).max(100),
+  isCurrent: z.boolean(),
+}).strict();
+const publicLeagueDetailSchema = publicLeagueNavigationItemSchema.omit({ country: true }).extend({
+  country: leagueCountrySchema.optional(),
+  seasons: z.array(publicLeagueSeasonSchema),
+}).strict();
+const publicLeagueTeamsQuerySchema = teamListQuerySchema.pick({ page: true, pageSize: true }).extend({
+  pageSize: teamListQuerySchema.shape.pageSize.pipe(z.literal(DEFAULT_PAGE_SIZE)),
+}).strict();
+const publicLeagueTeamSchema = z.object({
+  id: z.uuid(), name: createTeamInputSchema.shape.name, logoUrl: z.string().nullable(),
+}).strict();
+const publicLeagueTeamsResponseSchema = z.object({
+  data: z.array(publicLeagueTeamSchema),
+  pagination: z.object({
+    page: z.number().int().min(1), pageSize: z.literal(DEFAULT_PAGE_SIZE),
+    totalItems: z.number().int().min(0), totalPages: z.number().int().min(0),
+  }).strict(),
+}).strict();
 
 const countriesQuerySchema = z.preprocess((value) => {
   if (typeof value === "string") {
@@ -84,6 +117,14 @@ export {
   leagueStatusSchema,
   leagueCountrySchema,
   leagueLogoUrlSchema,
+  leagueSlugSchema,
+  publicLeagueNavigationItemSchema,
+  publicLeagueNavigationResponseSchema,
+  publicLeagueSeasonSchema,
+  publicLeagueDetailSchema,
+  publicLeagueTeamsQuerySchema,
+  publicLeagueTeamSchema,
+  publicLeagueTeamsResponseSchema,
   leagueNameSchema,
   updateLeagueInputSchema,
 };

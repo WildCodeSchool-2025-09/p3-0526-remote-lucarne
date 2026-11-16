@@ -8,3 +8,4 @@ dist
 **/coverage
 apps/api/src/generated
 .git
+output

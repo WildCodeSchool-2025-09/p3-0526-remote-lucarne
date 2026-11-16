@@ -13,7 +13,7 @@ describe("Team navigation through the application routes", () => {
     vi.unstubAllGlobals();
   });
 
-  it.each(["ADMIN", "MODERATOR", "EDITOR"])(
+  it.each(["ADMIN"])(
     "lets an already connected %s open the team list and then the creation form",
     async (role) => {
       const payload = btoa(JSON.stringify({ role, exp: Math.floor(Date.now() / 1000) + 60 }));

@@ -190,7 +190,7 @@ describe("DevLoginPage", () => {
     await user.click(screen.getByRole("button", { name: "Se connecter" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Email ou mot de passe incorrect.",
+      "Couple mot de passe/Email inexistant",
     );
     expect(screen.getByRole("alert")).not.toHaveTextContent("Internal detail");
   });

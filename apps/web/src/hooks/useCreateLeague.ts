@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { HttpError } from "../lib/httpClient";
 import { createLeague } from "../services/league.service";
 import { leagueKeys } from "../features/league/leagueKeys";
+import { invalidatePublicPortal } from "../components/public/publicPortalCache";
 
 function useCreateLeague() {
   const queryClient = useQueryClient();
@@ -10,8 +11,10 @@ function useCreateLeague() {
     mutationFn: (input) => createLeague(input),
     onSuccess: async () => {
       await Promise.all([
+        invalidatePublicPortal(queryClient),
         queryClient.invalidateQueries({ queryKey: leagueKeys.lists() }),
         queryClient.invalidateQueries({ queryKey: leagueKeys.countries() }),
+        queryClient.invalidateQueries({ queryKey: leagueKeys.publicNavigation() }),
       ]);
     },
     retry: false,

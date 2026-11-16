@@ -28,6 +28,7 @@ describe("createLeague", () => {
   it("creates only the League through Prisma", async () => {
     const league = {
       id: "league-id",
+      slug: "division-1-public-id",
       name: "Division 1",
       country: "France",
       logoUrl: null,
@@ -56,6 +57,7 @@ describe("createLeague", () => {
   it("updates only when id and expected version match, then increments version atomically", async () => {
     const league = {
       id: "league-id",
+      slug: "division-1-public-id",
       name: "Division 1",
       country: "France",
       logoUrl: null,
@@ -84,6 +86,7 @@ describe("createLeague", () => {
     updateManyAndReturn.mockResolvedValue([]);
     findUnique.mockResolvedValue({
       id: "league-id",
+      slug: "division-1-public-id",
       name: "Division 1",
       country: "France",
       logoUrl: null,

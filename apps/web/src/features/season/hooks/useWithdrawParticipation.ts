@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { HttpError } from "../../../lib/httpClient";
 import { withdrawParticipation } from "../../../services/participation.service";
 import { seasonKeys } from "../seasonKeys";
+import { leagueKeys } from "../../league/leagueKeys";
+import { invalidatePublicPortal } from "../../../components/public/publicPortalCache";
 
 interface WithdrawParticipationInput {
   leagueSeasonId: string;
@@ -20,7 +22,11 @@ function useWithdrawParticipation() {
     mutationFn: ({ leagueSeasonId, teamId }) =>
       withdrawParticipation(leagueSeasonId, teamId),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: seasonKeys.all });
+      await Promise.all([
+        invalidatePublicPortal(queryClient),
+        queryClient.invalidateQueries({ queryKey: seasonKeys.all }),
+        queryClient.invalidateQueries({ queryKey: leagueKeys.publicTeams() }),
+      ]);
     },
     retry: false,
   });

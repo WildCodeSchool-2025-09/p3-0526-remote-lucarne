@@ -5,8 +5,11 @@ import {
   activateLeague,
   deactivateLeague,
   findLeagueById,
+  findPublicLeagueBySlug,
   getLeagueDeletionDependencies,
   listLeagueCountries,
+  listPublicLeagueNavigation,
+  listPublicLeagueTeams,
   listLeagues,
   permanentlyDeleteLeague,
   updateLeagueOptimistic,
@@ -16,6 +19,7 @@ import { RESOURCE_VERSION_CONFLICT } from "@lucarne/shared";
 import type {
   ConditionalLeagueUpdateInput,
   ListLeaguesParams,
+  PublicLeagueTeamsQuery,
 } from "@lucarne/shared";
 import type { AppRole } from "../../auth/appRole";
 import type { CreateLeagueInput } from "./league.schema";
@@ -27,6 +31,19 @@ const createLeagueService = (input: CreateLeagueInput): Promise<League> =>
   });
 
 const listLeaguesService = (params: ListLeaguesParams) => listLeagues(params);
+const listPublicLeagueNavigationService = () => listPublicLeagueNavigation();
+
+const getPublicLeagueService = async (slug: string) => {
+  const league = await findPublicLeagueBySlug(slug);
+  if (league == null) throw new AppError(404, "RESOURCE_NOT_FOUND", "Ligue introuvable.");
+  return league;
+};
+
+const listPublicLeagueTeamsService = async (slug: string, seasonId: string, query: PublicLeagueTeamsQuery) => {
+  const result = await listPublicLeagueTeams(slug, seasonId, query);
+  if (result == null) throw new AppError(404, "RESOURCE_NOT_FOUND", "Cette saison n’est pas disponible pour cette ligue.");
+  return result;
+};
 
 const listLeagueCountriesService = (): Promise<string[]> => listLeagueCountries();
 
@@ -138,8 +155,11 @@ export {
   createLeagueService,
   deactivateLeagueService,
   getLeagueService,
+  getPublicLeagueService,
   listLeagueCountriesService,
   listLeaguesService,
+  listPublicLeagueNavigationService,
+  listPublicLeagueTeamsService,
   permanentlyDeleteLeagueService,
   updateLeagueService,
 };

@@ -1,4 +1,13 @@
 import type { PaginatedResponse } from "./pagination.types";
+import type { z } from "zod";
+import type { publicLeagueDetailSchema, publicLeagueNavigationItemSchema, publicLeagueSeasonSchema, publicLeagueTeamSchema, publicLeagueTeamsQuerySchema, publicLeagueTeamsResponseSchema } from "../schemas/league.schema";
+
+type PublicLeagueNavigationItem = z.infer<typeof publicLeagueNavigationItemSchema>;
+type PublicLeagueDetail = z.infer<typeof publicLeagueDetailSchema>;
+type PublicLeagueSeason = z.infer<typeof publicLeagueSeasonSchema>;
+type PublicLeagueTeam = z.infer<typeof publicLeagueTeamSchema>;
+type PublicLeagueTeamsQuery = z.infer<typeof publicLeagueTeamsQuerySchema>;
+type PublicLeagueTeamsResponse = z.infer<typeof publicLeagueTeamsResponseSchema>;
 
 interface CreateLeagueInput {
   name: string;
@@ -81,6 +90,12 @@ export type {
   LeagueStatusFilter,
   ListLeaguesParams,
   PaginatedLeaguesResponse,
+  PublicLeagueNavigationItem,
+  PublicLeagueDetail,
+  PublicLeagueSeason,
+  PublicLeagueTeam,
+  PublicLeagueTeamsQuery,
+  PublicLeagueTeamsResponse,
   SortDirection,
   UpdateLeagueInput,
 };

@@ -9,6 +9,7 @@ import type {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { playerKeys } from "../features/player/playerKeys";
 import { teamKeys } from "../features/team/teamKeys";
+import { invalidatePublicPortal } from "../components/public/publicPortalCache";
 import {
   activatePlayer,
   createPlayer,
@@ -40,12 +41,14 @@ function usePlayerCache() {
   const queryClient = useQueryClient();
 
   const invalidateListsAndRosters = async () => {
+    await invalidatePublicPortal(queryClient);
     await queryClient.invalidateQueries({ queryKey: playerKeys.lists() });
     await queryClient.invalidateQueries({ queryKey: teamKeys.rosters() });
   };
 
   const updateDetail = async (player: PlayerDetail) => {
     queryClient.setQueryData(playerKeys.detail(player.id), player);
+    await queryClient.invalidateQueries({ queryKey: [...playerKeys.detail(player.id), "public"] });
     await invalidateListsAndRosters();
   };
 

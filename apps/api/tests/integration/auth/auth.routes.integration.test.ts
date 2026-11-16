@@ -7,13 +7,14 @@ import { APP_ROLES } from "../../../src/auth/appRole";
 import { verifyAccessToken } from "../../../src/auth/jwt";
 import { hashPassword } from "../../../src/auth/password";
 import { clearLoginRateLimit } from "../../../src/middlewares/loginRateLimit";
+import { clearRegisterRateLimit } from "../../../src/middlewares/registerRateLimit";
 
 const email = "admin@lucarne.test";
 const password = "a-secure-password";
 const invalidCredentialsResponse = {
   error: {
     code: "INVALID_CREDENTIALS",
-    message: "Invalid email or password",
+    message: "Couple mot de passe/Email inexistant",
   },
 };
 
@@ -21,6 +22,7 @@ let userId: string;
 
 beforeEach(async () => {
   clearLoginRateLimit();
+  clearRegisterRateLimit();
   vi.spyOn(console, "error").mockImplementation(() => undefined);
 
   const role = await prisma.role.create({
@@ -40,6 +42,31 @@ beforeEach(async () => {
   });
 
   userId = user.id;
+  await prisma.role.create({ data: { name: APP_ROLES.USER } });
+});
+
+describe("Public registration and session", () => {
+  const input = { firstName: "Jane", lastName: "Doe", email: "jane@example.com", password: "Password1" };
+  it("persists an active USER and opens a usable session", async () => {
+    const response = await request(app).post("/api/v1/auth/register").send(input).expect(201);
+    const token = (response.body as { accessToken: string }).accessToken;
+    const user = await prisma.appUser.findUniqueOrThrow({ where: { email: input.email }, include: { role: true } });
+    expect(user.status).toBe("ACTIVE"); expect(user.role.name).toBe("USER"); expect(user.passwordHash).not.toBe(input.password);
+    const me = await request(app).get("/api/v1/auth/me").set("Authorization", `Bearer ${token}`).expect(200);
+    expect(me.body).toEqual({ id: user.id, firstName: input.firstName, lastName: input.lastName, email: input.email, role: "USER" });
+    await request(app).post("/api/v1/auth/login").send({ email: input.email, password: input.password }).expect(200);
+    await request(app).get("/api/v1/leagues").set("Authorization", `Bearer ${token}`).expect(403);
+  });
+  it("handles concurrent case-insensitive duplicates without disclosing the conflict", async () => {
+    const responses = await Promise.all([input.email, input.email.toUpperCase()].map((email) => request(app).post("/api/v1/auth/register").send({ ...input, email })));
+    expect(responses.map((response) => response.status).sort()).toEqual([201, 401]);
+    expect(responses.find((response) => response.status === 401)?.body).toEqual(invalidCredentialsResponse);
+    expect(await prisma.appUser.count({ where: { email: input.email } })).toBe(1);
+  });
+  it("rejects privilege injection without any write", async () => {
+    await request(app).post("/api/v1/auth/register").send({ ...input, role: "ADMIN" }).expect(400);
+    expect(await prisma.appUser.count({ where: { email: input.email } })).toBe(0);
+  });
 });
 
 afterEach(() => {
@@ -123,12 +150,7 @@ describe("POST /api/v1/auth/login", () => {
       .post("/api/v1/auth/login")
       .send({ email, password });
 
-    expect(response.status).toBe(403);
-    expect(response.body).toEqual({
-      error: {
-        code: "ACCOUNT_NOT_ACTIVE",
-        message: "User account is not active",
-      },
-    });
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual(invalidCredentialsResponse);
   });
 });

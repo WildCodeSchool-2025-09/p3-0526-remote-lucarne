@@ -1,6 +1,7 @@
 import { z } from "zod";
 import os from "node:os";
 import path from "node:path";
+import { isIP } from "node:net";
 
 const optionalUrlSchema = z.preprocess(
   (value) => value === "" ? undefined : value,
@@ -45,8 +46,16 @@ const environmentSchema = z.object({
 
   LOGIN_RATE_LIMIT_MAX_ATTEMPTS: z.coerce.number().int().min(0).max(100).default(5),
   LOGIN_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1_000).max(3_600_000).default(60_000),
+  REGISTER_RATE_LIMIT_MAX_ATTEMPTS: z.coerce.number().int().min(0).max(100).default(5),
+  REGISTER_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1_000).max(3_600_000).default(60_000),
 
   CLIENT_URL: optionalUrlSchema,
+
+  // Only literal proxy addresses are accepted; never trust all private networks.
+  TRUSTED_PROXY_IPS: z.string().default("")
+    .transform((value) => value.trim() === "" ? [] : value.split(",").map((ip) => ip.trim()))
+    .refine((addresses) => addresses.every((ip) => isIP(ip) !== 0),
+      "TRUSTED_PROXY_IPS must contain only comma-separated IPv4 or IPv6 addresses"),
 
   BUG_REPORTS_FILE_PATH: absolutePathSchema.optional(),
   UPLOAD_DIRECTORY: absolutePathSchema.optional(),
@@ -108,7 +117,12 @@ const environment = Object.freeze({
     maxAttempts: parsedEnvironment.LOGIN_RATE_LIMIT_MAX_ATTEMPTS,
     windowMs: parsedEnvironment.LOGIN_RATE_LIMIT_WINDOW_MS,
   },
+  registerRateLimit: {
+    maxAttempts: parsedEnvironment.REGISTER_RATE_LIMIT_MAX_ATTEMPTS,
+    windowMs: parsedEnvironment.REGISTER_RATE_LIMIT_WINDOW_MS,
+  },
   clientUrl: parsedEnvironment.CLIENT_URL,
+  trustedProxyIps: parsedEnvironment.TRUSTED_PROXY_IPS,
   database: {
     connectionString: databaseUrl,
     name: databaseName,

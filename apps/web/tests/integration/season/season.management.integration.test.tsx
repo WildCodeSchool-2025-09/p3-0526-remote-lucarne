@@ -8,6 +8,7 @@ import { clearAccessToken, setAccessToken } from "../../../src/lib/authToken";
 import appRouter from "../../../src/router";
 import { seasonKeys } from "../../../src/features/season/seasonKeys";
 import { leagueKeys } from "../../../src/features/league/leagueKeys";
+import { getCurrentAppRole } from "../../../src/auth/authRole";
 
 const league = { id: "league-one", name: "Division 1", country: "France", logoUrl: null, status: "ACTIVE", version: 0, createdAt: "2026-07-01T00:00:00Z" };
 const otherLeague = { ...league, id: "league-two", name: "Division 2" };
@@ -60,6 +61,13 @@ describe("Season management routes", () => {
     return fetchMock.mock.calls.filter(([, request]) => request?.method !== "GET");
   }
 
+  async function expectPublicRedirect(router: ReturnType<typeof createMemoryRouter>) {
+    await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+    expect(await screen.findByRole("navigation", { name: "Navigation publique" })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.every(([input]) => ["/api/v1/health", "/api/v1/auth/me", "/api/v1/matches", "/api/v1/leagues/navigation"].includes(requestPath(input)))).toBe(true);
+    expect(writes()).toHaveLength(0);
+  }
+
   beforeEach(() => {
     season = structuredClone(initialSeason);
     rejectedPath = "";
@@ -70,6 +78,10 @@ describe("Season management routes", () => {
     fetchMock.mockImplementation((input, request) => {
       const path = requestPath(input).replace("/api/v1", "");
       const method = request?.method ?? "GET";
+      if (path === "/health") return Promise.resolve(json({ status: "ok" }));
+      if (path === "/matches") return Promise.resolve(json(paginated([])));
+      if (path === "/leagues/navigation") return Promise.resolve(json([]));
+      if (path === "/auth/me") return Promise.resolve(json({ id: "session-user", firstName: "Test", lastName: "User", email: "user@lucarne.test", role: getCurrentAppRole() }));
       if (method === "POST" && path === "/leagues/league-two/seasons" && validationDetails.length > 0) return Promise.resolve(json({ error: { code: "VALIDATION_ERROR", message: "Configuration refusée.", details: validationDetails } }, 400));
       if (method !== "GET" && path === rejectedPath) return Promise.resolve(json({ error: { code: "RESOURCE_CONFLICT", message: "Action refusée : historique à préserver." } }, 409));
       if (path === "/seasons/season-one") {
@@ -125,14 +137,15 @@ describe("Season management routes", () => {
     vi.unstubAllGlobals();
   });
 
-  it.each(["ADMIN", "EDITOR", "MODERATOR"])("preserves section permissions for %s through the actual route", async (role) => {
-    renderRoute(undefined, role);
+  it.each(["ADMIN", "EDITOR", "MODERATOR"])("applies ADMIN-only dashboard permissions for %s", async (role) => {
+    const { router } = renderRoute(undefined, role);
+    if (role !== "ADMIN") { await expectPublicRedirect(router); return; }
     await screen.findByRole("heading", { name: "Modifier 2026-2027" });
     expect(screen.queryByRole("heading", { name: "Associer une ligue" }) != null).toBe(role === "ADMIN");
     expect(screen.getByLabelText("Inscrire une équipe")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Nom *") != null).toBe(role !== "MODERATOR");
-    expect(screen.queryByLabelText("Date de début *") != null).toBe(role !== "MODERATOR");
-    expect(screen.queryByLabelText("Date de fin *") != null).toBe(role !== "MODERATOR");
+    expect(screen.getByLabelText("Nom *")).toBeInTheDocument();
+    expect(screen.getByLabelText("Date de début *")).toBeInTheDocument();
+    expect(screen.getByLabelText("Date de fin *")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retirer la ligue" })).toBeEnabled();
     await screen.findByRole("option", { name: "Paris FC" });
     expect(screen.queryByRole("button", { name: "Associer" }) != null).toBe(role === "ADMIN");
@@ -142,10 +155,9 @@ describe("Season management routes", () => {
     expect(screen.getByRole("link", { name: "← Retour au détail" })).toHaveAttribute("href", "/dashboard/seasons/season-one");
   });
 
-  it("denies USER access before loading management data", () => {
-    renderRoute(undefined, "USER");
-    expect(screen.getByRole("heading", { name: "Accès refusé" })).toBeInTheDocument();
-    expect(fetchMock).not.toHaveBeenCalled();
+  it("redirects USER before loading management data", async () => {
+    const { router } = renderRoute(undefined, "USER");
+    await expectPublicRedirect(router);
   });
 
   it.each([false, true])("renders the canonical breadcrumb hierarchy (editing: %s)", async (editing) => {
@@ -213,9 +225,9 @@ describe("Season management routes", () => {
     expect(router.state.location.pathname).toBe("/dashboard/seasons/season-one/edit");
   });
 
-  it.each(["EDITOR", "MODERATOR"])("does not offer calendar-generating association creation to %s", async (role) => {
-    renderRoute(undefined, role);
-    await screen.findByRole("heading", { name: "Ligues associées et saison courante" });
+  it.each(["EDITOR", "MODERATOR"])("redirects %s before loading association creation", async (role) => {
+    const { router } = renderRoute(undefined, role);
+    await expectPublicRedirect(router);
     expect(screen.queryByRole("heading", { name: "Associer une ligue" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Associer" })).not.toBeInTheDocument();
     expect(writes()).toHaveLength(0);
@@ -253,9 +265,10 @@ describe("Season management routes", () => {
     }
   });
 
-  it.each(["ADMIN", "EDITOR", "MODERATOR"])("allows %s to confirm association removal and refreshes the dependency state", async (role) => {
+  it.each(["ADMIN", "EDITOR", "MODERATOR"])("restricts association removal to ADMIN (%s)", async (role) => {
     const user = userEvent.setup();
-    renderRoute(undefined, role);
+    const { router } = renderRoute(undefined, role);
+    if (role !== "ADMIN") { await expectPublicRedirect(router); return; }
     await user.click(await screen.findByRole("button", { name: "Retirer la ligue" }));
     expect(writes()).toHaveLength(0);
     const dialog = screen.getByRole("dialog");
@@ -349,9 +362,10 @@ describe("Season management routes", () => {
     expect(writes()[0][0]).toEqual(expect.stringContaining("/leagues/league-one/seasons/season-one/current"));
   });
 
-  it.each(["ADMIN", "EDITOR", "MODERATOR"])("allows %s to register then withdraw a team while retaining its sporting history", async (role) => {
+  it.each(["ADMIN", "EDITOR", "MODERATOR"])("restricts participation management to ADMIN (%s)", async (role) => {
     const user = userEvent.setup();
-    renderRoute(undefined, role);
+    const { router } = renderRoute(undefined, role);
+    if (role !== "ADMIN") { await expectPublicRedirect(router); return; }
     await screen.findByRole("option", { name: "Paris FC" });
     await user.selectOptions(screen.getByLabelText("Inscrire une équipe"), "team-one");
     await user.click(screen.getByRole("button", { name: "Inscrire" }));
@@ -423,9 +437,10 @@ describe("Season management routes", () => {
     expect(router.state.location.pathname).toBe("/dashboard/seasons/season-one/edit");
   });
 
-  it.each(["ADMIN", "MODERATOR", "EDITOR"])("keeps league seasons strictly read-only for %s", async (role) => {
+  it.each(["ADMIN", "MODERATOR", "EDITOR"])("enforces dashboard access and read-only league seasons (%s)", async (role) => {
     season.leagueSeasons[0] = { ...season.leagueSeasons[0], isCurrent: true, matchdayCount: 22, matchesPerMatchday: 6 };
-    renderRoute("/dashboard/leagues/league-one", role);
+    const { router } = renderRoute("/dashboard/leagues/league-one", role);
+    if (role !== "ADMIN") { await expectPublicRedirect(router); return; }
     const section = await screen.findByRole("region", { name: "Saisons de la ligue" });
     await within(section).findByRole("heading", { name: /2026-2027/ });
     expect(within(section).getByText("Saison actuelle")).toBeInTheDocument();

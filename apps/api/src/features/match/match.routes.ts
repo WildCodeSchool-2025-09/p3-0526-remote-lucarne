@@ -15,6 +15,8 @@ import {
   updateAdminMatchStatus,
 } from "./match.controller";
 import { MATCH_VIEW_ROLES, MATCH_WRITE_ROLES } from "./match.permissions";
+import { getPublicMatchEvents } from "../ranking/ranking.controller";
+import { z } from "zod";
 import {
   createMatchInputSchema,
   deleteMatchInputSchema,
@@ -88,6 +90,7 @@ adminMatchRouter.delete(
 );
 
 const publicMatchRouter = Router();
+publicMatchRouter.get("/:matchPublicId/events", validateRequest({ params: matchPublicIdParamsSchema, query: z.object({}).strict() }), getPublicMatchEvents);
 
 publicMatchRouter.get("/", validateRequest({ query: matchListQuerySchema }), listPublicMatchResponses);
 

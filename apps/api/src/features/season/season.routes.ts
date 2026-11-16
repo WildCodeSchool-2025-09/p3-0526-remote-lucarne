@@ -1,4 +1,7 @@
 import { Router } from "express";
+import { matchImportApplySchema, matchImportDocumentSchema } from "@lucarne/shared";
+import { APP_ROLES } from "../../auth/appRole";
+import { applySeasonMatchImport, previewSeasonMatchImport } from "./season-match-import.controller";
 import { authenticate } from "../../middlewares/authenticate";
 import { requireRoles } from "../../middlewares/requireRoles";
 import { validateRequest } from "../../middlewares/validateRequest";
@@ -9,6 +12,22 @@ import { LEAGUE_WRITE_ROLES } from "../league/league.permissions";
 
 const seasonRouter = Router();
 const leagueSeasonRouter = Router({ mergeParams: true });
+
+leagueSeasonRouter.post(
+  "/:seasonId/matches/import-preview",
+  authenticate,
+  requireRoles(APP_ROLES.ADMIN),
+  validateRequest({ params: leagueSeasonParamsSchema, body: matchImportDocumentSchema }),
+  previewSeasonMatchImport,
+);
+
+leagueSeasonRouter.post(
+  "/:seasonId/matches/import",
+  authenticate,
+  requireRoles(APP_ROLES.ADMIN),
+  validateRequest({ params: leagueSeasonParamsSchema, body: matchImportApplySchema }),
+  applySeasonMatchImport,
+);
 
 seasonRouter.get(
   "/",

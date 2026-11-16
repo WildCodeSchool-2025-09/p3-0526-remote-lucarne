@@ -15,16 +15,17 @@ const publicMatchSelect = {
   status: true,
   homeScore: true,
   awayScore: true,
-  homeTeam: { select: { name: true, logoUrl: true } },
-  awayTeam: { select: { name: true, logoUrl: true } },
+  homeTeam: { select: { id: true, name: true, logoUrl: true } },
+  awayTeam: { select: { id: true, name: true, logoUrl: true } },
   matchday: {
     select: {
+      id: true,
       number: true,
       name: true,
       leagueSeason: {
         select: {
-          league: { select: { name: true, country: true } },
-          season: { select: { name: true } },
+          league: { select: { id: true, slug: true, name: true, country: true } },
+          season: { select: { id: true, name: true } },
         },
       },
     },
@@ -32,6 +33,12 @@ const publicMatchSelect = {
 } as const;
 
 type PublicMatchRecord = Prisma.GameMatchGetPayload<{ select: typeof publicMatchSelect }>;
+
+const publicMatchVisibility: Prisma.GameMatchWhereInput = {
+  isActive: true, isPublished: true,
+  homeTeam: { isActive: true }, awayTeam: { isActive: true },
+  matchday: { isActive: true, leagueSeason: { league: { isActive: true } } },
+};
 
 const findMatch = (id: string) => prisma.gameMatch.findFirst({ where: { id, isActive: true }, include: matchInclude });
 
@@ -74,12 +81,12 @@ const listMatches = async (query: MatchListQuery) => {
 };
 
 const findPublicMatch = (matchPublicId: string) => prisma.gameMatch.findFirst({
-  where: { matchPublicId, isActive: true, isPublished: true },
+  where: { matchPublicId, ...publicMatchVisibility },
   select: publicMatchSelect,
 });
 
 const listPublicMatches = async (query: MatchListQuery) => {
-  const where = { ...buildMatchFilters(query), isPublished: true };
+  const where: Prisma.GameMatchWhereInput = { AND: [buildMatchFilters(query), publicMatchVisibility] };
   const [data, totalItems] = await prisma.$transaction(
     [
       prisma.gameMatch.findMany({
@@ -141,6 +148,7 @@ const mutateMatch = (
   );
 
 export {
+  publicMatchVisibility,
   createMatch,
   findMatch,
   findPublicMatch,

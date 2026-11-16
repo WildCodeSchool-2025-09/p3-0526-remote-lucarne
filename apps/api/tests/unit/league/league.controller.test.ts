@@ -29,6 +29,7 @@ describe("createLeague controller", () => {
   it("returns the created League with status 201", async () => {
     create.mockResolvedValue({
       id: "league-id",
+      slug: "division-1-public-id",
       name: "Division 1",
       country: "France",
       logoUrl: null,

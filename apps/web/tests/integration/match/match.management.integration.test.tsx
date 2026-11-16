@@ -1,12 +1,13 @@
 import type { AdminMatch, SeasonDetail } from "@lucarne/shared";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clearAccessToken, setAccessToken } from "../../../src/lib/authToken";
 import appRouter from "../../../src/router";
 import { seasonKeys } from "../../../src/features/season/seasonKeys";
+import { getCurrentAppRole } from "../../../src/auth/authRole";
 
 const ids = Array.from({ length: 9 }, (_, index) => `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`);
 const [matchId, publicId, leagueId, seasonId, editionId, dayId, nextDayId, homeId, awayId] = ids;
@@ -41,6 +42,15 @@ describe("MATCH Dashboard management", () => {
   }
   const writes = () => fetchMock.mock.calls.filter(([, options]) => options?.method !== "GET");
   const bodyOfLastWrite = () => JSON.parse(writes()[writes().length - 1]?.[1]?.body as string) as Record<string, unknown>;
+  async function expectPublicRedirect(router: ReturnType<typeof createMemoryRouter>) {
+    await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+    expect(await screen.findByRole("navigation", { name: "Navigation publique" })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.every(([input]) => {
+      const url = new URL(typeof input === "string" || input instanceof URL ? input : input.url, window.location.origin);
+      return ["/api/v1/health", "/api/v1/auth/me", "/api/v1/matches", "/api/v1/leagues/navigation"].includes(url.pathname);
+    })).toBe(true);
+    expect(writes()).toHaveLength(0);
+  }
   beforeEach(() => {
     match = structuredClone(initialMatch); rejectCode = ""; readStatus = 0;
     fetchMock.mockReset(); vi.stubGlobal("fetch", fetchMock);
@@ -51,6 +61,10 @@ describe("MATCH Dashboard management", () => {
         window.location.origin,
       );
       const path = url.pathname.replace("/api/v1", ""); const method = options?.method ?? "GET";
+      if (path === "/health") return json({ status: "ok" });
+      if (path === "/matches") return json(page([]));
+      if (path === "/leagues/navigation") return json([]);
+      if (path === "/auth/me") return json({ id: "session-user", firstName: "Test", lastName: "User", email: "user@lucarne.test", role: getCurrentAppRole() });
       if (path === "/leagues") return json(page([league]));
       if (path === "/seasons") return json(page([season]));
       if (path === "/teams") return json(page(teams));
@@ -116,20 +130,21 @@ describe("MATCH Dashboard management", () => {
     expect(match.isActive).toBe(false); expect(bodyOfLastWrite()).toEqual({ version: 5 });
   });
 
-  it.each(["EDITOR", "MODERATOR"])("allows %s reads and hides admin actions", async (role) => {
-    mount(undefined, role); await screen.findByRole("heading", { name: "Équipe à renseigner – Équipe à renseigner" });
+  it.each(["EDITOR", "MODERATOR"])("redirects %s before reading dashboard matches", async (role) => {
+    const { router } = mount(undefined, role); await expectPublicRedirect(router);
     expect(screen.queryByRole("button", { name: "Publier le match" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Modifier la programmation" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Supprimer le match" })).not.toBeInTheDocument(); expect(writes()).toHaveLength(0);
   });
   it.each(["EDITOR", "MODERATOR", "USER"])("blocks %s from edit and creation routes", async (role) => {
     const { router } = mount(`/dashboard/matches/${matchId}/edit`, role);
-    expect(await screen.findByRole("heading", { name: /Accès/ })).toBeInTheDocument();
-    await router.navigate("/dashboard/matches/new");
+    await expectPublicRedirect(router);
+    await act(() => router.navigate("/dashboard/matches/new"));
+    await expectPublicRedirect(router);
     expect(screen.queryByRole("button", { name: "Créer l’emplacement" })).not.toBeInTheDocument(); expect(writes()).toHaveLength(0);
   });
   it("blocks USER from dashboard match reads", async () => {
-    mount("/dashboard/matches", "USER"); expect(await screen.findByRole("heading", { name: /Accès/ })).toBeInTheDocument(); expect(fetchMock).not.toHaveBeenCalled();
+    const { router } = mount("/dashboard/matches", "USER"); await expectPublicRedirect(router);
   });
   it("filters through the URL, resets pagination and clears an incompatible day", async () => {
     const user = userEvent.setup(); const { router } = mount(`/dashboard/matches?seasonId=${seasonId}&leagueId=${leagueId}&matchdayId=${dayId}`);

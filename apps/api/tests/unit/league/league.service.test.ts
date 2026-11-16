@@ -12,6 +12,7 @@ const create = vi.mocked(createLeague);
 const update = vi.mocked(updateLeagueOptimistic);
 const createdLeague: League = {
   id: "league-id",
+  slug: "division-1-public-id",
   name: "Division 1",
   country: "France",
   logoUrl: null,

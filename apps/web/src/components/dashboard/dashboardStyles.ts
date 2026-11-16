@@ -30,6 +30,15 @@ const dashboardStyles = {
     text-[#9aaab6] hover:bg-[rgb(255_255_255/8%)] hover:text-[var(--color-bg-surface)]
     focus-visible:bg-[rgb(255_255_255/8%)] focus-visible:text-[var(--color-bg-surface)]
   `,
+  exitSection: "border-t border-[#526472] pt-4",
+  exitLink: `
+    flex min-h-11 items-center gap-3 rounded-[var(--radius-button)] border
+    border-[#526472] px-3 py-2 text-[15px] text-[#9aaab6] no-underline
+    hover:bg-[rgb(255_255_255/8%)] hover:text-[var(--color-bg-surface)]
+    focus-visible:outline-2 focus-visible:outline-offset-2
+    focus-visible:outline-[var(--color-bg-surface)]
+    dashboard-tablet:justify-center dashboard-tablet:px-2
+  `,
   mobileHeader: `
     hidden dashboard-mobile:grid dashboard-mobile:min-h-[60px]
     dashboard-mobile:grid-cols-[44px_1fr_72px] dashboard-mobile:items-center
@@ -51,7 +60,7 @@ const dashboardStyles = {
     [&_a]:min-h-[42px] [&_a]:justify-center
   `,
   mobileNavigationOpen:
-    "dashboard-mobile:max-h-[520px] dashboard-mobile:opacity-100 dashboard-mobile:[transform:scaleY(1)]",
+    "dashboard-mobile:max-h-[calc(100dvh-60px)] dashboard-mobile:overflow-y-auto dashboard-mobile:opacity-100 dashboard-mobile:[transform:scaleY(1)]",
   mobileNavigationClosed:
     "dashboard-mobile:max-h-0 dashboard-mobile:opacity-0 dashboard-mobile:[transform:scaleY(0)]",
   pageHeader: `

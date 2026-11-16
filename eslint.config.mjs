@@ -1,6 +1,7 @@
 import { base, node, react, typescript } from "@lucarne/eslint-config";
 
 export default [
+  { ignores: ["output/**"] },
   ...base,
   ...typescript,
   {

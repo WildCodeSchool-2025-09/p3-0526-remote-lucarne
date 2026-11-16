@@ -37,7 +37,7 @@ const toPublicMatch = (match: PublicMatchRecord): PublicMatch => {
     matchPublicId: match.matchPublicId,
     league: match.matchday.leagueSeason.league,
     season: match.matchday.leagueSeason.season,
-    matchday: { number: match.matchday.number, name: match.matchday.name },
+    matchday: { id: match.matchday.id, number: match.matchday.number, name: match.matchday.name },
     homeTeam: match.homeTeam,
     awayTeam: match.awayTeam,
     matchDate: match.matchDate.toISOString().slice(0, 10),

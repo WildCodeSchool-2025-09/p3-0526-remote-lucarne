@@ -1,13 +1,14 @@
 import { seasonStyles } from "../seasonStyles";
 import DashboardPageHeader from "../../../components/dashboard/DashboardPageHeader";
 import { Link, useNavigate, useParams } from "react-router";
-import { getCurrentAppRole, hasRole, SEASON_MANAGE_ROLES } from "../../../auth/authRole";
+import { APP_ROLES, getCurrentAppRole, hasRole, SEASON_MANAGE_ROLES } from "../../../auth/authRole";
 import { HttpError } from "../../../lib/httpClient";
 import { formatDate } from "../../../lib/dateFormat";
 import { formatDateTime } from "../../../lib/dateTimeFormat";
 import { AlertModal } from "../../../ui";
 import { useSeasonDetail } from "../hooks/useSeasonDetail";
 import { ParticipationList } from "../components/SeasonParticipations";
+import { SeasonMatchImport } from "../components/SeasonMatchImport";
 
 function SeasonDetailPage() {
   const navigate = useNavigate();
@@ -133,6 +134,11 @@ function SeasonDetailPage() {
                   </div>
                 </dl>
               </header>
+              {role === APP_ROLES.ADMIN ? (
+                <div className={seasonStyles.detailCard}>
+                  <SeasonMatchImport leagueId={edition.leagueId} seasonId={season.id} leagueName={edition.league.name} />
+                </div>
+              ) : null}
               <ParticipationList season={edition} />
               <section className={seasonStyles.detailCard}>
                 <h3>Journées</h3>

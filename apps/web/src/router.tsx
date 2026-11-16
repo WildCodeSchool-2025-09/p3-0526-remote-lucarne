@@ -19,6 +19,25 @@ import EditLeaguePage from "./features/league/pages/EditLeaguePage";
 import CreateLeaguePage from "./features/league/pages/CreateLeaguePage";
 import LeagueDetailPage from "./features/league/pages/LeagueDetailPage";
 import LeagueListPage from "./features/league/pages/LeagueListPage";
+import PublicLeaguePage from "./features/league/pages/PublicLeaguePage";
+import PublicLeagueRouteLayout from "./features/league/pages/PublicLeagueRouteLayout";
+import PublicLeagueTeamsPage from "./features/league/pages/PublicLeagueTeamsPage";
+import PublicLeagueListPage from "./features/league/pages/PublicLeagueListPage";
+import PublicLeagueCalendarPage from "./features/league/pages/PublicLeagueCalendarPage";
+import PublicLeagueStandingsPage from "./features/league/pages/PublicLeagueStandingsPage";
+import PublicLeagueStatisticsPage from "./features/league/pages/PublicLeagueStatisticsPage";
+import PublicTeamListPage from "./features/team/pages/PublicTeamListPage";
+import PublicTeamRouteLayout from "./features/team/pages/PublicTeamRouteLayout";
+import PublicTeamPage from "./features/team/pages/PublicTeamPage";
+import PublicTeamRosterPage from "./features/team/pages/PublicTeamRosterPage";
+import PublicTeamCalendarPage from "./features/team/pages/PublicTeamCalendarPage";
+import PublicPlayerListPage from "./features/player/pages/PublicPlayerListPage";
+import PublicPlayerPage from "./features/player/pages/PublicPlayerPage";
+import PublicStaffMemberPage from "./features/staff/pages/PublicStaffMemberPage";
+import PublicSeasonPage from "./features/season/pages/PublicSeasonPage";
+import PublicMatchdayPage from "./features/season/pages/PublicMatchdayPage";
+import PublicSearchPage from "./features/search/PublicSearchPage";
+import { publicNavigation } from "./components/public/publicRoutes";
 import DashboardRouteLayout from "./components/dashboard/DashboardRouteLayout";
 import DashboardNotFoundPage from "./components/dashboard/DashboardNotFoundPage";
 import DashboardRouteErrorPage from "./components/dashboard/DashboardRouteErrorPage";
@@ -50,6 +69,8 @@ import CreateMatchPage from "./features/match/pages/CreateMatchPage";
 import EditMatchPage from "./features/match/pages/EditMatchPage";
 import PublicMatchListPage from "./features/match/pages/PublicMatchListPage";
 import PublicMatchDetailPage from "./features/match/pages/PublicMatchDetailPage";
+import PublicRouteLayout from "./components/public/PublicRouteLayout";
+import PublicRouteErrorPage from "./components/public/PublicRouteErrorPage";
 
 const UiDemoPage = lazy(() => import("./pages/UiDemoPage"));
 const loadingPage = <p role="status">Chargement…</p>;
@@ -60,15 +81,42 @@ const router = createBrowserRouter([
     ErrorBoundary: RouteErrorPage,
     children: [
       {
-        index: true,
-        Component: HomePage,
+        handle: { usesPublicLayout: true },
+        Component: PublicRouteLayout,
+        children: [{
+          ErrorBoundary: PublicRouteErrorPage,
+          children: [
+            { index: true, Component: HomePage },
+            { path: "matches", Component: PublicMatchListPage },
+            { path: "matches/:matchPublicId", Component: PublicMatchDetailPage },
+            { path: publicNavigation.leagues, Component: PublicLeagueListPage },
+            { path: publicNavigation.search, Component: PublicSearchPage },
+            { path: publicNavigation.teams, Component: PublicTeamListPage },
+            { path: publicNavigation.teamPattern, Component: PublicTeamRouteLayout, children: [
+              { index: true, Component: PublicTeamPage },
+              { path: "roster", Component: PublicTeamRosterPage },
+              { path: "matches", Component: PublicTeamCalendarPage },
+            ] },
+            { path: publicNavigation.players, Component: PublicPlayerListPage },
+            { path: publicNavigation.playerPattern, Component: PublicPlayerPage },
+            { path: publicNavigation.staffPattern, Component: PublicStaffMemberPage },
+            { path: publicNavigation.seasonPattern, Component: PublicSeasonPage },
+            { path: publicNavigation.matchdayPattern, Component: PublicMatchdayPage },
+            { path: publicNavigation.leaguePattern, Component: PublicLeagueRouteLayout, children: [
+              { index: true, Component: PublicLeaguePage },
+              { path: "teams", Component: PublicLeagueTeamsPage },
+              { path: "matches", Component: PublicLeagueCalendarPage },
+              { path: "standings", Component: PublicLeagueStandingsPage },
+              { path: "statistics", Component: PublicLeagueStatisticsPage },
+            ] },
+            { path: "*", Component: NotFoundPage },
+          ],
+        }],
       },
       {
         path: "ui-demo",
         element: <Suspense fallback={loadingPage}><UiDemoPage /></Suspense>,
       },
-      { path: "matches", Component: PublicMatchListPage },
-      { path: "matches/:matchPublicId", Component: PublicMatchDetailPage },
       ...(import.meta.env.DEV
         ? [
           {
@@ -300,10 +348,6 @@ const router = createBrowserRouter([
             { path: "*", Component: DashboardNotFoundPage },
           ],
         }],
-      },
-      {
-        path: "*",
-        Component: NotFoundPage,
       },
     ],
   },

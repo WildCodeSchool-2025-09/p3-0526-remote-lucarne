@@ -22,6 +22,9 @@ Les packages partagés et les applications sont pilotés depuis la racine.
   staff, saisons et matchs : une modification devenue obsolète reçoit un conflit HTTP 409.
 - Saisons globales réutilisées par plusieurs ligues via `LeagueSeason` ; gestion
   des participations par édition et génération atomique des journées et emplacements.
+- [Import JSON des matchs d’une saison](docs/features/season-match-import.md)
+  réservé à ADMIN depuis la fiche saison : aperçu et confirmation, remplissage
+  atomique des emplacements vides et conservation des matchs déjà renseignés.
 - Programmation, publication, états et résultats des matchs administrés par ADMIN ;
   calendrier public `/matches`, limité aux matchs actifs et publiés. La suppression
   d'un match conserve ses résultats et événements, et libère ses réservations.
@@ -33,17 +36,34 @@ Après installation et chargement du seed facultatif, ouvrir
 `admin@lucarne.test` avec le mot de passe choisi dans `DEMO_ADMIN_PASSWORD`.
 La page donne accès à `/dashboard/leagues`, `/dashboard/teams`,
 `/dashboard/players`, `/dashboard/staff-members`, `/dashboard/seasons` et
-`/dashboard/matches`. Sans seed, un compte actif
-doit déjà exister dans la base ; aucune inscription n'est implémentée.
+`/dashboard/matches`. Sans seed, un compte `ADMIN` actif doit déjà exister dans
+la base pour accéder au dashboard. L'inscription publique crée un compte `USER`.
 
-Les rôles `ADMIN`, `MODERATOR` et `EDITOR` accèdent au dashboard et aux opérations
-d'écriture autorisées par les routes. Les suppressions définitives sont réservées
-à `ADMIN`. Le rôle `USER` n'accède pas aux ressources métier du dashboard.
+Seul le rôle `ADMIN` accède à l'interface du dashboard. Les permissions API de
+`ADMIN`, `MODERATOR` et `EDITOR` restent définies par les routes ; les suppressions
+définitives sont réservées à `ADMIN`. Le rôle `USER` n'accède pas aux ressources
+métier du dashboard.
 Les contrôles d'interface ne remplacent pas les permissions de l'API.
 
-La connexion `/dev/login` est absente du build de production : il n'existe pas
-encore de parcours Web de connexion en production. `/ui-demo` présente les
-composants UI et reste accessible dans le routeur actuel.
+La connexion `/dev/login` est absente du build de production. Le bouton public
+« Compte » ouvre les modales de connexion et d'inscription sans quitter la page.
+`/ui-demo` présente les composants UI et reste accessible dans le routeur actuel.
+
+Le portail public propose l'accueil sportif `/`, les ligues `/leagues` avec une
+recherche par nom/pays, le calendrier `/matches` et les fiches de matchs par
+`matchPublicId`. Une ligue `/leagues/:leagueSlug` propose une vue d'ensemble,
+ses équipes et son calendrier `/leagues/:leagueSlug/matches`. Le choix de saison
+et les filtres sont conservés dans l'URL et lors du retour d'une fiche match.
+Ces pages utilisent les lectures publiques existantes, sans référentiel administratif.
+
+Les annuaires `/teams` et `/players` donnent accès aux fiches publiques. Une équipe
+`/teams/:teamId` propose son effectif courant (`/roster`) et son calendrier
+(`/matches`). Les fiches joueuse, staff, saison et journée sont accessibles via
+`/players/:playerId`, `/staff-members/:staffMemberId`, `/seasons/:seasonId` et
+`/matchdays/:matchdayId`. Les UUID existants restent stables ; seuls les matchs
+emploient un identifiant public distinct et les ligues un slug.
+Les calendriers et annuaires chargent leurs filtres depuis les lectures anonymes.
+Les effectifs respectent les périodes inclusives et le jour civil Europe/Paris.
 
 ## Architecture et structure
 
@@ -217,6 +237,7 @@ n'a pas de couche serveur propre. La valeur VITE_API_URL est intégrée au build
 | `DATABASE_URL` | URL PostgreSQL obligatoire |
 | `TEST_DATABASE_URL` | Obligatoire en mode test ; base dédiée au préfixe `lucarne_test`, distincte de la base de développement |
 | `CLIENT_URL` | Origine CORS autorisée ; facultative, vide en production de même origine |
+| `TRUSTED_PROXY_IPS` | Adresses IPv4/IPv6 exactes des proxys de confiance, séparées par des virgules ; vide par défaut, les en-têtes transmis sont alors ignorés |
 | `BUG_REPORTS_FILE_PATH` | Chemin absolu du fichier de bug reports de développement ; par défaut `~/.lucarne/bug-reports.json` ; ne jamais le placer dans le dépôt |
 | `UPLOAD_DIRECTORY` | Répertoire absolu des images téléversées ; défaut `~/.lucarne/upload`. Prévoir un stockage persistant ; les configurations Compose le placent dans un volume |
 | `JWT_ACCESS_TOKEN_TTL_SECONDS` | Durée du jeton ; défaut `900`, maximum `86400` secondes |
@@ -224,12 +245,18 @@ n'a pas de couche serveur propre. La valeur VITE_API_URL est intégrée au build
 | `LOGIN_RATE_LIMIT_WINDOW_MS` | Fenêtre de limitation ; défaut `60000` millisecondes |
 | `DEMO_ADMIN_PASSWORD` | Mot de passe du compte de démonstration, utilisé uniquement par le seed |
 
+En production derrière un proxy, renseigner `TRUSTED_PROXY_IPS` avec son adresse
+interne fixe et ne pas publier le port de l'API. Seules les connexions provenant
+de ces adresses peuvent transmettre l'adresse cliente. Les valeurs générales
+`true`, les nombres de sauts et les plages CIDR ne sont pas acceptés. Garder la
+liste vide en accès direct et en développement local.
+
 Le limiteur conserve au plus 10 000 compteurs IP/email à clés hachées de taille
 fixe. Chaque requête évince les entrées expirées. À capacité pleine, une nouvelle
 clé reçoit 429 avec `Retry-After` ; les compteurs actifs sont conservés pour
 éviter qu'un afflux de clés réinitialise les tentatives bloquées. La limitation
-reste locale au processus ; aucun nouvel arbitrage par IP seule ni configuration
-de proxys de confiance n'est ajouté. `LOGIN_RATE_LIMIT_MAX_ATTEMPTS=0` la désactive.
+reste locale au processus ; aucun nouvel arbitrage par IP seule n'est ajouté au
+login. `LOGIN_RATE_LIMIT_MAX_ATTEMPTS=0` la désactive.
 
 Un changement de jeton ou une déconnexion vide les caches Query/Mutation et annule
 les requêtes HTTP en cours. Une révision de session empêche aussi leurs réponses
@@ -249,8 +276,8 @@ a été supprimée. Les images restent sur le disque de l'API : sauvegarder le
 répertoire ou volume correspondant. Les volumes Compose existants conservent leur
 nom et leur chemin de stockage.
 
-Après démarrage, la page d'accueil affiche l'état de santé et ses états
-chargement/erreur. Vérification manuelle :
+Après démarrage, l'accueil charge les rencontres et les ligues, avec des états
+chargement, vide et erreur indépendants. Vérification manuelle de l'API :
 
 ```bash
 curl http://localhost:3310/api/v1/health
@@ -335,9 +362,41 @@ locales, en export propre et les limites concernant la CI réelle.
   impose une nationalité non nulle sans reprise des anciennes valeurs nulles.
   Une base contenant ces valeurs nécessite une décision de reprise des données
   avant cette migration ; aucune nationalité ne doit être inventée.
-- **Connexion :** aucun parcours Web de connexion en production ni mécanisme de
-  renouvellement du jeton n'est implémenté. Le limiteur borné reste local à
-  chaque processus ; une stratégie multi-instance et par IP seule reste à décider.
+- **Authentification :** connexion et inscription publiques en modale, avec JWT
+  dans `sessionStorage`, sans renouvellement automatique. Le bouton public unique
+  « Compte » ouvre la connexion avec une invitation à s'inscrire ; après connexion,
+  la sidebar affiche « Dashboard » pour `ADMIN` au-dessus de « Déconnexion ».
+  Sur mobile, « Compte » reste accessible dans le header pour les visiteurs ;
+  les actions du compte connecté sont affichées dans le menu repliable.
+  L'inscription crée
+  explicitement un compte `ACTIVE` avec le rôle de référence `USER` (qui doit
+  exister en base). Elle exige au moins 8 caractères, un chiffre et une majuscule ;
+  les comptes existants restent compatibles avec la politique du login.
+  Les refus utilisent le même message générique. La déconnexion est locale :
+  une copie du JWT reste utilisable jusqu'à expiration. Les limiteurs bornés sont
+  propres à chaque processus ; l'inscription est limitée par IP, le login par
+  couple IP/email. Leur partage entre instances reste à définir.
+  Toutes les routes Web `/dashboard/...` sont réservées à `ADMIN` ; les visiteurs
+  anonymes et les autres rôles sont redirigés vers `/`, en conservant leur session.
+- **Navigation des ligues :** `GET /api/v1/leagues/navigation` expose sans connexion
+  la liste complète des ligues actives, triée par nom puis pays, avec uniquement
+  `id`, `slug`, `name`, `country` et `logoUrl`. Les liens publics utilisent
+  `/leagues/:leagueSlug`. La page présente les prochains matchs et les derniers
+  résultats de la saison sélectionnée, avec accès au calendrier et aux équipes.
+  Une ligue inconnue ou inactive affiche la page introuvable.
+  La migration `20261011230000_public_league_navigation` ajoute les slugs sans
+  supprimer les données existantes. Un trigger les génère à partir du nom et d'un
+  UUID public distinct de l'ID interne, puis empêche leur modification.
+  Sur tablette, les liens utilisent les logos ; les logos absents, cassés ou
+  externes sont remplacés par une initiale. Les autorisations administratives et
+  la politique globale d'images restent inchangées.
+- **Fiches publiques :** les GET `/api/v1/public/teams`, `/public/players`, leurs
+  détails et effectifs, ainsi que les détails `/public/staff-members`,
+  `/public/seasons` et `/public/matchdays` utilisent des sélections et DTO limités.
+  Les nouvelles listes utilisent `page/limit` (20 par défaut, 50 maximum) ; les
+  contrats existants en `pageSize` restent inchangés. Les matchs publics exigent
+  aussi une journée, une ligue et deux équipes actives. Les dates de naissance,
+  versions, comptes et identifiants d’affectation ne sont pas exposés.
 - **Images externes :** la CSP actuelle autorise seulement la même origine et
   `data:` pour les images, malgré les URLs externes acceptées par les formulaires.
   Les origines HTTPS autorisées restent à définir avant de modifier cette politique.

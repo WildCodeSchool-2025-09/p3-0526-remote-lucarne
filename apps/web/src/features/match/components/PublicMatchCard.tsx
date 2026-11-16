@@ -2,8 +2,9 @@ import { matchStyles } from "../matchStyles";
 import type { PublicMatch } from "@lucarne/shared";
 import { Link } from "react-router";
 import { matchSchedule, matchScore, matchStatusLabels } from "../matchPresentation";
+import { publicMatchLink } from "../publicMatchNavigation";
 
-function PublicMatchCard({ match }: { match: PublicMatch }) {
+function PublicMatchCard({ match, returnTo }: { match: PublicMatch; returnTo?: string }) {
   return (
     <article
       className={`
@@ -17,7 +18,7 @@ function PublicMatchCard({ match }: { match: PublicMatch }) {
         {match.league.name} · {match.season.name} · Journée {match.matchday.number}
       </p>
       <h2>
-        <Link to={`/matches/${match.matchPublicId}`}>
+        <Link to={publicMatchLink(match.matchPublicId, returnTo)}>
           {match.homeTeam.name} – {match.awayTeam.name}
         </Link>
       </h2>

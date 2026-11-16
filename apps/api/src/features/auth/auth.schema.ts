@@ -1,12 +1,2 @@
-import { z } from "zod";
-import { passwordSchema } from "../../auth/password";
-
-const loginBodySchema = z.object({
-  email: z.email().max(320),
-  password: passwordSchema,
-}).strict();
-
-type LoginBody = z.infer<typeof loginBodySchema>;
-
-export { loginBodySchema };
-export type { LoginBody };
+export { loginInputSchema as loginBodySchema, registerInputSchema as registerBodySchema } from "@lucarne/shared";
+export type { LoginInput as LoginBody, RegisterInput as RegisterBody } from "@lucarne/shared";

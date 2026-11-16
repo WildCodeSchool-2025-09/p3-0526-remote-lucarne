@@ -40,5 +40,6 @@ describe("useUpdateLeague", () => {
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: leagueKeys.detail("league-id") });
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: leagueKeys.lists() });
     expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: leagueKeys.countries() });
+    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: leagueKeys.publicNavigation() });
   });
 });

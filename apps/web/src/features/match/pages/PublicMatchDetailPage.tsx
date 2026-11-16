@@ -1,20 +1,26 @@
 import { matchStyles } from "../matchStyles";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import { HttpError } from "../../../lib/httpClient";
 import { Alert, Button, EntityLogo, LoadingState } from "../../../ui";
 import PublicMatchBreadcrumb from "../components/PublicMatchBreadcrumb";
 import { usePublicMatch } from "../hooks/usePublicMatches";
 import { matchSchedule, matchScore, matchStatusLabels } from "../matchPresentation";
+import { publicMatchReturnPath } from "../publicMatchNavigation";
+import PublicShareButton from "../../../components/public/PublicShareButton";
+import { publicNavigation } from "../../../components/public/publicRoutes";
+import PublicMatchEvents from "../components/PublicMatchEvents";
 
 function PublicMatchDetailPage() {
   const { matchPublicId = "" } = useParams();
+  const [search] = useSearchParams();
+  const returnTo = publicMatchReturnPath(search.get("returnTo"));
   const query = usePublicMatch(matchPublicId);
   const match = query.data;
 
   return (
-    <section className={matchStyles.publicPage}>
-      <PublicMatchBreadcrumb detail />
-      <Link className="lucarne-button lucarne-button--ghost" to="/matches">
+    <section className={`${matchStyles.publicPage} public-page-stack`}>
+      <PublicMatchBreadcrumb detail leagueName={match?.league.name} returnTo={returnTo} />
+      <Link className="lucarne-button lucarne-button--ghost justify-self-start" to={returnTo}>
         ← Retour au calendrier des matchs
       </Link>
       {query.isPending ? <LoadingState>Chargement du match…</LoadingState> : null}
@@ -30,30 +36,32 @@ function PublicMatchDetailPage() {
       ) : null}
       {match ? (
         <>
-          <h1>
-            {match.homeTeam.name} – {match.awayTeam.name}
-          </h1>
-          <div className="my-6 flex flex-wrap items-center justify-center gap-6">
-            <EntityLogo name={match.homeTeam.name} logoUrl={match.homeTeam.logoUrl} />
-            <span>{matchScore(match)}</span>
-            <EntityLogo name={match.awayTeam.name} logoUrl={match.awayTeam.logoUrl} />
+          <header className="public-resource-header">
+            <h1>{match.homeTeam.name} – {match.awayTeam.name}</h1>
+            <PublicShareButton />
+          </header>
+          <div className="public-match-summary">
+            <div className="public-match-summary__team"><EntityLogo name={match.homeTeam.name} logoUrl={match.homeTeam.logoUrl} />{match.homeTeam.id ? <Link to={publicNavigation.team(match.homeTeam.id)}>{match.homeTeam.name}</Link> : match.homeTeam.name}</div>
+            <div className="public-match-summary__result"><strong className={match.result.homeScore === null ? "public-match-summary__missing" : undefined}>{matchScore(match)}</strong><span>{matchStatusLabels[match.status]}</span></div>
+            <div className="public-match-summary__team"><EntityLogo name={match.awayTeam.name} logoUrl={match.awayTeam.logoUrl} />{match.awayTeam.id ? <Link to={publicNavigation.team(match.awayTeam.id)}>{match.awayTeam.name}</Link> : match.awayTeam.name}</div>
           </div>
+          <PublicMatchEvents matchPublicId={match.matchPublicId} />
           <section className={matchStyles.detailCard} aria-label="Informations du match">
             <dl>
               <div>
                 <dt>Ligue</dt>
                 <dd>
-                  {match.league.name} · {match.league.country}
+                  {match.league.slug ? <Link to={`${publicNavigation.league(match.league.slug)}${match.season.id ? `?${new URLSearchParams({ seasonId: match.season.id })}` : ""}`}>{match.league.name}</Link> : match.league.name} · {match.league.country}
                 </dd>
               </div>
               <div>
                 <dt>Saison</dt>
-                <dd>{match.season.name}</dd>
+                <dd>{match.season.id ? <Link to={publicNavigation.season(match.season.id)}>{match.season.name}</Link> : match.season.name}</dd>
               </div>
               <div>
                 <dt>Journée</dt>
                 <dd>
-                  Journée {match.matchday.number}
+                  {match.matchday.id ? <Link to={publicNavigation.matchday(match.matchday.id)}>Journée {match.matchday.number}</Link> : `Journée ${match.matchday.number}`}
                   {match.matchday.name ? ` · ${match.matchday.name}` : ""}
                 </dd>
               </div>

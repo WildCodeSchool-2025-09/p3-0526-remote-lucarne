@@ -41,6 +41,7 @@ const useStaffMutation = <TVariables>(mutationFn: (variables: TVariables) => Pro
     mutationFn,
     onSuccess: async (staffMember) => {
       queryClient.setQueryData(staffKeys.detail(staffMember.id), staffMember);
+      await queryClient.invalidateQueries({ queryKey: [...staffKeys.detail(staffMember.id), "public"] });
       await queryClient.invalidateQueries({ queryKey: staffKeys.lists() });
       await queryClient.invalidateQueries({ queryKey: teamKeys.rosters() });
     },

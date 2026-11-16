@@ -6,6 +6,7 @@ import {
   deleteLeague,
 } from "../../../services/league.service";
 import { leagueKeys } from "../leagueKeys";
+import { invalidatePublicPortal } from "../../../components/public/publicPortalCache";
 
 interface LeagueMutationInput {
   action: "activate" | "delete" | "deactivate";
@@ -39,8 +40,12 @@ function useLeagueMutation() {
       }
 
       await Promise.all([
+        invalidatePublicPortal(queryClient),
         queryClient.invalidateQueries({ queryKey: leagueKeys.lists() }),
         queryClient.invalidateQueries({ queryKey: leagueKeys.countries() }),
+        queryClient.invalidateQueries({ queryKey: leagueKeys.publicNavigation() }),
+        queryClient.invalidateQueries({ queryKey: leagueKeys.publicDetails() }),
+        queryClient.invalidateQueries({ queryKey: leagueKeys.publicTeams() }),
       ]);
     },
     retry: false,

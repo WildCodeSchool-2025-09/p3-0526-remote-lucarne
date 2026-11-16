@@ -30,14 +30,14 @@ type MatchSportingState =
   | { status: "SCHEDULED" | "IN_PROGRESS"; result: MatchResult }
   | { status: "COMPLETED"; result: { homeScore: number; awayScore: number } };
 
-// Public DTO omits internal IDs, version, publication and deletion flags.
+// Public resource references are additive; match internals and management flags stay private.
 type PublicMatch = MatchSportingState & {
   matchPublicId: string;
-  league: { name: string; country: string };
-  season: { name: string };
-  matchday: { number: number; name: string | null };
-  homeTeam: MatchTeamSummary;
-  awayTeam: MatchTeamSummary;
+  league: { id?: string; slug?: string; name: string; country: string };
+  season: { id?: string; name: string };
+  matchday: { id?: string; number: number; name: string | null };
+  homeTeam: MatchTeamSummary & { id?: string };
+  awayTeam: MatchTeamSummary & { id?: string };
   matchDate: string;
   startTime: string;
   timeZone: typeof MATCH_TIME_ZONE;

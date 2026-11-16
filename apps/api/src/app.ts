@@ -11,6 +11,9 @@ import { API_V1_PATH } from "@lucarne/shared";
 
 const app = express();
 
+// Ignore forwarded headers unless the connection comes from an explicit proxy.
+app.set("trust proxy", environment.trustedProxyIps);
+
 app.use(helmet());
 
 if (environment.clientUrl != null) {

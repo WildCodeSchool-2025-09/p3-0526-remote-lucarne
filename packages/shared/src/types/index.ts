@@ -11,3 +11,8 @@ export * from "./participation.types";
 export * from "./bug-report.types";
 export * from "./teamRoster.types";
 export * from "./match.types";
+export * from "./matchImport.types";
+export * from "./auth.types";
+export * from "./publicPortal.types";
+export * from "./publicStatistics.types";
+export * from "./publicSearch.types";

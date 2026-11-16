@@ -8,3 +8,8 @@ export * from "./participation.schema";
 export * from "./bug-report.schema";
 export * from "./assignment.schema";
 export * from "./match.schema";
+export * from "./matchImport.schema";
+export * from "./auth.schema";
+export * from "./publicPortal.schema";
+export * from "./publicStatistics.schema";
+export * from "./publicSearch.schema";

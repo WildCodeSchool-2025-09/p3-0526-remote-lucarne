@@ -2,6 +2,7 @@ import { dashboardStyles } from "./dashboardStyles";
 import logoFull from "../../../docs/images/logo-blanc-sans-fond.png";
 import logoMark from "../../../docs/images/logo-sans-texte-blanc.png";
 import { Link } from "react-router";
+import DashboardExitLink from "./DashboardExitLink";
 import DashboardNavigation, {
   type DashboardNavigationItemKey,
 } from "./DashboardNavigation";
@@ -28,6 +29,10 @@ function DashboardSidebar({ activeItem, onNavigate }: DashboardSidebarProps) {
         />
       </div>
       <DashboardNavigation activeItem={activeItem} />
+      <div className="min-h-8 flex-auto" />
+      <div className={dashboardStyles.exitSection}>
+        <DashboardExitLink onNavigate={onNavigate} />
+      </div>
     </aside>
   );
 }

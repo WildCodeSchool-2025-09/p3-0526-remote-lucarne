@@ -1,0 +1,66 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.vps
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      APP_PORT: 3310
+      APP_SECRET: ${APP_SECRET:?APP_SECRET requis}
+      DATABASE_URL: postgresql://${DB_USER:?DB_USER requis}:${DB_PASSWORD:?DB_PASSWORD requis}@db:5432/${DB_NAME:?DB_NAME requis}
+      CLIENT_URL: ""
+      TRUSTED_PROXY_IPS: "172.30.50.2"
+      UPLOAD_DIRECTORY: /var/lib/lucarne/player-photos
+    volumes:
+      - photos:/var/lib/lucarne/player-photos
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [front, backend]
+
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:?DB_NAME requis}
+      POSTGRES_USER: ${DB_USER:?DB_USER requis}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD requis}
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [backend]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN requis}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.vps:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      front:
+        ipv4_address: 172.30.50.2
+
+networks:
+  front:
+    ipam:
+      config:
+        - subnet: 172.30.50.0/24
+  backend:
+    internal: true
+
+volumes:
+  postgres_data:
+  photos:
+  caddy_data:
+  caddy_config:

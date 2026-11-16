@@ -15,6 +15,8 @@ interface LoginRateLimitOptions {
   windowMs: number;
   maxKeys?: number;
   now?: () => number;
+  keyBy?: "ip" | "ip-email";
+  errorCode?: string;
 }
 
 function getLoginAttemptKey(ip: string, email: unknown): string {
@@ -29,6 +31,8 @@ function createLoginRateLimiter({
   windowMs,
   maxKeys = MAX_LOGIN_RATE_LIMIT_KEYS,
   now = Date.now,
+  keyBy = "ip-email",
+  errorCode = "TOO_MANY_LOGIN_ATTEMPTS",
 }: LoginRateLimitOptions) {
   const loginAttempts = new Map<string, LoginAttempt>();
 
@@ -47,7 +51,7 @@ function createLoginRateLimiter({
     const email = typeof body === "object" && body != null && "email" in body
       ? (body as { email?: unknown }).email
       : undefined;
-    const key = getLoginAttemptKey(request.ip ?? "unknown", email);
+    const key = getLoginAttemptKey(request.ip ?? "unknown", keyBy === "ip" ? undefined : email);
     const current = loginAttempts.get(key);
 
     // Never evict a live counter: flooding new keys must not reset a blocked login.
@@ -57,8 +61,8 @@ function createLoginRateLimiter({
       response.setHeader("Retry-After", String(Math.max(1, Math.ceil((resetAt - currentTime) / 1000))));
       next(new AppError(
         429,
-        "TOO_MANY_LOGIN_ATTEMPTS",
-        "Too many login attempts. Please try again later.",
+        errorCode,
+        "Too many authentication attempts. Please try again later.",
       ));
       return;
     }

@@ -9,6 +9,7 @@ import {
 import { seasonKeys } from "../../season/seasonKeys";
 import { leagueKeys } from "../leagueKeys";
 import { matchKeys } from "../../match/matchKeys";
+import { invalidatePublicPortal } from "../../../components/public/publicPortalCache";
 
 type LeagueSeasonMutationInput =
   | ({ action: "assign"; leagueId: string } & AssignLeagueSeasonInput)
@@ -34,9 +35,12 @@ function useLeagueSeasonMutation() {
     },
     onSuccess: async (_result, { leagueId }) => {
       await Promise.all([
+        invalidatePublicPortal(queryClient),
         queryClient.invalidateQueries({ queryKey: matchKeys.all }),
         queryClient.invalidateQueries({ queryKey: seasonKeys.all }),
         queryClient.invalidateQueries({ queryKey: leagueKeys.detail(leagueId) }),
+        queryClient.invalidateQueries({ queryKey: leagueKeys.publicDetails() }),
+        queryClient.invalidateQueries({ queryKey: leagueKeys.publicTeams() }),
       ]);
     },
     retry: false,

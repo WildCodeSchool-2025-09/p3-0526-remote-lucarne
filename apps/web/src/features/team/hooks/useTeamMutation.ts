@@ -6,6 +6,8 @@ import {
   updateTeam,
 } from "../../../services/team.service";
 import { teamKeys } from "../teamKeys";
+import { leagueKeys } from "../../league/leagueKeys";
+import { invalidatePublicPortal } from "../../../components/public/publicPortalCache";
 
 interface TeamMutationInput {
   action: "delete" | "deactivate" | "activate";
@@ -28,7 +30,11 @@ function useTeamMutation() {
         queryClient.removeQueries({ queryKey: teamKeys.detail(variables.id) });
       else if (team !== undefined)
         queryClient.setQueryData(teamKeys.detail(variables.id), team);
-      await queryClient.invalidateQueries({ queryKey: teamKeys.lists() });
+      await Promise.all([
+        invalidatePublicPortal(queryClient),
+        queryClient.invalidateQueries({ queryKey: teamKeys.lists() }),
+        queryClient.invalidateQueries({ queryKey: leagueKeys.publicTeams() }),
+      ]);
     },
     retry: false,
   });

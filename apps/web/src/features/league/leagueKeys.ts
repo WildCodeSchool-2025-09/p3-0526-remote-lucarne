@@ -1,4 +1,4 @@
-import type { ListLeaguesParams } from "@lucarne/shared";
+import type { ListLeaguesParams, PublicLeagueTeamsQuery } from "@lucarne/shared";
 
 function listParams(params: ListLeaguesParams): ListLeaguesParams {
   return {
@@ -9,6 +9,12 @@ function listParams(params: ListLeaguesParams): ListLeaguesParams {
 
 const leagueKeys = {
   all: ["league"] as const,
+  publicNavigation: () => [...leagueKeys.all, "public", "navigation"] as const,
+  publicDetails: () => [...leagueKeys.all, "public", "detail"] as const,
+  publicDetail: (leagueSlug: string) => [...leagueKeys.publicDetails(), leagueSlug] as const,
+  publicTeams: () => [...leagueKeys.all, "public", "teams"] as const,
+  publicTeamList: (leagueSlug: string, seasonId: string, query: PublicLeagueTeamsQuery) =>
+    [...leagueKeys.publicTeams(), leagueSlug, seasonId, query] as const,
   countries: () => [...leagueKeys.all, "countries"] as const,
   details: () => [...leagueKeys.all, "detail"] as const,
   detail: (leagueId: string) => [...leagueKeys.details(), leagueId] as const,

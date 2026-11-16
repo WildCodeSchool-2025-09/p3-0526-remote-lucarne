@@ -9,6 +9,10 @@ import type {
   Season,
   SeasonDetail,
   UpdateSeasonInput,
+  MatchImportApply,
+  MatchImportDocument,
+  MatchImportPreview,
+  MatchImportResult,
 } from "@lucarne/shared";
 import { httpClient } from "../lib/httpClient";
 
@@ -54,3 +58,9 @@ async function deleteSeason(seasonId: string): Promise<void> {
 }
 
 export { assignLeagueSeason, createSeason, deleteSeason, getSeason, listLeagueSeasons, listSeasons, removeLeagueSeason, setCurrentSeason, updateSeason };
+
+const previewSeasonMatchImport = (leagueId: string, seasonId: string, document: MatchImportDocument) =>
+  httpClient.post<MatchImportPreview>(`/leagues/${leagueId}/seasons/${seasonId}/matches/import-preview`, { json: document });
+const applySeasonMatchImport = (leagueId: string, seasonId: string, input: MatchImportApply) =>
+  httpClient.post<MatchImportResult>(`/leagues/${leagueId}/seasons/${seasonId}/matches/import`, { json: input });
+export { applySeasonMatchImport, previewSeasonMatchImport };

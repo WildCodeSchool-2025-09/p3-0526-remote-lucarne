@@ -6,6 +6,7 @@ import { seasonKeys } from "../../season/seasonKeys";
 import { leagueKeys } from "../../league/leagueKeys";
 import { teamKeys } from "../../team/teamKeys";
 import { matchKeys } from "../matchKeys";
+import { invalidatePublicPortal } from "../../../components/public/publicPortalCache";
 
 const useMatchList = (params: MatchListQuery, enabled = true) =>
   useQuery({
@@ -28,6 +29,7 @@ function useMatchMutation<T, R = AdminMatch>(mutationFn: (input: T) => Promise<R
     mutationFn,
     retry: false,
     onSuccess: async () => {
+      await invalidatePublicPortal(client);
       await Promise.all(
         [matchKeys.all, seasonKeys.all, leagueKeys.all, teamKeys.all].map((queryKey) =>
           client.invalidateQueries({ queryKey }),
