@@ -1,0 +1,3 @@
+ALTER TABLE staff_member
+    ALTER COLUMN nationality SET NOT NULL,
+    ADD COLUMN version INTEGER NOT NULL DEFAULT 0;

@@ -1,0 +1,54 @@
+import type {
+  UpdatePlayerAssignmentInput,
+  CreatePlayerAssignmentInput,
+  CreatePlayerInput,
+  ListPlayersParams,
+  PaginatedPlayersResponse,
+  PlayerDetail,
+  UpdatePlayerInput,
+} from "@lucarne/shared";
+import { httpClient } from "../lib/httpClient";
+
+const createPlayer = (input: CreatePlayerInput) =>
+  httpClient.post<PlayerDetail>("/players", { json: input });
+
+const listPlayers = (params: ListPlayersParams) =>
+  httpClient.get<PaginatedPlayersResponse>("/players", { query: params });
+
+const getPlayer = (id: string) => httpClient.get<PlayerDetail>(`/players/${id}`);
+
+const createPlayerAssignment = (id: string, input: CreatePlayerAssignmentInput) =>
+  httpClient.post<PlayerDetail>(`/players/${id}/assignments`, { json: input });
+
+const updatePlayer = (id: string, input: UpdatePlayerInput) =>
+  httpClient.patch<PlayerDetail>(`/players/${id}`, { json: input });
+
+const activatePlayer = (id: string) =>
+  httpClient.post<PlayerDetail>(`/players/${id}/activate`);
+
+const deactivatePlayer = (id: string) =>
+  httpClient.post<PlayerDetail>(`/players/${id}/deactivate`);
+
+const deletePlayer = (id: string) =>
+  httpClient.delete<void>(`/players/${id}`, { json: { confirm: true } });
+
+const updatePlayerAssignment = (
+  id: string,
+  assignmentId: string,
+  input: UpdatePlayerAssignmentInput,
+) =>
+  httpClient.patch<PlayerDetail>(`/players/${id}/assignments/${assignmentId}`, {
+    json: input,
+  });
+
+export {
+  updatePlayerAssignment,
+  activatePlayer,
+  createPlayer,
+  createPlayerAssignment,
+  deactivatePlayer,
+  deletePlayer,
+  getPlayer,
+  listPlayers,
+  updatePlayer,
+};

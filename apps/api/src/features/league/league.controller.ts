@@ -1,0 +1,128 @@
+import type { RequestHandler } from "express";
+import type { League, PaginatedLeaguesResponse, PublicLeagueDetail, PublicLeagueNavigationItem, PublicLeagueTeamsResponse } from "@lucarne/shared";
+import { publicLeagueTeamsQuerySchema } from "@lucarne/shared";
+import { asyncHandler } from "../../utils/asyncHandler";
+import { activateLeagueService, createLeagueService, deactivateLeagueService, listLeagueCountriesService, permanentlyDeleteLeagueService, updateLeagueService } from "./league.service";
+import {
+  getLeagueService,
+  getPublicLeagueService,
+  listLeaguesService,
+  listPublicLeagueNavigationService,
+  listPublicLeagueTeamsService,
+} from "./league.service";
+import type { CreateLeagueInput, DeleteLeagueInput, ListLeaguesParams, UpdateLeagueInput } from "./league.schema";
+
+const toLeagueResponse = (league: {
+  id: string;
+  name: string;
+  country: string;
+  logoUrl: string | null;
+  isActive: boolean;
+  version: number;
+  createdAt: Date;
+}): League => ({
+  id: league.id,
+  name: league.name,
+  country: league.country,
+  logoUrl: league.logoUrl,
+  status: league.isActive ? "ACTIVE" : "INACTIVE",
+  isActive: league.isActive,
+  version: league.version,
+  createdAt: league.createdAt.toISOString(),
+});
+
+const createLeague: RequestHandler<
+  Record<string, never>,
+  League,
+  CreateLeagueInput
+> = asyncHandler(async (request, response) => {
+  const league = await createLeagueService(request.body);
+
+  response.status(201).json(toLeagueResponse(league));
+});
+
+const listLeagues: RequestHandler<
+  Record<string, never>,
+  PaginatedLeaguesResponse,
+  Record<string, never>,
+  ListLeaguesParams
+> = asyncHandler(async (request, response) => {
+  const result = await listLeaguesService(request.query);
+  const page = request.query.page ?? 1;
+  const pageSize = request.query.pageSize ?? 20;
+
+  response.json({
+    data: result.data.map(toLeagueResponse),
+    pagination: {
+      page,
+      pageSize,
+      totalItems: result.totalItems,
+      totalPages: Math.ceil(result.totalItems / pageSize),
+    },
+  });
+});
+
+const listLeagueCountries: RequestHandler = asyncHandler(async (_request, response) => {
+  response.json(await listLeagueCountriesService());
+});
+
+const listPublicLeagueNavigation: RequestHandler<Record<string, never>, PublicLeagueNavigationItem[]> = asyncHandler(async (_request, response) => {
+  const leagues = await listPublicLeagueNavigationService();
+  response.json(leagues.map(({ id, slug, name, country, logoUrl }) => ({ id, slug, name, country, logoUrl })));
+});
+
+const getPublicLeague: RequestHandler<{ leagueSlug: string }, PublicLeagueDetail> = asyncHandler(async (request, response) => {
+  const { id, slug, name, country, logoUrl, leagueSeasons } = await getPublicLeagueService(request.params.leagueSlug);
+  response.json({
+    id, slug, name, country, logoUrl,
+    seasons: leagueSeasons.map(({ isCurrent, season }) => ({ id: season.id, name: season.name, isCurrent })),
+  });
+});
+
+const listPublicLeagueTeamResponses: RequestHandler<{ leagueSlug: string; seasonId: string }, PublicLeagueTeamsResponse> = asyncHandler(async (request, response) => {
+  const query = publicLeagueTeamsQuerySchema.parse(request.query);
+  const { data, totalItems } = await listPublicLeagueTeamsService(request.params.leagueSlug, request.params.seasonId, query);
+  const { page, pageSize } = query;
+  response.json({
+    data,
+    pagination: { page, pageSize, totalItems, totalPages: Math.ceil(totalItems / pageSize) },
+  });
+});
+
+const getLeague: RequestHandler<{ leagueId: string }, League> = asyncHandler(async (request, response) => {
+  const league = await getLeagueService(request.params.leagueId);
+
+  response.json(toLeagueResponse(league));
+});
+
+const updateLeague: RequestHandler<
+  { leagueId: string },
+  League,
+  UpdateLeagueInput
+> = asyncHandler(async (request, response) => {
+  const { version, ...changes } = request.body;
+  const league = await updateLeagueService({
+    leagueId: request.params.leagueId,
+    expectedVersion: version,
+    changes,
+  }, request.user!.role);
+
+  response.json(toLeagueResponse(league));
+});
+
+const deleteLeague: RequestHandler<{ leagueId: string }, void, DeleteLeagueInput> = asyncHandler(async (request, response) => {
+  await permanentlyDeleteLeagueService(request.params.leagueId);
+  response.sendStatus(204);
+});
+
+const deactivateLeague: RequestHandler<{ leagueId: string }> = asyncHandler(async (request, response) => {
+  const league = await deactivateLeagueService(request.params.leagueId);
+  response.json(toLeagueResponse(league));
+});
+
+const activateLeague: RequestHandler<{ leagueId: string }> = asyncHandler(async (request, response) => {
+  const league = await activateLeagueService(request.params.leagueId);
+  response.json(toLeagueResponse(league));
+});
+
+export { activateLeague, createLeague, deactivateLeague, deleteLeague, getLeague, getPublicLeague, listLeagueCountries, listLeagues, listPublicLeagueNavigation, listPublicLeagueTeamResponses, toLeagueResponse, updateLeague };

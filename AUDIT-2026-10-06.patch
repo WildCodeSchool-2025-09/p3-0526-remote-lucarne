@@ -1,0 +1,1900 @@
+diff --git a/packages/shared/src/schemas/staff.schema.ts b/packages/shared/src/schemas/staff.schema.ts
+index 3cca464..6577209 100644
+--- a/packages/shared/src/schemas/staff.schema.ts
++++ b/packages/shared/src/schemas/staff.schema.ts
+@@ -6,18 +6,21 @@ const optionalPictureUrl = z.preprocess(
+   (value) => typeof value === "string" && value.trim() === "" ? null : value,
+   z.string().trim().url().nullable().optional(),
+ );
++
+ const staffFields = {
+   firstName: z.string({ error: "Prénom requis" }).trim().min(1, "Prénom requis").max(100),
+   lastName: z.string({ error: "Nom requis" }).trim().min(1, "Nom requis").max(100),
+   nationality: z.string({ error: "Nationalité requise" }).trim().min(1, "Nationalité requise").max(100),
+   pictureUrl: optionalPictureUrl,
+ };
++
+ const staffAssignmentFields = {
+   teamId: z.string().uuid(),
+   jobTitle: z.string({ error: "Intitulé de poste requis" }).trim().min(1, "Intitulé de poste requis").max(100),
+   joinedAt: z.string().date(),
+   leftAt: assignmentEndSchema,
+ };
++
+ const createStaffMemberInputSchema = z.object({
+   ...staffFields,
+   teamId: staffAssignmentFields.teamId.optional(),
+@@ -27,14 +30,34 @@ const createStaffMemberInputSchema = z.object({
+ }).strict().superRefine((value, context) => {
+   const hasAssignmentValue = value.teamId !== undefined || value.jobTitle !== undefined || value.joinedAt !== undefined || value.leftAt != null;
+   if (!hasAssignmentValue) return;
+-  if (value.leftAt != null && value.joinedAt && value.leftAt <= value.joinedAt) context.addIssue({ code: "custom", message: "La date de fin doit être postérieure à la date de début.", path: ["leftAt"] });
++  if (value.leftAt != null && value.joinedAt && value.leftAt <= value.joinedAt)
++    context.addIssue({
++      code: "custom",
++      message: "La date de fin doit être postérieure à la date de début.",
++      path: ["leftAt"],
++    });
+   for (const field of ["teamId", "jobTitle", "joinedAt"] as const) {
+-    if (value[field] === undefined) context.addIssue({ code: "custom", message: "Une affectation requiert une équipe, un intitulé de poste et une date d’arrivée", path: [field] });
++    if (value[field] === undefined)
++      context.addIssue({
++        code: "custom",
++        message: "Une affectation requiert une équipe, un intitulé de poste et une date d’arrivée",
++        path: [field],
++      });
+   }
+ });
+-const createStaffAssignmentInputSchema = z.object(staffAssignmentFields).strict().refine((v) => v.leftAt == null || v.leftAt > v.joinedAt, { message: "La date de fin doit être postérieure à la date de début.", path: ["leftAt"] });
++
++const createStaffAssignmentInputSchema = z.object(staffAssignmentFields).strict().refine(
++  (input) => input.leftAt == null || input.leftAt > input.joinedAt,
++  {
++    message: "La date de fin doit être postérieure à la date de début.",
++    path: ["leftAt"],
++  },
++);
++
+ const updateStaffAssignmentInputSchema = assignmentDatesSchema;
++
+ const staffAssignmentParamsSchema = z.object({ staffMemberId: z.string().uuid(), assignmentId: z.string().uuid() }).strict();
++
+ const updateStaffMemberInputSchema = z.object(staffFields).partial().extend({
+   isActive: z.boolean().optional(),
+   version: z.number().int().min(0),
+@@ -42,10 +65,14 @@ const updateStaffMemberInputSchema = z.object(staffFields).partial().extend({
+   (value) => Object.entries(value).some(([key, fieldValue]) => key !== "version" && fieldValue !== undefined),
+   { message: "Au moins un champ doit être modifié" },
+ );
++
+ const staffMemberListQuerySchema = z.object({
+   page: z.coerce.number().int().min(1).default(DEFAULT_PAGE),
+   pageSize: z.coerce.number().int().refine((value) => value === DEFAULT_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
+-  search: z.preprocess((value) => typeof value === "string" ? value.trim() || undefined : value, z.string().max(MAX_SEARCH_LENGTH).optional()),
++  search: z.preprocess(
++    (value) => typeof value === "string" ? value.trim() || undefined : value,
++    z.string().max(MAX_SEARCH_LENGTH).optional(),
++  ),
+   teamName: z.string().trim().min(1).optional(),
+   assignmentStatus: z.enum(["CURRENT", "PLANNED"]).optional(),
+   selectable: z.preprocess((value) => value === "true" ? true : value === "false" ? false : value, z.boolean().optional()),
+@@ -53,11 +80,14 @@ const staffMemberListQuerySchema = z.object({
+   sortBy: z.enum(["lastName", "createdAt"]).default("lastName"),
+   sortOrder: z.enum(["asc", "desc"]).default("asc"),
+ }).strict();
++
+ const staffMemberIdParamsSchema = z.object({ staffMemberId: z.string().uuid() }).strict();
++
+ const deleteStaffMemberBodySchema = z.object({ confirm: z.literal(true) }).strict();
+ 
+ export {
+-  updateStaffAssignmentInputSchema, staffAssignmentParamsSchema,
++  updateStaffAssignmentInputSchema,
++  staffAssignmentParamsSchema,
+   createStaffAssignmentInputSchema,
+   createStaffMemberInputSchema,
+   deleteStaffMemberBodySchema,
+diff --git a/packages/shared/src/schemas/player.schema.ts b/packages/shared/src/schemas/player.schema.ts
+index c1a7053..a7b1398 100644
+--- a/packages/shared/src/schemas/player.schema.ts
++++ b/packages/shared/src/schemas/player.schema.ts
+@@ -6,14 +6,14 @@ import {
+   MAX_SEARCH_LENGTH,
+ } from "../constants/pagination";
+ 
+-const optionalText = (max: number) =>
++const optionalText = (maxLength: number) =>
+   z.preprocess(
+-    (v) => (typeof v === "string" && v.trim() === "" ? null : v),
+-    z.string().trim().max(max).nullable().optional(),
++    (input) => (typeof input === "string" && input.trim() === "" ? null : input),
++    z.string().trim().max(maxLength).nullable().optional(),
+   );
+ 
+ const optionalDate = z.preprocess(
+-  (v) => (typeof v === "string" && v.trim() === "" ? null : v),
++  (input) => (typeof input === "string" && input.trim() === "" ? null : input),
+   z.string().date().nullable().optional(),
+ );
+ 
+@@ -24,7 +24,7 @@ const playerFields = {
+   position: optionalText(50),
+   birthday: optionalDate,
+   pictureUrl: z.preprocess(
+-    (v) => (typeof v === "string" && v.trim() === "" ? null : v),
++    (input) => (typeof input === "string" && input.trim() === "" ? null : input),
+     z.string().trim().url().nullable().optional(),
+   ),
+ };
+@@ -38,18 +38,18 @@ const createPlayerInputSchema = z
+     shirtNumber: z.number().int().min(1).max(99).nullable().optional(),
+   })
+   .strict()
+-  .refine((v) => !v.teamId || v.joinedAt != null, {
++  .refine((input) => !input.teamId || input.joinedAt != null, {
+     message: "La date d'arrivée est requise avec une équipe",
+     path: ["joinedAt"],
+   })
+-  .superRefine((v, context) => {
+-    if (v.leftAt != null && (!v.teamId || !v.joinedAt))
++  .superRefine((input, context) => {
++    if (input.leftAt != null && (!input.teamId || !input.joinedAt))
+       context.addIssue({
+         code: "custom",
+         message: "Une date de fin requiert une équipe et une date de début.",
+         path: ["leftAt"],
+       });
+-    if (v.leftAt != null && v.joinedAt && v.leftAt <= v.joinedAt)
++    if (input.leftAt != null && input.joinedAt && input.leftAt <= input.joinedAt)
+       context.addIssue({
+         code: "custom",
+         message: "La date de fin doit être postérieure à la date de début.",
+@@ -65,7 +65,7 @@ const createPlayerAssignmentInputSchema = z
+     shirtNumber: z.number().int().min(1).max(99).nullable().optional(),
+   })
+   .strict()
+-  .refine((v) => v.leftAt == null || v.leftAt > v.joinedAt, {
++  .refine((input) => input.leftAt == null || input.leftAt > input.joinedAt, {
+     message: "La date de fin doit être postérieure à la date de début.",
+     path: ["leftAt"],
+   });
+@@ -82,8 +82,8 @@ const updatePlayerInputSchema = z
+   .extend({ isActive: z.boolean().optional(), version: z.number().int().min(0) })
+   .strict()
+   .refine(
+-    (v) =>
+-      Object.entries(v).some(([key, value]) => key !== "version" && value !== undefined),
++    (input) =>
++      Object.entries(input).some(([key, value]) => key !== "version" && value !== undefined),
+     { message: "Au moins un champ doit être modifié" },
+   );
+ 
+@@ -93,10 +93,10 @@ const playerListQuerySchema = z
+     pageSize: z.coerce
+       .number()
+       .int()
+-      .refine((v) => v === DEFAULT_PAGE_SIZE)
++      .refine((input) => input === DEFAULT_PAGE_SIZE)
+       .default(DEFAULT_PAGE_SIZE),
+     search: z.preprocess(
+-      (v) => (typeof v === "string" ? v.trim() || undefined : v),
++      (input) => (typeof input === "string" ? input.trim() || undefined : input),
+       z.string().max(MAX_SEARCH_LENGTH).optional(),
+     ),
+     teamName: z.string().trim().min(1).optional(),
+diff --git a/packages/shared/src/schemas/match.schema.ts b/packages/shared/src/schemas/match.schema.ts
+index 250bb7f..108af38 100644
+--- a/packages/shared/src/schemas/match.schema.ts
++++ b/packages/shared/src/schemas/match.schema.ts
+@@ -3,11 +3,17 @@ import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from "../constants/pagination";
+ 
+ // Civil date/time in Paris, never an ISO instant or a fixed UTC offset.
+ const MATCH_TIME_ZONE = "Europe/Paris" as const;
++
+ const matchStatusSchema = z.enum(["SCHEDULED", "IN_PROGRESS", "COMPLETED"]);
++
+ const matchDateSchema = z.iso.date();
++
+ const matchStartTimeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "L'heure doit être au format HH:mm");
++
+ const matchStadiumSchema = z.string().trim().min(1).max(150);
++
+ const matchVersionSchema = z.number().int().min(0).max(2_147_483_647);
++
+ const matchScoreSchema = z.number().int().min(0).max(2_147_483_647);
+ 
+ // Manual slot creation; automatic generation reuses the existing association input.
+@@ -23,10 +29,18 @@ const updateMatchInputSchema = z.object({
+   stadium: matchStadiumSchema.nullable().optional(),
+ }).strict().superRefine((input, context) => {
+   if (!Object.entries(input).some(([key, value]) => key !== "version" && value !== undefined)) {
+-    context.addIssue({ code: "custom", message: "Au moins un champ métier doit être modifié", path: ["request"] });
++    context.addIssue({
++      code: "custom",
++      message: "Au moins un champ métier doit être modifié",
++      path: ["request"],
++    });
+   }
+   if (input.homeTeamId != null && input.homeTeamId === input.awayTeamId) {
+-    context.addIssue({ code: "custom", message: "Les équipes doivent être différentes", path: ["awayTeamId"] });
++    context.addIssue({
++      code: "custom",
++      message: "Les équipes doivent être différentes",
++      path: ["awayTeamId"],
++    });
+   }
+ });
+ 
+@@ -39,9 +53,13 @@ const matchPublicationSchema = z.object({
+   matchDate: matchDateSchema,
+   startTime: matchStartTimeSchema,
+   stadium: matchStadiumSchema.nullable(),
+-}).strict().refine(({ homeTeamId, awayTeamId }) => homeTeamId !== awayTeamId, {
+-  message: "Les équipes doivent être différentes", path: ["awayTeamId"],
+-});
++}).strict().refine(
++  ({ homeTeamId, awayTeamId }) => homeTeamId !== awayTeamId,
++  {
++    message: "Les équipes doivent être différentes",
++    path: ["awayTeamId"],
++  },
++);
+ 
+ const publishMatchInputSchema = z.object({ version: matchVersionSchema }).strict();
+ // Structural contract only: this schema does not authorize a status transition.
+@@ -49,18 +67,23 @@ const updateMatchStatusInputSchema = z.object({
+   version: matchVersionSchema,
+   status: matchStatusSchema,
+ }).strict();
++
+ const updateMatchResultInputSchema = z.object({
+   version: matchVersionSchema,
+   homeScore: matchScoreSchema,
+   awayScore: matchScoreSchema,
+ }).strict();
++
+ const deleteMatchInputSchema = z.object({ version: matchVersionSchema }).strict();
+ 
+ const matchListQuerySchema = z.object({
+   page: z.coerce.number().int().min(1).default(DEFAULT_PAGE),
+-  pageSize: z.coerce.number().int().refine((value) => value === DEFAULT_PAGE_SIZE, {
+-    message: `pageSize must be ${DEFAULT_PAGE_SIZE}`,
+-  }).default(DEFAULT_PAGE_SIZE),
++  pageSize: z.coerce.number().int().refine(
++    (value) => value === DEFAULT_PAGE_SIZE,
++    {
++      message: `pageSize must be ${DEFAULT_PAGE_SIZE}`,
++    },
++  ).default(DEFAULT_PAGE_SIZE),
+   leagueId: z.string().uuid().optional(),
+   seasonId: z.string().uuid().optional(),
+   matchdayId: z.string().uuid().optional(),
+@@ -70,9 +93,13 @@ const matchListQuerySchema = z.object({
+   dateTo: matchDateSchema.optional(),
+   sortBy: z.enum(["matchDate"]).default("matchDate"),
+   sortOrder: z.enum(["asc", "desc"]).default("asc"),
+-}).strict().refine(({ dateFrom, dateTo }) => dateFrom === undefined || dateTo === undefined || dateTo >= dateFrom, {
+-  message: "La fin de période doit être postérieure ou égale au début", path: ["dateTo"],
+-});
++}).strict().refine(
++  ({ dateFrom, dateTo }) => dateFrom === undefined || dateTo === undefined || dateTo >= dateFrom,
++  {
++    message: "La fin de période doit être postérieure ou égale au début",
++    path: ["dateTo"],
++  },
++);
+ 
+ export {
+   MATCH_TIME_ZONE,
+diff --git a/apps/api/src/utils/assignmentPeriod.ts b/apps/api/src/utils/assignmentPeriod.ts
+index 346c84d..65f4cb6 100644
+--- a/apps/api/src/utils/assignmentPeriod.ts
++++ b/apps/api/src/utils/assignmentPeriod.ts
+@@ -1,26 +1,62 @@
+ import { parisDate } from "@lucarne/shared";
+ import { AppError } from "../errors/AppError";
+ 
+-type AssignmentPeriod = { id: string; joinedAt: Date; leftAt: Date | null };
++type AssignmentPeriod = {
++  id: string;
++  joinedAt: Date;
++  leftAt: Date | null;
++};
++
+ const assignmentDate = (date = new Date()) => new Date(parisDate(date));
+ const previousDay = (date: Date) => new Date(date.getTime() - 86_400_000);
++
+ const assertPeriod = (joinedAt: Date, leftAt: Date | null) => {
+-  if (leftAt !== null && leftAt <= joinedAt) throw new AppError(400, "ASSIGNMENT_INVALID_PERIOD", "La date de fin doit être postérieure à la date de début.");
++  if (leftAt !== null && leftAt <= joinedAt) {
++    throw new AppError(
++      400,
++      "ASSIGNMENT_INVALID_PERIOD",
++      "La date de fin doit être postérieure à la date de début.",
++    );
++  }
+ };
+-const overlaps = (a: Pick<AssignmentPeriod, "joinedAt" | "leftAt">, b: Pick<AssignmentPeriod, "joinedAt" | "leftAt">) =>
+-  (a.leftAt === null || b.joinedAt <= a.leftAt) && (b.leftAt === null || a.joinedAt <= b.leftAt);
++
++const overlaps = (
++  period: Pick<AssignmentPeriod, "joinedAt" | "leftAt">,
++  otherPeriod: Pick<AssignmentPeriod, "joinedAt" | "leftAt">,
++) =>
++  (period.leftAt === null || otherPeriod.joinedAt <= period.leftAt)
++  && (otherPeriod.leftAt === null || period.joinedAt <= otherPeriod.leftAt);
+ 
+ // Historical insertions never rewrite history. Present/future transfers may close
+ // the one open predecessor; dated periods are never silently shortened.
+-const prepareAssignment = (periods: AssignmentPeriod[], joinedAt: Date, leftAt: Date | null, date = assignmentDate()) => {
++const prepareAssignment = (
++  periods: AssignmentPeriod[],
++  joinedAt: Date,
++  leftAt: Date | null,
++  date = assignmentDate(),
++) => {
+   assertPeriod(joinedAt, leftAt);
+-  const predecessor = joinedAt >= date ? periods.find((period) => period.leftAt === null && period.joinedAt < joinedAt) : undefined;
++
++  const predecessor = joinedAt >= date
++    ? periods.find((period) => period.leftAt === null && period.joinedAt < joinedAt)
++    : undefined;
+   const closure = predecessor ? previousDay(joinedAt) : null;
+-  if (predecessor && closure) assertPeriod(predecessor.joinedAt, closure);
++
++  if (predecessor && closure) {
++    assertPeriod(predecessor.joinedAt, closure);
++  }
++
+   if (periods.some((period) => overlaps(
+     period.id === predecessor?.id ? { ...period, leftAt: closure } : period,
+     { joinedAt, leftAt },
+-  ))) throw new AppError(409, "ASSIGNMENT_PERIOD_CONFLICT", "Cette période chevauche une autre affectation.");
++  ))) {
++    throw new AppError(
++      409,
++      "ASSIGNMENT_PERIOD_CONFLICT",
++      "Cette période chevauche une autre affectation.",
++    );
++  }
++
+   return predecessor && closure ? { id: predecessor.id, leftAt: closure } : null;
+ };
+ 
+diff --git a/apps/api/src/middlewares/loginRateLimit.ts b/apps/api/src/middlewares/loginRateLimit.ts
+index 32215be..7963290 100644
+--- a/apps/api/src/middlewares/loginRateLimit.ts
++++ b/apps/api/src/middlewares/loginRateLimit.ts
+@@ -2,39 +2,54 @@ import type { RequestHandler } from "express";
+ import { environment } from "../config/environment";
+ import { AppError } from "../errors/AppError";
+ 
+-interface Attempt { count: number; resetAt: number; }
+-const attempts = new Map<string, Attempt>();
++interface LoginAttempt {
++  count: number;
++  resetAt: number;
++}
++
++const loginAttempts = new Map<string, LoginAttempt>();
+ 
+-function loginKey(ip: string, email: unknown): string {
++function getLoginAttemptKey(ip: string, email: unknown): string {
+   const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
++
+   return `${ip}:${normalizedEmail}`;
+ }
+ 
+ const loginRateLimit: RequestHandler = (request, response, next) => {
+-  if (environment.loginRateLimit.maxAttempts === 0) return next();
++  if (environment.loginRateLimit.maxAttempts === 0) {
++    return next();
++  }
++
+   const now = Date.now();
+   const body = request.body as unknown;
+   const email = typeof body === "object" && body != null && "email" in body
+     ? (body as { email?: unknown }).email
+     : undefined;
+-  const key = loginKey(request.ip ?? "unknown", email);
+-  const current = attempts.get(key);
++  const key = getLoginAttemptKey(request.ip ?? "unknown", email);
++  const current = loginAttempts.get(key);
+   const attempt = current == null || current.resetAt <= now
+     ? { count: 0, resetAt: now + environment.loginRateLimit.windowMs }
+     : current;
+ 
+   if (attempt.count >= environment.loginRateLimit.maxAttempts) {
+     const retryAfter = Math.max(1, Math.ceil((attempt.resetAt - now) / 1000));
++
+     response.setHeader("Retry-After", String(retryAfter));
+-    next(new AppError(429, "TOO_MANY_LOGIN_ATTEMPTS", "Too many login attempts. Please try again later."));
++    next(new AppError(
++      429,
++      "TOO_MANY_LOGIN_ATTEMPTS",
++      "Too many login attempts. Please try again later.",
++    ));
+     return;
+   }
+ 
+   attempt.count += 1;
+-  attempts.set(key, attempt);
++  loginAttempts.set(key, attempt);
+   next();
+ };
+ 
+-function clearLoginRateLimit(): void { attempts.clear(); }
++function clearLoginRateLimit(): void {
++  loginAttempts.clear();
++}
+ 
+ export { clearLoginRateLimit, loginRateLimit };
+diff --git a/apps/api/src/features/staff/staff.service.ts b/apps/api/src/features/staff/staff.service.ts
+index b9cfd19..164ce19 100644
+--- a/apps/api/src/features/staff/staff.service.ts
++++ b/apps/api/src/features/staff/staff.service.ts
+@@ -2,29 +2,57 @@ import type { UpdateStaffAssignmentInput } from "@lucarne/shared";
+ import { updateStaffAssignment } from "./staff.repository";
+ import type { AppRole } from "../../auth/appRole";
+ import { APP_ROLES } from "../../auth/appRole";
+-import type { CreateStaffAssignmentInput, CreateStaffMemberInput, ListStaffMembersParams, StaffMember, StaffMemberDetail, UpdateStaffMemberInput } from "@lucarne/shared";
++import type {
++  CreateStaffAssignmentInput,
++  CreateStaffMemberInput,
++  ListStaffMembersParams,
++  StaffMember,
++  StaffMemberDetail,
++  UpdateStaffMemberInput,
++} from "@lucarne/shared";
+ import { AppError } from "../../errors/AppError";
+-import { assignmentState, utcDate } from "./staff.assignment";
+-import { activateStaffMember, createStaffAssignment, createStaffMember, deactivateStaffMember, deleteStaffMember, findStaffMemberById, hasProtectedDependencies, listStaffMembers, updateStaffMemberOptimistic } from "./staff.repository";
++import { assignmentState, assignmentDate } from "./staff.assignment";
++import {
++  activateStaffMember,
++  createStaffAssignment,
++  createStaffMember,
++  deactivateStaffMember,
++  deleteStaffMember,
++  findStaffMemberById,
++  hasProtectedDependencies,
++  listStaffMembers,
++  updateStaffMemberOptimistic,
++} from "./staff.repository";
+ import type { StaffMemberRecord } from "./staff.repository";
+ 
+-const toStaffMemberSummary = (staffMember: StaffMemberRecord, date = utcDate()): StaffMember => {
++const toStaffMemberSummary = (staffMember: StaffMemberRecord, date = assignmentDate()): StaffMember => {
+   const current = staffMember.isActive
+     ? staffMember.teamStaffMembers.find((assignment) => assignmentState(assignment, date) === "CURRENT")
+     : undefined;
++
+   return {
+-    id: staffMember.id, firstName: staffMember.firstName, lastName: staffMember.lastName,
+-    nationality: staffMember.nationality, pictureUrl: staffMember.pictureUrl,
+-    isActive: staffMember.isActive, version: staffMember.version, createdAt: staffMember.createdAt.toISOString(),
+-    activeTeam: current?.team ?? null, isSelectable: staffMember.isActive && current != null,
++    id: staffMember.id,
++    firstName: staffMember.firstName,
++    lastName: staffMember.lastName,
++    nationality: staffMember.nationality,
++    pictureUrl: staffMember.pictureUrl,
++    isActive: staffMember.isActive,
++    version: staffMember.version,
++    createdAt: staffMember.createdAt.toISOString(),
++    activeTeam: current?.team ?? null,
++    isSelectable: staffMember.isActive && current != null,
+   };
+ };
++
+ const toStaffMemberDetail = (staffMember: StaffMemberRecord): StaffMemberDetail => {
+-  const date = utcDate();
++  const date = assignmentDate();
++
+   return {
+     ...toStaffMemberSummary(staffMember, date),
+     assignments: staffMember.teamStaffMembers.map((assignment) => ({
+-      id: assignment.id, team: assignment.team, jobTitle: assignment.jobTitle,
++      id: assignment.id,
++      team: assignment.team,
++      jobTitle: assignment.jobTitle,
+       joinedAt: assignment.joinedAt.toISOString().slice(0, 10),
+       leftAt: assignment.leftAt?.toISOString().slice(0, 10) ?? null,
+       state: assignmentState(assignment, date),
+@@ -33,31 +61,60 @@ const toStaffMemberDetail = (staffMember: StaffMemberRecord): StaffMemberDetail
+ };
+ 
+ const createStaffMemberService = async (input: CreateStaffMemberInput) => toStaffMemberDetail(await createStaffMember(input));
++
+ const createStaffAssignmentService = async (id: string, input: CreateStaffAssignmentInput) => toStaffMemberDetail(await createStaffAssignment(id, input));
++
+ const getStaffMemberService = async (id: string) => {
+   const staffMember = await findStaffMemberById(id);
+-  if (!staffMember) throw new AppError(404, "RESOURCE_NOT_FOUND", "Membre du staff introuvable");
++
++  if (!staffMember)
++    throw new AppError(404, "RESOURCE_NOT_FOUND", "Membre du staff introuvable");
+   return toStaffMemberDetail(staffMember);
+ };
++
+ const listStaffMembersService = async (params: ListStaffMembersParams) => {
+   const result = await listStaffMembers(params);
+-  const date = utcDate();
+-  return { ...result, data: result.data.map((staffMember) => toStaffMemberSummary(staffMember, date)) };
++  const date = assignmentDate();
++  return {
++    ...result,
++    data: result.data.map((staffMember) => toStaffMemberSummary(staffMember, date)),
++  };
+ };
++
+ const updateStaffMemberService = async (id: string, input: UpdateStaffMemberInput) => {
+   const result = await updateStaffMemberOptimistic(id, input);
+   if (result) return toStaffMemberDetail(result);
+   await getStaffMemberService(id);
+   throw new AppError(409, "RESOURCE_VERSION_CONFLICT", "Le membre du staff a été modifié par un autre utilisateur. Rechargez la fiche.");
+ };
++
+ const deactivateStaffMemberService = async (id: string) => toStaffMemberDetail(await deactivateStaffMember(id));
++
+ const activateStaffMemberService = async (id: string) => toStaffMemberDetail(await activateStaffMember(id));
++
+ const deleteStaffMemberService = async (id: string, role: AppRole) => {
+-  if (role !== APP_ROLES.ADMIN) throw new AppError(403, "INSUFFICIENT_ROLE", "Seuls les administrateurs peuvent supprimer un membre du staff");
++  if (role !== APP_ROLES.ADMIN)
++    throw new AppError(403, "INSUFFICIENT_ROLE", "Seuls les administrateurs peuvent supprimer un membre du staff");
+   await getStaffMemberService(id);
+-  if (await hasProtectedDependencies(id)) throw new AppError(409, "PROTECTED_DEPENDENCIES", "Suppression bloquée : le membre du staff possède des affectations protégées");
++  if (await hasProtectedDependencies(id))
++    throw new AppError(409, "PROTECTED_DEPENDENCIES", "Suppression bloquée : le membre du staff possède des affectations protégées");
+   return deleteStaffMember(id);
+ };
+ 
+-const updateStaffAssignmentService = async (id: string, assignmentId: string, input: UpdateStaffAssignmentInput) => toStaffMemberDetail(await updateStaffAssignment(id, assignmentId, input));
+-export { updateStaffAssignmentService, activateStaffMemberService, createStaffAssignmentService, createStaffMemberService, deactivateStaffMemberService, deleteStaffMemberService, getStaffMemberService, listStaffMembersService, updateStaffMemberService };
++const updateStaffAssignmentService = async (
++  id: string,
++  assignmentId: string,
++  input: UpdateStaffAssignmentInput,
++) => toStaffMemberDetail(await updateStaffAssignment(id, assignmentId, input));
++
++export {
++  updateStaffAssignmentService,
++  activateStaffMemberService,
++  createStaffAssignmentService,
++  createStaffMemberService,
++  deactivateStaffMemberService,
++  deleteStaffMemberService,
++  getStaffMemberService,
++  listStaffMembersService,
++  updateStaffMemberService,
++};
+diff --git a/apps/api/src/features/staff/staff.repository.ts b/apps/api/src/features/staff/staff.repository.ts
+index b92b579..1b511c4 100644
+--- a/apps/api/src/features/staff/staff.repository.ts
++++ b/apps/api/src/features/staff/staff.repository.ts
+@@ -1,27 +1,46 @@
+-import { assertPeriod, overlaps, prepareAssignment, previousDay } from "../../utils/assignmentPeriod";
++import {
++  assertPeriod,
++  overlaps,
++  prepareAssignment,
++  previousDay,
++} from "../../utils/assignmentPeriod";
+ import type { UpdateStaffAssignmentInput } from "@lucarne/shared";
+ import prisma from "../../../database/prisma";
+ import type { Prisma } from "../../generated/prisma/client";
+-import type { CreateStaffAssignmentInput, CreateStaffMemberInput, ListStaffMembersParams, UpdateStaffMemberInput } from "@lucarne/shared";
++import type {
++  CreateStaffAssignmentInput,
++  CreateStaffMemberInput,
++  ListStaffMembersParams,
++  UpdateStaffMemberInput,
++} from "@lucarne/shared";
+ import { AppError } from "../../errors/AppError";
+-import { currentAssignmentWhere, plannedAssignmentWhere, utcDate } from "./staff.assignment";
++import { currentAssignmentWhere, plannedAssignmentWhere, assignmentDate } from "./staff.assignment";
+ 
+ const assignmentSelect = {
+-  id: true, jobTitle: true, joinedAt: true, leftAt: true,
++  id: true,
++  jobTitle: true,
++  joinedAt: true,
++  leftAt: true,
+   team: { select: { id: true, name: true } },
+ } satisfies Prisma.TeamStaffMemberSelect;
++
+ const staffMemberListInclude = (date: Date) => ({
+   teamStaffMembers: { where: currentAssignmentWhere(date), select: assignmentSelect },
+ } satisfies Prisma.StaffMemberInclude);
++
+ const staffMemberDetailInclude = {
+-  teamStaffMembers: { select: assignmentSelect, orderBy: [{ joinedAt: "desc" }, { id: "asc" }] },
++  teamStaffMembers: {
++    select: assignmentSelect,
++    orderBy: [{ joinedAt: "desc" }, { id: "asc" }],
++  },
+ } satisfies Prisma.StaffMemberInclude;
+ 
+ type StaffMemberRecord = Prisma.StaffMemberGetPayload<{ include: typeof staffMemberDetailInclude }>;
++
+ const findStaffMemberById = (id: string) => prisma.staffMember.findUnique({ where: { id }, include: staffMemberDetailInclude });
+ 
+ const listStaffMembers = async (params: ListStaffMembersParams) => {
+-  const date = utcDate();
++  const date = assignmentDate();
+   const searchTerms = params.search?.split(/\s+/).filter(Boolean) ?? [];
+   const where: Prisma.StaffMemberWhereInput = {
+     AND: [
+@@ -30,7 +49,10 @@ const listStaffMembers = async (params: ListStaffMembersParams) => {
+         { lastName: { contains: params.search, mode: "insensitive" as const } },
+         ...(searchTerms.length > 1 ? [{ AND: [
+           { firstName: { contains: searchTerms[0], mode: "insensitive" as const } },
+-          { lastName: { contains: searchTerms.slice(1).join(" "), mode: "insensitive" as const } },
++          { lastName: {
++            contains: searchTerms.slice(1).join(" "),
++            mode: "insensitive" as const,
++          } },
+         ] }] : []),
+       ] }] : []),
+       ...(params.status && params.status !== "ALL" ? [{ isActive: params.status === "ACTIVE" }] : []),
+@@ -41,14 +63,19 @@ const listStaffMembers = async (params: ListStaffMembersParams) => {
+           team: { name: { contains: params.teamName, mode: "insensitive" as const } },
+         } },
+       }] : []),
+-      ...(params.selectable === true ? [{ isActive: true, teamStaffMembers: { some: currentAssignmentWhere(date) } }] : []),
++      ...(params.selectable === true ? [{
++        isActive: true,
++        teamStaffMembers: { some: currentAssignmentWhere(date) },
++      }] : []),
+     ],
+   };
+   const [data, totalItems] = await Promise.all([
+     prisma.staffMember.findMany({
+-      where, include: staffMemberListInclude(date),
++      where,
++      include: staffMemberListInclude(date),
+       orderBy: [{ [params.sortBy ?? "lastName"]: params.sortOrder ?? "asc" }, { id: "asc" }],
+-      skip: ((params.page ?? 1) - 1) * (params.pageSize ?? 20), take: params.pageSize ?? 20,
++      skip: ((params.page ?? 1) - 1) * (params.pageSize ?? 20),
++      take: params.pageSize ?? 20,
+     }),
+     prisma.staffMember.count({ where }),
+   ]);
+@@ -60,17 +87,26 @@ const assertActiveTeam = async (tx: Prisma.TransactionClient, teamId: string, le
+     SELECT is_active FROM team WHERE id = ${teamId}::uuid FOR UPDATE
+   `;
+   if (!teams[0]) throw new AppError(404, "TEAM_NOT_FOUND", "Équipe introuvable");
+-  if (!teams[0].is_active && !(leftAt && new Date(leftAt) < utcDate())) throw new AppError(409, "TEAM_INACTIVE", "L’équipe est inactive");
++  if (!teams[0].is_active && !(leftAt && new Date(leftAt) < assignmentDate()))
++    throw new AppError(409, "TEAM_INACTIVE", "L’équipe est inactive");
+ };
+ 
+ const createStaffMember = (input: CreateStaffMemberInput) => prisma.$transaction(async (tx) => {
+   if (input.teamId) await assertActiveTeam(tx, input.teamId, input.leftAt);
+   const staffMember = await tx.staffMember.create({ data: {
+-    firstName: input.firstName.trim(), lastName: input.lastName.trim(), nationality: input.nationality.trim(), pictureUrl: input.pictureUrl ?? null,
+-  } });
+-  if (input.teamId) await tx.teamStaffMember.create({ data: {
+-    staffMemberId: staffMember.id, teamId: input.teamId, jobTitle: input.jobTitle!.trim(), joinedAt: new Date(input.joinedAt!), leftAt: input.leftAt ? new Date(input.leftAt) : null,
++    firstName: input.firstName.trim(),
++    lastName: input.lastName.trim(),
++    nationality: input.nationality.trim(),
++    pictureUrl: input.pictureUrl ?? null,
+   } });
++  if (input.teamId)
++    await tx.teamStaffMember.create({ data: {
++      staffMemberId: staffMember.id,
++      teamId: input.teamId,
++      jobTitle: input.jobTitle!.trim(),
++      joinedAt: new Date(input.joinedAt!),
++      leftAt: input.leftAt ? new Date(input.leftAt) : null,
++    } });
+   return tx.staffMember.findUniqueOrThrow({ where: { id: staffMember.id }, include: staffMemberDetailInclude });
+ });
+ 
+@@ -82,11 +118,22 @@ const createStaffAssignment = (staffMemberId: string, input: CreateStaffAssignme
+   if (!people[0]) throw new AppError(404, "RESOURCE_NOT_FOUND", "Personne introuvable");
+   const teams = await tx.$queryRaw<{ is_active: boolean }[]>`SELECT is_active FROM team WHERE id = ${input.teamId}::uuid FOR UPDATE`;
+   if (!teams[0]) throw new AppError(404, "TEAM_NOT_FOUND", "Équipe introuvable");
+-  if (!teams[0].is_active && !(leftAt && leftAt < utcDate())) throw new AppError(409, "TEAM_INACTIVE", "Une équipe inactive ne peut recevoir qu’une affectation historique.");
+-  const periods = await tx.teamStaffMember.findMany({ where: { staffMemberId }, select: { id: true, joinedAt: true, leftAt: true } });
++  if (!teams[0].is_active && !(leftAt && leftAt < assignmentDate()))
++    throw new AppError(409, "TEAM_INACTIVE", "Une équipe inactive ne peut recevoir qu’une affectation historique.");
++  const periods = await tx.teamStaffMember.findMany({
++    where: { staffMemberId },
++    select: { id: true, joinedAt: true, leftAt: true },
++  });
+   const closure = prepareAssignment(periods, joinedAt, leftAt);
+-  if (closure) await tx.teamStaffMember.update({ where: { id: closure.id }, data: { leftAt: closure.leftAt } });
+-  await tx.teamStaffMember.create({ data: { staffMemberId, teamId: input.teamId, joinedAt, leftAt, jobTitle: input.jobTitle.trim() } });
++  if (closure)
++    await tx.teamStaffMember.update({ where: { id: closure.id }, data: { leftAt: closure.leftAt } });
++  await tx.teamStaffMember.create({ data: {
++    staffMemberId,
++    teamId: input.teamId,
++    joinedAt,
++    leftAt,
++    jobTitle: input.jobTitle.trim(),
++  } });
+   await tx.staffMember.update({ where: { id: staffMemberId }, data: { version: { increment: 1 } } });
+   return tx.staffMember.findUniqueOrThrow({ where: { id: staffMemberId }, include: staffMemberDetailInclude });
+ });
+@@ -100,9 +147,11 @@ const updateStaffAssignment = (staffMemberId: string, assignmentId: string, inpu
+   const joinedAt = new Date(input.joinedAt);
+   const leftAt = input.leftAt === undefined ? assignment.leftAt : input.leftAt ? new Date(input.leftAt) : null;
+   assertPeriod(joinedAt, leftAt);
+-  if (periods.some((period) => period.id !== assignmentId && overlaps(period, { joinedAt, leftAt }))) throw new AppError(409, "ASSIGNMENT_PERIOD_CONFLICT", "Cette période chevauche une autre affectation.");
++  if (periods.some((period) => period.id !== assignmentId && overlaps(period, { joinedAt, leftAt })))
++    throw new AppError(409, "ASSIGNMENT_PERIOD_CONFLICT", "Cette période chevauche une autre affectation.");
+   const teams = await tx.$queryRaw<{ is_active: boolean }[]>`SELECT is_active FROM team WHERE id = ${assignment.teamId}::uuid FOR UPDATE`;
+-  if (!teams[0]?.is_active && !(leftAt && leftAt < utcDate())) throw new AppError(409, "TEAM_INACTIVE", "Une équipe inactive ne peut recevoir qu’une affectation historique.");
++  if (!teams[0]?.is_active && !(leftAt && leftAt < assignmentDate()))
++    throw new AppError(409, "TEAM_INACTIVE", "Une équipe inactive ne peut recevoir qu’une affectation historique.");
+   await tx.teamStaffMember.update({ where: { id: assignmentId }, data: { joinedAt, leftAt } });
+   await tx.staffMember.update({ where: { id: staffMemberId }, data: { version: { increment: 1 } } });
+   return tx.staffMember.findUniqueOrThrow({ where: { id: staffMemberId }, include: staffMemberDetailInclude });
+@@ -112,27 +161,58 @@ const closeCurrentAssignment = async (tx: Prisma.TransactionClient, id: string,
+   const periods = await tx.teamStaffMember.findMany({ where: { staffMemberId: id, ...currentAssignmentWhere(date) } });
+   const leftAt = previousDay(date);
+   for (const period of periods) assertPeriod(period.joinedAt, leftAt);
+-  return tx.teamStaffMember.updateMany({ where: { id: { in: periods.map((period) => period.id) } }, data: { leftAt } });
++  return tx.teamStaffMember.updateMany({
++    where: { id: { in: periods.map((period) => period.id) } },
++    data: { leftAt },
++  });
+ };
+ 
+ const updateStaffMemberOptimistic = (id: string, changes: UpdateStaffMemberInput) => prisma.$transaction(async (tx) => {
+   const { version, ...fields } = changes;
+-  const result = await tx.staffMember.updateManyAndReturn({ where: { id, version }, data: { ...fields, version: { increment: 1 } } });
++  const result = await tx.staffMember.updateManyAndReturn({
++    where: { id, version },
++    data: { ...fields, version: { increment: 1 } },
++  });
+   if (!result[0]) return null;
+-  if (changes.isActive === false) await closeCurrentAssignment(tx, id, utcDate());
++  if (changes.isActive === false) await closeCurrentAssignment(tx, id, assignmentDate());
+   return tx.staffMember.findUniqueOrThrow({ where: { id }, include: staffMemberDetailInclude });
+ });
++
+ const deactivateStaffMember = (id: string) => prisma.$transaction(async (tx) => {
+   const rows = await tx.$queryRaw<{ id: string }[]>`SELECT id FROM staff_member WHERE id = ${id}::uuid FOR UPDATE`;
+-  if (!rows[0]) throw new AppError(404, "RESOURCE_NOT_FOUND", "Membre du staff introuvable");
++  if (!rows[0])
++    throw new AppError(404, "RESOURCE_NOT_FOUND", "Membre du staff introuvable");
+   const staffMember = await tx.staffMember.findUniqueOrThrow({ where: { id } });
+-  const closed = await closeCurrentAssignment(tx, id, utcDate());
+-  if (staffMember.isActive || closed.count > 0) await tx.staffMember.update({ where: { id }, data: { isActive: false, version: { increment: 1 } } });
++  const closed = await closeCurrentAssignment(tx, id, assignmentDate());
++  if (staffMember.isActive || closed.count > 0)
++    await tx.staffMember.update({
++      where: { id },
++      data: { isActive: false, version: { increment: 1 } },
++    });
+   return tx.staffMember.findUniqueOrThrow({ where: { id }, include: staffMemberDetailInclude });
+ });
+-const activateStaffMember = (id: string) => prisma.staffMember.update({ where: { id }, data: { isActive: true, version: { increment: 1 } }, include: staffMemberDetailInclude });
++
++const activateStaffMember = (id: string) => prisma.staffMember.update({
++  where: { id },
++  data: { isActive: true, version: { increment: 1 } },
++  include: staffMemberDetailInclude,
++});
++
+ const deleteStaffMember = (id: string) => prisma.staffMember.delete({ where: { id } });
++
+ const hasProtectedDependencies = (id: string) => prisma.teamStaffMember.count({ where: { staffMemberId: id } });
+ 
+-export { updateStaffAssignment, activateStaffMember, createStaffAssignment, createStaffMember, deactivateStaffMember, deleteStaffMember, findStaffMemberById, hasProtectedDependencies, listStaffMembers, updateStaffMemberOptimistic };
++export {
++  updateStaffAssignment,
++  activateStaffMember,
++  createStaffAssignment,
++  createStaffMember,
++  deactivateStaffMember,
++  deleteStaffMember,
++  findStaffMemberById,
++  hasProtectedDependencies,
++  listStaffMembers,
++  updateStaffMemberOptimistic,
++};
++
+ export type { StaffMemberRecord };
+diff --git a/apps/api/src/features/staff/staff.assignment.ts b/apps/api/src/features/staff/staff.assignment.ts
+index 299f903..d7206ff 100644
+--- a/apps/api/src/features/staff/staff.assignment.ts
++++ b/apps/api/src/features/staff/staff.assignment.ts
+@@ -1,14 +1,21 @@
+ import type { Prisma } from "../../generated/prisma/client";
+ import { assignmentDate } from "../../utils/assignmentPeriod";
+ 
+-// Kept as an alias for existing consumers; today now follows Europe/Paris.
+-const utcDate = assignmentDate;
+ const currentAssignmentWhere = (date = assignmentDate()): Prisma.TeamStaffMemberWhereInput => ({
+-  joinedAt: { lte: date }, OR: [{ leftAt: null }, { leftAt: { gte: date } }],
++  joinedAt: { lte: date },
++  OR: [{ leftAt: null }, { leftAt: { gte: date } }],
+ });
++
+ const plannedAssignmentWhere = (date = assignmentDate()): Prisma.TeamStaffMemberWhereInput => ({ joinedAt: { gt: date } });
++
+ const assignmentState = (assignment: { joinedAt: Date; leftAt: Date | null }, date = assignmentDate()): "HISTORICAL" | "CURRENT" | "PLANNED" => {
+   if (assignment.leftAt !== null && assignment.leftAt < date) return "HISTORICAL";
+   return assignment.joinedAt > date ? "PLANNED" : "CURRENT";
+ };
+-export { assignmentState, currentAssignmentWhere, plannedAssignmentWhere, utcDate };
++
++export {
++  assignmentState,
++  currentAssignmentWhere,
++  plannedAssignmentWhere,
++  assignmentDate,
++};
+diff --git a/apps/api/src/errors/mapErrorToAppError.ts b/apps/api/src/errors/mapErrorToAppError.ts
+index 0b5ba04..a054172 100644
+--- a/apps/api/src/errors/mapErrorToAppError.ts
++++ b/apps/api/src/errors/mapErrorToAppError.ts
+@@ -58,19 +58,48 @@ const prismaErrorMap: Record<string, ErrorDefinition> = {
+ 
+ // Stable SQLSTATEs emitted by MATCH triggers. Never parse raw database messages.
+ const matchDatabaseErrorMap: Record<string, ErrorDefinition> = {
+-  LM001: { statusCode: 409, code: "MATCH_TEAM_MATCHDAY_CONFLICT", message: "Une équipe participe déjà à un match de cette journée." },
+-  LM002: { statusCode: 409, code: "MATCH_TEAM_NOT_REGISTERED", message: "Une équipe n'est pas inscrite dans cette édition." },
+-  LM003: { statusCode: 409, code: "MATCH_EDITION_CHANGE_FORBIDDEN", message: "Le déplacement doit rester dans la même édition ligue/saison." },
+-  LM004: { statusCode: 409, code: "MATCH_PUBLICATION_INCOMPLETE", message: "La publication exige deux équipes, une date et une heure." },
+-  LM005: { statusCode: 409, code: "MATCH_RESULT_REQUIRED", message: "Deux scores sont requis pour terminer le match." },
+-  LM006: { statusCode: 400, code: "VALIDATION_ERROR", message: "Les informations du match sont invalides." },
+-  LM007: { statusCode: 404, code: "RESOURCE_NOT_FOUND", message: "La journée est introuvable." },
++  LM001: {
++    statusCode: 409,
++    code: "MATCH_TEAM_MATCHDAY_CONFLICT",
++    message: "Une équipe participe déjà à un match de cette journée.",
++  },
++  LM002: {
++    statusCode: 409,
++    code: "MATCH_TEAM_NOT_REGISTERED",
++    message: "Une équipe n'est pas inscrite dans cette édition.",
++  },
++  LM003: {
++    statusCode: 409,
++    code: "MATCH_EDITION_CHANGE_FORBIDDEN",
++    message: "Le déplacement doit rester dans la même édition ligue/saison.",
++  },
++  LM004: {
++    statusCode: 409,
++    code: "MATCH_PUBLICATION_INCOMPLETE",
++    message: "La publication exige deux équipes, une date et une heure.",
++  },
++  LM005: {
++    statusCode: 409,
++    code: "MATCH_RESULT_REQUIRED",
++    message: "Deux scores sont requis pour terminer le match.",
++  },
++  LM006: {
++    statusCode: 400,
++    code: "VALIDATION_ERROR",
++    message: "Les informations du match sont invalides.",
++  },
++  LM007: {
++    statusCode: 404,
++    code: "RESOURCE_NOT_FOUND",
++    message: "La journée est introuvable.",
++  },
+ };
+ 
+ const getPostgresSqlState = (error: Prisma.PrismaClientKnownRequestError): string | undefined => {
+   if (typeof error.meta?.code === "string") return error.meta.code;
+   const adapter = error.meta?.driverAdapterError;
+-  if (adapter == null || typeof adapter !== "object" || !("cause" in adapter)) return undefined;
++  if (adapter == null || typeof adapter !== "object" || !("cause" in adapter))
++    return undefined;
+   const cause = adapter.cause;
+   if (cause == null || typeof cause !== "object" || !("code" in cause)) return undefined;
+   return typeof cause.code === "string" ? cause.code : undefined;
+diff --git a/apps/web/src/hooks/useStaff.ts b/apps/web/src/hooks/useStaff.ts
+index 6b5665c..a5c63ef 100644
+--- a/apps/web/src/hooks/useStaff.ts
++++ b/apps/web/src/hooks/useStaff.ts
+@@ -1,24 +1,84 @@
+ import { teamKeys } from "../features/team/teamKeys";
+ import { updateStaffAssignment } from "../services/staff.service";
+-import type { UpdateStaffAssignmentInput, CreateStaffAssignmentInput, CreateStaffMemberInput, ListStaffMembersParams, StaffMemberDetail, UpdateStaffMemberInput } from "@lucarne/shared";
++import type {
++  UpdateStaffAssignmentInput,
++  CreateStaffAssignmentInput,
++  CreateStaffMemberInput,
++  ListStaffMembersParams,
++  StaffMemberDetail,
++  UpdateStaffMemberInput,
++} from "@lucarne/shared";
+ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+-import { activateStaffMember, createStaffAssignment, createStaffMember, deactivateStaffMember, deleteStaffMember, getStaffMember, listStaffMembers, updateStaffMember } from "../services/staff.service";
++import {
++  activateStaffMember,
++  createStaffAssignment,
++  createStaffMember,
++  deactivateStaffMember,
++  deleteStaffMember,
++  getStaffMember,
++  listStaffMembers,
++  updateStaffMember,
++} from "../services/staff.service";
+ import { staffKeys } from "../features/staff/staffKeys";
+ 
+-export const useStaffMemberList = (params: ListStaffMembersParams) => useQuery({ queryKey: staffKeys.list(params), queryFn: () => listStaffMembers(params), retry: false });
+-export const useStaffMemberDetail = (id: string) => useQuery({ queryKey: staffKeys.detail(id), queryFn: () => getStaffMember(id), enabled: id !== "", retry: false });
++export const useStaffMemberList = (params: ListStaffMembersParams) => useQuery({
++  queryKey: staffKeys.list(params),
++  queryFn: () => listStaffMembers(params),
++  retry: false,
++});
++
++export const useStaffMemberDetail = (id: string) => useQuery({
++  queryKey: staffKeys.detail(id),
++  queryFn: () => getStaffMember(id),
++  enabled: id !== "",
++  retry: false,
++});
++
+ const useStaffMutation = <TVariables>(mutationFn: (variables: TVariables) => Promise<StaffMemberDetail>) => {
+   const queryClient = useQueryClient();
+-  return useMutation<StaffMemberDetail, Error, TVariables>({ mutationFn, onSuccess: async (staffMember) => { queryClient.setQueryData(staffKeys.detail(staffMember.id), staffMember); await queryClient.invalidateQueries({ queryKey: staffKeys.lists() }); await queryClient.invalidateQueries({ queryKey: teamKeys.rosters() }); }, retry: false });
++
++  return useMutation<StaffMemberDetail, Error, TVariables>({
++    mutationFn,
++    onSuccess: async (staffMember) => {
++      queryClient.setQueryData(staffKeys.detail(staffMember.id), staffMember);
++      await queryClient.invalidateQueries({ queryKey: staffKeys.lists() });
++      await queryClient.invalidateQueries({ queryKey: teamKeys.rosters() });
++    },
++    retry: false,
++  });
+ };
++
+ export const useCreateStaffMember = () => useStaffMutation<CreateStaffMemberInput>(createStaffMember);
+-export const useCreateStaffAssignment = () => useStaffMutation<{ id: string; input: CreateStaffAssignmentInput }>(({ id, input }) => createStaffAssignment(id, input));
+-export const useUpdateStaffMember = () => useStaffMutation<{ id: string; input: UpdateStaffMemberInput }>(({ id, input }) => updateStaffMember(id, input));
++
++export const useCreateStaffAssignment = () =>
++  useStaffMutation<{ id: string; input: CreateStaffAssignmentInput }>(
++    ({ id, input }) => createStaffAssignment(id, input),
++  );
++
++export const useUpdateStaffMember = () =>
++  useStaffMutation<{ id: string; input: UpdateStaffMemberInput }>(
++    ({ id, input }) => updateStaffMember(id, input),
++  );
++
+ export const useActivateStaffMember = () => useStaffMutation<string>(activateStaffMember);
++
+ export const useDeactivateStaffMember = () => useStaffMutation<string>(deactivateStaffMember);
++
+ export const useDeleteStaffMember = () => {
+   const queryClient = useQueryClient();
+-  return useMutation<void, Error, string>({ mutationFn: deleteStaffMember, onSuccess: async (_, id) => { queryClient.removeQueries({ queryKey: staffKeys.detail(id) }); await queryClient.invalidateQueries({ queryKey: staffKeys.lists() }); await queryClient.invalidateQueries({ queryKey: teamKeys.rosters() }); }, retry: false });
++
++  return useMutation<void, Error, string>({
++    mutationFn: deleteStaffMember,
++    onSuccess: async (_, id) => {
++      queryClient.removeQueries({ queryKey: staffKeys.detail(id) });
++      await queryClient.invalidateQueries({ queryKey: staffKeys.lists() });
++      await queryClient.invalidateQueries({ queryKey: teamKeys.rosters() });
++    },
++    retry: false,
++  });
+ };
+ 
+-export const useUpdateStaffAssignment = () => useStaffMutation<{ id: string; assignmentId: string; input: UpdateStaffAssignmentInput }>(({ id, assignmentId, input }) => updateStaffAssignment(id, assignmentId, input));
++export const useUpdateStaffAssignment = () =>
++  useStaffMutation<{ id: string; assignmentId: string; input: UpdateStaffAssignmentInput }>(
++    ({ id, assignmentId, input }) => updateStaffAssignment(id, assignmentId, input),
++  );
+diff --git a/apps/api/src/features/match/match.service.ts b/apps/api/src/features/match/match.service.ts
+index 0ca8fe6..0042e59 100644
+--- a/apps/api/src/features/match/match.service.ts
++++ b/apps/api/src/features/match/match.service.ts
+@@ -1,91 +1,197 @@
+-import { matchPublicationSchema, type CreateMatchInput, type DeleteMatchInput, type MatchListQuery, type PublishMatchInput, type UpdateMatchInput, type UpdateMatchResultInput, type UpdateMatchStatusInput } from "@lucarne/shared";
++import {
++  matchPublicationSchema,
++  type CreateMatchInput,
++  type DeleteMatchInput,
++  type MatchListQuery,
++  type PublishMatchInput,
++  type UpdateMatchInput,
++  type UpdateMatchResultInput,
++  type UpdateMatchStatusInput,
++} from "@lucarne/shared";
+ import { Prisma } from "../../generated/prisma/client";
+ import { AppError } from "../../errors/AppError";
+ import { getPostgresSqlState } from "../../errors/mapErrorToAppError";
+-import { createMatch, findMatch, findPublicMatch, listMatches, listPublicMatches, mutateMatch, type MatchRecord } from "./match.repository";
++import {
++  createMatch,
++  findMatch,
++  findPublicMatch,
++  listMatches,
++  listPublicMatches,
++  mutateMatch,
++  type MatchRecord,
++} from "./match.repository";
+ 
+-const programming = (match: MatchRecord) => ({
+-  matchdayId: match.matchdayId, homeTeamId: match.homeTeamId, awayTeamId: match.awayTeamId,
++const toMatchProgramming = (match: MatchRecord) => ({
++  matchdayId: match.matchdayId,
++  homeTeamId: match.homeTeamId,
++  awayTeamId: match.awayTeamId,
+   matchDate: match.matchDate?.toISOString().slice(0, 10) ?? null,
+   startTime: match.startTime?.toISOString().slice(11, 16) ?? null,
+   stadium: match.stadium,
+ });
+ 
+-const requireComplete = (values: unknown) => {
++const assertMatchPublicationComplete = (values: unknown) => {
+   if (!matchPublicationSchema.safeParse(values).success) {
+-    throw new AppError(409, "MATCH_PUBLICATION_INCOMPLETE", "Deux équipes distinctes, une date et une heure sont requises pour un match publié.");
++    throw new AppError(
++      409,
++      "MATCH_PUBLICATION_INCOMPLETE",
++      "Deux équipes distinctes, une date et une heure sont requises pour un match publié.",
++    );
+   }
+ };
+-const requirePublished = (match: MatchRecord) => {
+-  if (!match.isPublished) throw new AppError(409, "MATCH_STATUS_TRANSITION_FORBIDDEN", "Publiez le match avant de modifier son état ou ses scores.");
++
++const assertMatchPublished = (match: MatchRecord) => {
++  if (!match.isPublished) {
++    throw new AppError(
++      409,
++      "MATCH_STATUS_TRANSITION_FORBIDDEN",
++      "Publiez le match avant de modifier son état ou ses scores.",
++    );
++  }
+ };
+ 
+-const withConcurrencyError = async <T>(operation: () => Promise<T>): Promise<T> => {
+-  try { return await operation(); } catch (error) {
++const withMatchConcurrencyError = async <T>(operation: () => Promise<T>): Promise<T> => {
++  try {
++    return await operation();
++  } catch (error) {
+     if (error instanceof Prisma.PrismaClientKnownRequestError) {
+       const sqlState = getPostgresSqlState(error);
+-      if (error.code === "P2034" || ((error.code === "P2010" || error.code === "P2039") && (sqlState === "40001" || sqlState === "40P01"))) {
+-        throw new AppError(409, "RESOURCE_VERSION_CONFLICT", "Une modification concurrente est survenue. Rechargez le match avant de réessayer.");
++      if (
++        error.code === "P2034"
++        || ((error.code === "P2010" || error.code === "P2039")
++          && (sqlState === "40001" || sqlState === "40P01"))
++      ) {
++        throw new AppError(
++          409,
++          "RESOURCE_VERSION_CONFLICT",
++          "Une modification concurrente est survenue. Rechargez le match avant de réessayer.",
++        );
+       }
+     }
++
+     throw error;
+   }
+ };
+ 
+ const getMatchService = async (id: string) => {
+   const match = await findMatch(id);
+-  if (!match) throw new AppError(404, "RESOURCE_NOT_FOUND", "Match introuvable.");
++
++  if (!match) {
++    throw new AppError(404, "RESOURCE_NOT_FOUND", "Match introuvable.");
++  }
++
+   return match;
+ };
++
+ const listMatchesService = (query: MatchListQuery) => listMatches(query);
++
+ const listPublicMatchesService = (query: MatchListQuery) => listPublicMatches(query);
++
+ const getPublicMatchService = async (matchPublicId: string) => {
+   const match = await findPublicMatch(matchPublicId);
+-  if (!match) throw new AppError(404, "RESOURCE_NOT_FOUND", "Match introuvable.");
++
++  if (!match) {
++    throw new AppError(404, "RESOURCE_NOT_FOUND", "Match introuvable.");
++  }
++
+   return match;
+ };
++
+ const createMatchService = (input: CreateMatchInput) => createMatch(input.matchdayId);
+ 
+-const updateMatchService = (id: string, input: UpdateMatchInput) => withConcurrencyError(() => mutateMatch(id, input.version, (current) => {
+-  const { matchdayId, homeTeamId, awayTeamId, matchDate: date, startTime: time, stadium } = input;
+-  const changes = {
+-    ...(matchdayId !== undefined ? { matchdayId } : {}),
+-    ...(homeTeamId !== undefined ? { homeTeamId } : {}),
+-    ...(awayTeamId !== undefined ? { awayTeamId } : {}),
+-    ...(date !== undefined ? { matchDate: date } : {}),
+-    ...(time !== undefined ? { startTime: time } : {}),
+-    ...(stadium !== undefined ? { stadium } : {}),
+-  };
+-  const merged = { ...programming(current), ...changes };
+-  if (merged.homeTeamId && merged.homeTeamId === merged.awayTeamId) {
+-    throw new AppError(400, "VALIDATION_ERROR", "Les équipes domicile et extérieur doivent être distinctes.");
+-  }
+-  if (current.isPublished) requireComplete(merged);
+-  const { matchDate, startTime, ...otherChanges } = changes;
+-  return {
+-    ...otherChanges,
+-    ...(matchDate !== undefined ? { matchDate: matchDate === null ? null : new Date(`${matchDate}T00:00:00.000Z`) } : {}),
+-    ...(startTime !== undefined ? { startTime: startTime === null ? null : new Date(`1970-01-01T${startTime}:00.000Z`) } : {}),
+-  };
+-}));
+-
+-const publishMatchService = (id: string, input: PublishMatchInput) => withConcurrencyError(() => mutateMatch(id, input.version, (current) => {
+-  requireComplete(programming(current));
+-  return { isPublished: true };
+-}));
+-const updateMatchStatusService = (id: string, input: UpdateMatchStatusInput) => withConcurrencyError(() => mutateMatch(id, input.version, (current) => {
+-  requirePublished(current);
+-  if (input.status === "COMPLETED" && (current.homeScore === null || current.awayScore === null)) {
+-    throw new AppError(409, "MATCH_RESULT_REQUIRED", "Renseignez les deux scores avant de terminer le match.");
+-  }
+-  // Product decision: admins may correct status freely, including backwards
+-  // transitions and direct completion, once publication/result rules hold.
+-  return { status: input.status };
+-}));
+-const updateMatchResultService = (id: string, input: UpdateMatchResultInput) => withConcurrencyError(() => mutateMatch(id, input.version, (current) => {
+-  requirePublished(current);
+-  return { homeScore: input.homeScore, awayScore: input.awayScore };
+-}));
+-const deleteMatchService = (id: string, input: DeleteMatchInput) => withConcurrencyError(() => mutateMatch(id, input.version, () => ({ isActive: false })));
+-
+-export { createMatchService, deleteMatchService, getMatchService, getPublicMatchService, listMatchesService, listPublicMatchesService, programming, publishMatchService, updateMatchResultService, updateMatchService, updateMatchStatusService };
++const updateMatchService = (id: string, input: UpdateMatchInput) =>
++  withMatchConcurrencyError(() => mutateMatch(
++    id,
++    input.version,
++    (current) => {
++      const { matchdayId, homeTeamId, awayTeamId, matchDate: date, startTime: time, stadium } = input;
++      const changes = {
++        ...(matchdayId !== undefined ? { matchdayId } : {}),
++        ...(homeTeamId !== undefined ? { homeTeamId } : {}),
++        ...(awayTeamId !== undefined ? { awayTeamId } : {}),
++        ...(date !== undefined ? { matchDate: date } : {}),
++        ...(time !== undefined ? { startTime: time } : {}),
++        ...(stadium !== undefined ? { stadium } : {}),
++      };
++      const merged = { ...toMatchProgramming(current), ...changes };
++
++      if (merged.homeTeamId && merged.homeTeamId === merged.awayTeamId) {
++        throw new AppError(400, "VALIDATION_ERROR", "Les équipes domicile et extérieur doivent être distinctes.");
++      }
++      if (current.isPublished) {
++        assertMatchPublicationComplete(merged);
++      }
++
++      const { matchDate, startTime, ...otherChanges } = changes;
++
++      return {
++        ...otherChanges,
++        ...(matchDate !== undefined
++          ? { matchDate: matchDate === null ? null : new Date(`${matchDate}T00:00:00.000Z`) }
++          : {}),
++        ...(startTime !== undefined
++          ? { startTime: startTime === null ? null : new Date(`1970-01-01T${startTime}:00.000Z`) }
++          : {}),
++      };
++    },
++  ));
++
++const publishMatchService = (id: string, input: PublishMatchInput) =>
++  withMatchConcurrencyError(() => mutateMatch(
++    id,
++    input.version,
++    (current) => {
++      assertMatchPublicationComplete(toMatchProgramming(current));
++
++      return { isPublished: true };
++    },
++  ));
++
++const updateMatchStatusService = (id: string, input: UpdateMatchStatusInput) =>
++  withMatchConcurrencyError(() => mutateMatch(
++    id,
++    input.version,
++    (current) => {
++      assertMatchPublished(current);
++
++      if (input.status === "COMPLETED" && (current.homeScore === null || current.awayScore === null)) {
++        throw new AppError(
++          409,
++          "MATCH_RESULT_REQUIRED",
++          "Renseignez les deux scores avant de terminer le match.",
++        );
++      }
++
++      // Product decision: admins may correct status freely, including backwards
++      // transitions and direct completion, once publication/result rules hold.
++      return { status: input.status };
++    },
++  ));
++
++const updateMatchResultService = (id: string, input: UpdateMatchResultInput) =>
++  withMatchConcurrencyError(() => mutateMatch(
++    id,
++    input.version,
++    (current) => {
++      assertMatchPublished(current);
++
++      return { homeScore: input.homeScore, awayScore: input.awayScore };
++    },
++  ));
++
++const deleteMatchService = (id: string, input: DeleteMatchInput) =>
++  withMatchConcurrencyError(() => mutateMatch(id, input.version, () => ({ isActive: false })));
++
++export {
++  createMatchService,
++  deleteMatchService,
++  getMatchService,
++  getPublicMatchService,
++  listMatchesService,
++  listPublicMatchesService,
++  toMatchProgramming,
++  publishMatchService,
++  updateMatchResultService,
++  updateMatchService,
++  updateMatchStatusService,
++};
+diff --git a/apps/api/src/features/match/match.routes.ts b/apps/api/src/features/match/match.routes.ts
+index 75b0601..5d14672 100644
+--- a/apps/api/src/features/match/match.routes.ts
++++ b/apps/api/src/features/match/match.routes.ts
+@@ -2,22 +2,101 @@ import { Router } from "express";
+ import { authenticate } from "../../middlewares/authenticate";
+ import { requireRoles } from "../../middlewares/requireRoles";
+ import { validateRequest } from "../../middlewares/validateRequest";
+-import { createAdminMatch, deleteAdminMatch, getAdminMatch, getPublicMatch, listAdminMatches, listPublicMatchResponses, publishAdminMatch, updateAdminMatch, updateAdminMatchResult, updateAdminMatchStatus } from "./match.controller";
++import {
++  createAdminMatch,
++  deleteAdminMatch,
++  getAdminMatch,
++  getPublicMatch,
++  listAdminMatches,
++  listPublicMatchResponses,
++  publishAdminMatch,
++  updateAdminMatch,
++  updateAdminMatchResult,
++  updateAdminMatchStatus,
++} from "./match.controller";
+ import { MATCH_VIEW_ROLES, MATCH_WRITE_ROLES } from "./match.permissions";
+-import { createMatchInputSchema, deleteMatchInputSchema, matchIdParamsSchema, matchListQuerySchema, matchPublicIdParamsSchema, publishMatchInputSchema, updateMatchInputSchema, updateMatchResultInputSchema, updateMatchStatusInputSchema } from "./match.schema";
++import {
++  createMatchInputSchema,
++  deleteMatchInputSchema,
++  matchIdParamsSchema,
++  matchListQuerySchema,
++  matchPublicIdParamsSchema,
++  publishMatchInputSchema,
++  updateMatchInputSchema,
++  updateMatchResultInputSchema,
++  updateMatchStatusInputSchema,
++} from "./match.schema";
+ 
+ const adminMatchRouter = Router();
++
+ adminMatchRouter.use(authenticate);
+-adminMatchRouter.get("/", requireRoles(...MATCH_VIEW_ROLES), validateRequest({ query: matchListQuerySchema }), listAdminMatches);
+-adminMatchRouter.get("/:matchId", requireRoles(...MATCH_VIEW_ROLES), validateRequest({ params: matchIdParamsSchema }), getAdminMatch);
+-adminMatchRouter.post("/", requireRoles(...MATCH_WRITE_ROLES), validateRequest({ body: createMatchInputSchema }), createAdminMatch);
+-adminMatchRouter.patch("/:matchId", requireRoles(...MATCH_WRITE_ROLES), validateRequest({ params: matchIdParamsSchema, body: updateMatchInputSchema }), updateAdminMatch);
+-adminMatchRouter.patch("/:matchId/publication", requireRoles(...MATCH_WRITE_ROLES), validateRequest({ params: matchIdParamsSchema, body: publishMatchInputSchema }), publishAdminMatch);
+-adminMatchRouter.patch("/:matchId/status", requireRoles(...MATCH_WRITE_ROLES), validateRequest({ params: matchIdParamsSchema, body: updateMatchStatusInputSchema }), updateAdminMatchStatus);
+-adminMatchRouter.patch("/:matchId/result", requireRoles(...MATCH_WRITE_ROLES), validateRequest({ params: matchIdParamsSchema, body: updateMatchResultInputSchema }), updateAdminMatchResult);
+-adminMatchRouter.delete("/:matchId", requireRoles(...MATCH_WRITE_ROLES), validateRequest({ params: matchIdParamsSchema, body: deleteMatchInputSchema }), deleteAdminMatch);
++
++adminMatchRouter.get(
++  "/",
++  requireRoles(...MATCH_VIEW_ROLES),
++  validateRequest({ query: matchListQuerySchema }),
++  listAdminMatches,
++);
++
++adminMatchRouter.get(
++  "/:matchId",
++  requireRoles(...MATCH_VIEW_ROLES),
++  validateRequest({ params: matchIdParamsSchema }),
++  getAdminMatch,
++);
++
++adminMatchRouter.post(
++  "/",
++  requireRoles(...MATCH_WRITE_ROLES),
++  validateRequest({ body: createMatchInputSchema }),
++  createAdminMatch,
++);
++
++adminMatchRouter.patch(
++  "/:matchId",
++  requireRoles(...MATCH_WRITE_ROLES),
++  validateRequest({ params: matchIdParamsSchema, body: updateMatchInputSchema }),
++  updateAdminMatch,
++);
++
++adminMatchRouter.patch(
++  "/:matchId/publication",
++  requireRoles(...MATCH_WRITE_ROLES),
++  validateRequest({ params: matchIdParamsSchema, body: publishMatchInputSchema }),
++  publishAdminMatch,
++);
++
++adminMatchRouter.patch(
++  "/:matchId/status",
++  requireRoles(...MATCH_WRITE_ROLES),
++  validateRequest({ params: matchIdParamsSchema, body: updateMatchStatusInputSchema }),
++  updateAdminMatchStatus,
++);
++
++adminMatchRouter.patch(
++  "/:matchId/result",
++  requireRoles(...MATCH_WRITE_ROLES),
++  validateRequest({ params: matchIdParamsSchema, body: updateMatchResultInputSchema }),
++  updateAdminMatchResult,
++);
++
++adminMatchRouter.delete(
++  "/:matchId",
++  requireRoles(...MATCH_WRITE_ROLES),
++  validateRequest({ params: matchIdParamsSchema, body: deleteMatchInputSchema }),
++  deleteAdminMatch,
++);
++
+ const publicMatchRouter = Router();
++
+ publicMatchRouter.get("/", validateRequest({ query: matchListQuerySchema }), listPublicMatchResponses);
+-publicMatchRouter.get("/:matchPublicId", validateRequest({ params: matchPublicIdParamsSchema }), getPublicMatch);
++
++publicMatchRouter.get(
++  "/:matchPublicId",
++  validateRequest({ params: matchPublicIdParamsSchema }),
++  getPublicMatch,
++);
++
+ export { publicMatchRouter };
++
+ export default adminMatchRouter;
+diff --git a/apps/api/src/features/match/match.repository.ts b/apps/api/src/features/match/match.repository.ts
+index 09bb2be..e6ad953 100644
+--- a/apps/api/src/features/match/match.repository.ts
++++ b/apps/api/src/features/match/match.repository.ts
+@@ -4,61 +4,95 @@ import type { Prisma } from "../../generated/prisma/client";
+ import { AppError } from "../../errors/AppError";
+ 
+ const matchInclude = { matchday: { include: { leagueSeason: true } } } as const;
++
+ type MatchRecord = Prisma.GameMatchGetPayload<{ include: typeof matchInclude }>;
++
+ const publicMatchSelect = {
+-  matchPublicId: true, matchDate: true, startTime: true, stadium: true,
+-  status: true, homeScore: true, awayScore: true,
++  matchPublicId: true,
++  matchDate: true,
++  startTime: true,
++  stadium: true,
++  status: true,
++  homeScore: true,
++  awayScore: true,
+   homeTeam: { select: { name: true, logoUrl: true } },
+   awayTeam: { select: { name: true, logoUrl: true } },
+-  matchday: { select: {
+-    number: true, name: true,
+-    leagueSeason: { select: { league: { select: { name: true, country: true } }, season: { select: { name: true } } } },
+-  } },
++  matchday: {
++    select: {
++      number: true,
++      name: true,
++      leagueSeason: {
++        select: {
++          league: { select: { name: true, country: true } },
++          season: { select: { name: true } },
++        },
++      },
++    },
++  },
+ } as const;
++
+ type PublicMatchRecord = Prisma.GameMatchGetPayload<{ select: typeof publicMatchSelect }>;
+ 
+ const findMatch = (id: string) => prisma.gameMatch.findFirst({ where: { id, isActive: true }, include: matchInclude });
+ 
+-const matchFilters = (query: MatchListQuery): Prisma.GameMatchWhereInput => ({
++const buildMatchFilters = (query: MatchListQuery): Prisma.GameMatchWhereInput => ({
+   isActive: true,
+   matchdayId: query.matchdayId,
+   status: query.status,
+   matchday: { leagueSeason: { leagueId: query.leagueId, seasonId: query.seasonId } },
+   ...(query.teamId ? { OR: [{ homeTeamId: query.teamId }, { awayTeamId: query.teamId }] } : {}),
+   ...(query.dateFrom || query.dateTo ? {
+-    matchDate: { gte: query.dateFrom ? new Date(query.dateFrom) : undefined, lte: query.dateTo ? new Date(query.dateTo) : undefined },
++    matchDate: {
++      gte: query.dateFrom ? new Date(query.dateFrom) : undefined,
++      lte: query.dateTo ? new Date(query.dateTo) : undefined,
++    },
+   } : {}),
+ });
+-const matchOrder = (query: MatchListQuery): Prisma.GameMatchOrderByWithRelationInput[] => [
++
++const buildMatchOrderBy = (query: MatchListQuery): Prisma.GameMatchOrderByWithRelationInput[] => [
+   { matchDate: { sort: query.sortOrder, nulls: "last" } },
+   { startTime: { sort: query.sortOrder, nulls: "last" } },
+   { id: "asc" },
+ ];
+ 
+ const listMatches = async (query: MatchListQuery) => {
+-  const where = matchFilters(query);
+-  const [data, totalItems] = await prisma.$transaction([
+-    prisma.gameMatch.findMany({
+-      where, include: matchInclude, skip: (query.page - 1) * query.pageSize, take: query.pageSize,
+-      orderBy: matchOrder(query),
+-    }),
+-    prisma.gameMatch.count({ where }),
+-  ], { isolationLevel: "RepeatableRead" });
++  const where = buildMatchFilters(query);
++  const [data, totalItems] = await prisma.$transaction(
++    [
++      prisma.gameMatch.findMany({
++        where,
++        include: matchInclude,
++        skip: (query.page - 1) * query.pageSize,
++        take: query.pageSize,
++        orderBy: buildMatchOrderBy(query),
++      }),
++      prisma.gameMatch.count({ where }),
++    ],
++    { isolationLevel: "RepeatableRead" },
++  );
+   return { data, totalItems };
+ };
+ 
+ const findPublicMatch = (matchPublicId: string) => prisma.gameMatch.findFirst({
+-  where: { matchPublicId, isActive: true, isPublished: true }, select: publicMatchSelect,
++  where: { matchPublicId, isActive: true, isPublished: true },
++  select: publicMatchSelect,
+ });
++
+ const listPublicMatches = async (query: MatchListQuery) => {
+-  const where = { ...matchFilters(query), isPublished: true };
+-  const [data, totalItems] = await prisma.$transaction([
+-    prisma.gameMatch.findMany({
+-      where, select: publicMatchSelect, skip: (query.page - 1) * query.pageSize,
+-      take: query.pageSize, orderBy: matchOrder(query),
+-    }),
+-    prisma.gameMatch.count({ where }),
+-  ], { isolationLevel: "RepeatableRead" });
++  const where = { ...buildMatchFilters(query), isPublished: true };
++  const [data, totalItems] = await prisma.$transaction(
++    [
++      prisma.gameMatch.findMany({
++        where,
++        select: publicMatchSelect,
++        skip: (query.page - 1) * query.pageSize,
++        take: query.pageSize,
++        orderBy: buildMatchOrderBy(query),
++      }),
++      prisma.gameMatch.count({ where }),
++    ],
++    { isolationLevel: "RepeatableRead" },
++  );
+   return { data, totalItems };
+ };
+ 
+@@ -66,17 +100,53 @@ const createMatch = (matchdayId: string) => prisma.gameMatch.create({ data: { ma
+ 
+ // Lock before reading the state used by business validation. The conditional
+ // update also protects the version; triggers arbitrate conflicts across matches.
+-const mutateMatch = (id: string, version: number, buildChanges: (current: MatchRecord) => Prisma.GameMatchUncheckedUpdateManyInput) =>
+-  prisma.$transaction(async (transaction) => {
+-    await transaction.$queryRaw`SELECT id FROM game_match WHERE id = ${id}::uuid AND is_active = true FOR UPDATE`;
+-    const current = await transaction.gameMatch.findFirst({ where: { id, isActive: true }, include: matchInclude });
+-    if (!current) throw new AppError(404, "RESOURCE_NOT_FOUND", "Match introuvable.");
+-    if (current.version !== version) throw new AppError(409, "RESOURCE_VERSION_CONFLICT", "Ce match a été modifié. Rechargez-le avant de réessayer.");
+-    const data = buildChanges(current);
+-    const updated = await transaction.gameMatch.updateMany({ where: { id, version, isActive: true }, data: { ...data, version: { increment: 1 } } });
+-    if (updated.count !== 1) throw new AppError(409, "RESOURCE_VERSION_CONFLICT", "Ce match a été modifié. Rechargez-le avant de réessayer.");
+-    return transaction.gameMatch.findUniqueOrThrow({ where: { id }, include: matchInclude });
+-  }, { isolationLevel: "ReadCommitted" });
+-
+-export { createMatch, findMatch, findPublicMatch, listMatches, listPublicMatches, mutateMatch };
++const mutateMatch = (
++  id: string,
++  version: number,
++  buildChanges: (current: MatchRecord) => Prisma.GameMatchUncheckedUpdateManyInput,
++) =>
++  prisma.$transaction(
++    async (transaction) => {
++      await transaction.$queryRaw`SELECT id FROM game_match WHERE id = ${id}::uuid AND is_active = true FOR UPDATE`;
++
++      const current = await transaction.gameMatch.findFirst({ where: { id, isActive: true }, include: matchInclude });
++
++      if (!current) {
++        throw new AppError(404, "RESOURCE_NOT_FOUND", "Match introuvable.");
++      }
++      if (current.version !== version) {
++        throw new AppError(
++          409,
++          "RESOURCE_VERSION_CONFLICT",
++          "Ce match a été modifié. Rechargez-le avant de réessayer.",
++        );
++      }
++
++      const data = buildChanges(current);
++      const updated = await transaction.gameMatch.updateMany({
++        where: { id, version, isActive: true },
++        data: { ...data, version: { increment: 1 } },
++      });
++      if (updated.count !== 1) {
++        throw new AppError(
++          409,
++          "RESOURCE_VERSION_CONFLICT",
++          "Ce match a été modifié. Rechargez-le avant de réessayer.",
++        );
++      }
++
++      return transaction.gameMatch.findUniqueOrThrow({ where: { id }, include: matchInclude });
++    },
++    { isolationLevel: "ReadCommitted" },
++  );
++
++export {
++  createMatch,
++  findMatch,
++  findPublicMatch,
++  listMatches,
++  listPublicMatches,
++  mutateMatch,
++};
++
+ export type { MatchRecord, PublicMatchRecord };
+diff --git a/apps/api/src/features/match/match.controller.ts b/apps/api/src/features/match/match.controller.ts
+index 0380139..1752223 100644
+--- a/apps/api/src/features/match/match.controller.ts
++++ b/apps/api/src/features/match/match.controller.ts
+@@ -1,81 +1,192 @@
+-import { MATCH_TIME_ZONE, matchListQuerySchema, type AdminMatch, type CreateMatchInput, type DeleteMatchInput, type ListMatchesParams, type PaginatedAdminMatchesResponse, type PaginatedPublicMatchesResponse, type PublicMatch, type PublishMatchInput, type UpdateMatchInput, type UpdateMatchResultInput, type UpdateMatchStatusInput } from "@lucarne/shared";
++import {
++  MATCH_TIME_ZONE,
++  matchListQuerySchema,
++  type AdminMatch,
++  type CreateMatchInput,
++  type DeleteMatchInput,
++  type ListMatchesParams,
++  type PaginatedAdminMatchesResponse,
++  type PaginatedPublicMatchesResponse,
++  type PublicMatch,
++  type PublishMatchInput,
++  type UpdateMatchInput,
++  type UpdateMatchResultInput,
++  type UpdateMatchStatusInput,
++} from "@lucarne/shared";
+ import type { RequestHandler } from "express";
+ import { asyncHandler } from "../../utils/asyncHandler";
+ import type { MatchRecord, PublicMatchRecord } from "./match.repository";
+-import { createMatchService, deleteMatchService, getMatchService, getPublicMatchService, listMatchesService, listPublicMatchesService, programming, publishMatchService, updateMatchResultService, updateMatchService, updateMatchStatusService } from "./match.service";
++import {
++  createMatchService,
++  deleteMatchService,
++  getMatchService,
++  getPublicMatchService,
++  listMatchesService,
++  listPublicMatchesService,
++  toMatchProgramming,
++  publishMatchService,
++  updateMatchResultService,
++  updateMatchService,
++  updateMatchStatusService,
++} from "./match.service";
+ 
+ const toPublicMatch = (match: PublicMatchRecord): PublicMatch => {
+-  if (!match.homeTeam || !match.awayTeam || !match.matchDate || !match.startTime) throw new Error("Incomplete published match");
++  if (!match.homeTeam || !match.awayTeam || !match.matchDate || !match.startTime)
++    throw new Error("Incomplete published match");
+   const common = {
+     matchPublicId: match.matchPublicId,
+     league: match.matchday.leagueSeason.league,
+     season: match.matchday.leagueSeason.season,
+     matchday: { number: match.matchday.number, name: match.matchday.name },
+-    homeTeam: match.homeTeam, awayTeam: match.awayTeam,
+-    matchDate: match.matchDate.toISOString().slice(0, 10), startTime: match.startTime.toISOString().slice(11, 16),
+-    timeZone: MATCH_TIME_ZONE, stadium: match.stadium,
++    homeTeam: match.homeTeam,
++    awayTeam: match.awayTeam,
++    matchDate: match.matchDate.toISOString().slice(0, 10),
++    startTime: match.startTime.toISOString().slice(11, 16),
++    timeZone: MATCH_TIME_ZONE,
++    stadium: match.stadium,
+   };
+   if (match.status === "COMPLETED") {
+-    if (match.homeScore === null || match.awayScore === null) throw new Error("Incomplete completed match result");
+-    return { ...common, status: "COMPLETED", result: { homeScore: match.homeScore, awayScore: match.awayScore } };
++    if (match.homeScore === null || match.awayScore === null)
++      throw new Error("Incomplete completed match result");
++    return {
++      ...common,
++      status: "COMPLETED",
++      result: { homeScore: match.homeScore, awayScore: match.awayScore },
++    };
+   }
+-  if (match.status !== "SCHEDULED" && match.status !== "IN_PROGRESS") throw new Error("Unknown match status");
+-  return { ...common, status: match.status, result: { homeScore: match.homeScore, awayScore: match.awayScore } };
++  if (match.status !== "SCHEDULED" && match.status !== "IN_PROGRESS")
++    throw new Error("Unknown match status");
++  return {
++    ...common,
++    status: match.status,
++    result: { homeScore: match.homeScore, awayScore: match.awayScore },
++  };
+ };
++
+ const listPublicMatchResponses: RequestHandler<Record<string, never>, PaginatedPublicMatchesResponse, never, ListMatchesParams> = asyncHandler(async (request, response) => {
+   const query = matchListQuerySchema.parse(request.query);
+   const { data, totalItems } = await listPublicMatchesService(query);
+   const { page, pageSize } = query;
+-  response.json({ data: data.map(toPublicMatch), pagination: { page, pageSize, totalItems, totalPages: Math.ceil(totalItems / pageSize) } });
++  response.json({
++    data: data.map(toPublicMatch),
++    pagination: {
++      page,
++      pageSize,
++      totalItems,
++      totalPages: Math.ceil(totalItems / pageSize),
++    },
++  });
+ });
++
+ const getPublicMatch: RequestHandler<{ matchPublicId: string }, PublicMatch> = asyncHandler(async (request, response) => {
+   response.json(toPublicMatch(await getPublicMatchService(request.params.matchPublicId)));
+ });
+ 
+ const toAdminMatch = (match: MatchRecord): AdminMatch => {
+   const common = {
+-    id: match.id, matchPublicId: match.matchPublicId, leagueSeasonId: match.matchday.leagueSeasonId,
+-    leagueId: match.matchday.leagueSeason.leagueId, seasonId: match.matchday.leagueSeason.seasonId,
+-    version: match.version, isActive: match.isActive, createdAt: match.createdAt.toISOString(), timeZone: MATCH_TIME_ZONE,
++    id: match.id,
++    matchPublicId: match.matchPublicId,
++    leagueSeasonId: match.matchday.leagueSeasonId,
++    leagueId: match.matchday.leagueSeason.leagueId,
++    seasonId: match.matchday.leagueSeason.seasonId,
++    version: match.version,
++    isActive: match.isActive,
++    createdAt: match.createdAt.toISOString(),
++    timeZone: MATCH_TIME_ZONE,
++  };
++  const values = toMatchProgramming(match);
++  if (!match.isPublished)
++    return {
++      ...common,
++      ...values,
++      isPublished: false,
++      status: "SCHEDULED",
++      result: { homeScore: null, awayScore: null },
++    };
++  if (!values.homeTeamId || !values.awayTeamId || !values.matchDate || !values.startTime)
++    throw new Error("Incomplete published match");
++  const published = {
++    ...common,
++    ...values,
++    homeTeamId: values.homeTeamId,
++    awayTeamId: values.awayTeamId,
++    matchDate: values.matchDate,
++    startTime: values.startTime,
++    isPublished: true as const,
+   };
+-  const values = programming(match);
+-  if (!match.isPublished) return { ...common, ...values, isPublished: false, status: "SCHEDULED", result: { homeScore: null, awayScore: null } };
+-  if (!values.homeTeamId || !values.awayTeamId || !values.matchDate || !values.startTime) throw new Error("Incomplete published match");
+-  const published = { ...common, ...values, homeTeamId: values.homeTeamId, awayTeamId: values.awayTeamId, matchDate: values.matchDate, startTime: values.startTime, isPublished: true as const };
+   if (match.status === "COMPLETED") {
+-    if (match.homeScore === null || match.awayScore === null) throw new Error("Incomplete completed match result");
+-    return { ...published, status: "COMPLETED", result: { homeScore: match.homeScore, awayScore: match.awayScore } };
++    if (match.homeScore === null || match.awayScore === null)
++      throw new Error("Incomplete completed match result");
++    return {
++      ...published,
++      status: "COMPLETED",
++      result: { homeScore: match.homeScore, awayScore: match.awayScore },
++    };
+   }
+-  if (match.status !== "SCHEDULED" && match.status !== "IN_PROGRESS") throw new Error("Unknown match status");
+-  return { ...published, status: match.status, result: { homeScore: match.homeScore, awayScore: match.awayScore } };
++  if (match.status !== "SCHEDULED" && match.status !== "IN_PROGRESS")
++    throw new Error("Unknown match status");
++  return {
++    ...published,
++    status: match.status,
++    result: { homeScore: match.homeScore, awayScore: match.awayScore },
++  };
+ };
+ 
+ const listAdminMatches: RequestHandler<Record<string, never>, PaginatedAdminMatchesResponse, never, ListMatchesParams> = asyncHandler(async (request, response) => {
+   const query = matchListQuerySchema.parse(request.query);
+   const { data, totalItems } = await listMatchesService(query);
+   const { page, pageSize } = query;
+-  response.json({ data: data.map(toAdminMatch), pagination: { page, pageSize, totalItems, totalPages: Math.ceil(totalItems / pageSize) } });
++  response.json({
++    data: data.map(toAdminMatch),
++    pagination: {
++      page,
++      pageSize,
++      totalItems,
++      totalPages: Math.ceil(totalItems / pageSize),
++    },
++  });
+ });
++
+ const getAdminMatch: RequestHandler<{ matchId: string }, AdminMatch> = asyncHandler(async (request, response) => {
+   response.json(toAdminMatch(await getMatchService(request.params.matchId)));
+ });
++
+ const createAdminMatch: RequestHandler<Record<string, never>, AdminMatch, CreateMatchInput> = asyncHandler(async (request, response) => {
+   response.status(201).json(toAdminMatch(await createMatchService(request.body)));
+ });
++
+ const updateAdminMatch: RequestHandler<{ matchId: string }, AdminMatch, UpdateMatchInput> = asyncHandler(async (request, response) => {
+   response.json(toAdminMatch(await updateMatchService(request.params.matchId, request.body)));
+ });
++
+ const publishAdminMatch: RequestHandler<{ matchId: string }, AdminMatch, PublishMatchInput> = asyncHandler(async (request, response) => {
+   response.json(toAdminMatch(await publishMatchService(request.params.matchId, request.body)));
+ });
++
+ const updateAdminMatchStatus: RequestHandler<{ matchId: string }, AdminMatch, UpdateMatchStatusInput> = asyncHandler(async (request, response) => {
+   response.json(toAdminMatch(await updateMatchStatusService(request.params.matchId, request.body)));
+ });
++
+ const updateAdminMatchResult: RequestHandler<{ matchId: string }, AdminMatch, UpdateMatchResultInput> = asyncHandler(async (request, response) => {
+   response.json(toAdminMatch(await updateMatchResultService(request.params.matchId, request.body)));
+ });
++
+ const deleteAdminMatch: RequestHandler<{ matchId: string }, never, DeleteMatchInput> = asyncHandler(async (request, response) => {
+   await deleteMatchService(request.params.matchId, request.body);
+   response.status(204).send();
+ });
+-export { createAdminMatch, deleteAdminMatch, getAdminMatch, getPublicMatch, listAdminMatches, listPublicMatchResponses, publishAdminMatch, toAdminMatch, toPublicMatch, updateAdminMatch, updateAdminMatchResult, updateAdminMatchStatus };
++
++export {
++  createAdminMatch,
++  deleteAdminMatch,
++  getAdminMatch,
++  getPublicMatch,
++  listAdminMatches,
++  listPublicMatchResponses,
++  publishAdminMatch,
++  toAdminMatch,
++  toPublicMatch,
++  updateAdminMatch,
++  updateAdminMatchResult,
++  updateAdminMatchStatus,
++};
+diff --git a/apps/web/src/components/dashboard/DashboardSidebar.tsx b/apps/web/src/components/dashboard/DashboardSidebar.tsx
+index 7469e80..be22f39 100644
+--- a/apps/web/src/components/dashboard/DashboardSidebar.tsx
++++ b/apps/web/src/components/dashboard/DashboardSidebar.tsx
+@@ -16,9 +16,9 @@ function DashboardSidebar({ activeItem, onNavigate }: DashboardSidebarProps) {
+     <aside aria-label="Dashboard" className={dashboardStyles.sidebar}>
+       <div className={dashboardStyles.brand}>
+         <Link
+-            onClick={onNavigate}
+-            to={"/dashboard/"}>
+-          <img alt="Lucarne" className={dashboardStyles.sidebarLogo} src={logoFull} />        
++          onClick={onNavigate}
++          to={"/dashboard/"}>
++          <img alt="Lucarne" className={dashboardStyles.sidebarLogo} src={logoFull} />
+         </Link>
+         <img
+           alt=""
+diff --git a/apps/web/src/features/player/pages/EditPlayerPage.tsx b/apps/web/src/features/player/pages/EditPlayerPage.tsx
+index c9fa0c2..4871882 100644
+--- a/apps/web/src/features/player/pages/EditPlayerPage.tsx
++++ b/apps/web/src/features/player/pages/EditPlayerPage.tsx
+@@ -52,32 +52,32 @@ export default function EditPlayerPage() {
+         {hasSaved ? (
+           <Alert variant="success">La joueuse a été modifiée avec succès.</Alert>
+         ) : null}
+-          <UpdatePlayerForm
+-            key={playerId}
+-            player={query.data}
+-            onCancel={() => void navigate(`/dashboard/players/${playerId}`)}
+-            onReload={() => {
+-              void query.refetch();
+-            }}
+-            onSuccess={() => setHasSaved(true)}
+-          />
+-          <PlayerAssignments
+-            assignments={query.data.assignments}
+-            playerId={playerId}
+-            canEdit
+-          >
+-            {!isScheduling ? (
+-              <Button onClick={() => setIsScheduling(true)} variant="outline">
+-                Ajouter une affectation
+-              </Button>
+-            ) : (
+-              <CreatePlayerAssignmentForm
+-                playerId={playerId}
+-                onCancel={() => setIsScheduling(false)}
+-                onSuccess={() => setIsScheduling(false)}
+-              />
+-            )}
+-          </PlayerAssignments>
++        <UpdatePlayerForm
++          key={playerId}
++          player={query.data}
++          onCancel={() => void navigate(`/dashboard/players/${playerId}`)}
++          onReload={() => {
++            void query.refetch();
++          }}
++          onSuccess={() => setHasSaved(true)}
++        />
++        <PlayerAssignments
++          assignments={query.data.assignments}
++          playerId={playerId}
++          canEdit
++        >
++          {!isScheduling ? (
++            <Button onClick={() => setIsScheduling(true)} variant="outline">
++              Ajouter une affectation
++            </Button>
++          ) : (
++            <CreatePlayerAssignmentForm
++              playerId={playerId}
++              onCancel={() => setIsScheduling(false)}
++              onSuccess={() => setIsScheduling(false)}
++            />
++          )}
++        </PlayerAssignments>
+       </div>
+     </section>
+   );
+diff --git a/apps/web/src/features/match/hooks/useMatchOptions.ts b/apps/web/src/features/match/hooks/useMatchOptions.ts
+index c381c05..a07964a 100644
+--- a/apps/web/src/features/match/hooks/useMatchOptions.ts
++++ b/apps/web/src/features/match/hooks/useMatchOptions.ts
+@@ -6,7 +6,7 @@ import { leagueKeys } from "../../league/leagueKeys";
+ import { seasonKeys } from "../../season/seasonKeys";
+ import { teamKeys } from "../../team/teamKeys";
+ 
+-async function allPages<T>(
++async function loadAllPages<T>(
+   load: (page: number) => Promise<{ data: T[]; pagination: { totalPages: number } }>,
+ ): Promise<T[]> {
+   const first = await load(1);
+@@ -22,21 +22,21 @@ function useMatchOptions() {
+   const leagues = useQuery({
+     queryKey: [...leagueKeys.all, "match-options"],
+     queryFn: () =>
+-      allPages((page) =>
++      loadAllPages((page) =>
+         listLeagues({ page, pageSize: 20, sortBy: "name", sortOrder: "asc" }),
+       ),
+   });
+   const seasons = useQuery({
+     queryKey: [...seasonKeys.all, "match-options"],
+     queryFn: () =>
+-      allPages((page) =>
++      loadAllPages((page) =>
+         listSeasons({ page, pageSize: 20, sortBy: "startDate", sortOrder: "desc" }),
+       ),
+   });
+   const teams = useQuery({
+     queryKey: [...teamKeys.all, "match-options"],
+     queryFn: () =>
+-      allPages((page) =>
++      loadAllPages((page) =>
+         listTeams({ page, pageSize: 20, sortBy: "name", sortOrder: "asc" }),
+       ),
+   });

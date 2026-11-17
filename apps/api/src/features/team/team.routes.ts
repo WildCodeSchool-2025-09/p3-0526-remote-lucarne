@@ -1,0 +1,29 @@
+import { getTeamRoster } from "./team.controller";
+import { Router } from "express";
+import { authenticate } from "../../middlewares/authenticate";
+import { requireRoles } from "../../middlewares/requireRoles";
+import { validateRequest } from "../../middlewares/validateRequest";
+import { createTeamInputSchema, deleteTeamInputSchema } from "@lucarne/shared";
+import { createTeam, deleteTeam, getTeam, getTeamDeletionPreview, listTeams, updateTeam } from "./team.controller";
+import { APP_ROLES } from "../../auth/appRole";
+import { TEAM_CREATE_ROLES, TEAM_EDIT_ROLES, TEAM_VIEW_ROLES } from "./team.permissions";
+import { teamIdParamsSchema, teamListQuerySchema, updateTeamInputSchema } from "@lucarne/shared";
+
+const teamRouter = Router();
+
+teamRouter.get("/", authenticate, requireRoles(...TEAM_VIEW_ROLES), validateRequest({ query: teamListQuerySchema }), listTeams);
+teamRouter.get("/:teamId", authenticate, requireRoles(...TEAM_VIEW_ROLES), validateRequest({ params: teamIdParamsSchema }), getTeam);
+teamRouter.get("/:teamId/deletion-preview", authenticate, requireRoles(APP_ROLES.ADMIN), validateRequest({ params: teamIdParamsSchema }), getTeamDeletionPreview);
+
+teamRouter.post(
+  "/",
+  authenticate,
+  requireRoles(...TEAM_CREATE_ROLES),
+  validateRequest({ body: createTeamInputSchema }),
+  createTeam,
+);
+teamRouter.patch("/:teamId", authenticate, requireRoles(...TEAM_EDIT_ROLES), validateRequest({ params: teamIdParamsSchema, body: updateTeamInputSchema }), updateTeam);
+teamRouter.delete("/:teamId", authenticate, requireRoles(APP_ROLES.ADMIN), validateRequest({ params: teamIdParamsSchema, body: deleteTeamInputSchema }), deleteTeam);
+
+teamRouter.get("/:teamId/roster", authenticate, requireRoles(...TEAM_VIEW_ROLES), validateRequest({ params: teamIdParamsSchema }), getTeamRoster);
+export default teamRouter;

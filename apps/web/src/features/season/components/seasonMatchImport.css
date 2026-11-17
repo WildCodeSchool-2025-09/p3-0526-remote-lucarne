@@ -1,0 +1,17 @@
+.season-match-import {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.season-match-import input[type="file"] { max-width: 100%; }
+.season-match-import__actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.season-match-import__matches { max-height: 28rem; overflow-y: auto; padding-left: 1.5rem; }
+.season-match-import__matches li { margin-block: 1rem; }
+.season-match-import__matches span { display: block; }
+.season-match-import summary { cursor: pointer; padding-block: 0.75rem; }
+
+@media (max-width: 600px) {
+  .season-match-import__actions { flex-direction: column; align-items: stretch; }
+}

@@ -1,0 +1,108 @@
+.public-league-page {
+  display: grid;
+  gap: 24px;
+  margin: 0 auto;
+  max-width: 798px;
+  min-width: 0;
+  padding: 32px 24px 48px;
+}
+
+.public-league-page > * { min-width: 0; }
+.public-league-page > p { margin: 0; }
+
+.public-league-header { display: flex; align-items: center; gap: 16px; }
+.public-league-header h1 { margin: 0; font-size: 32px; line-height: 1.25; overflow-wrap: anywhere; }
+.public-league-header__logo .entity-logo { width: 48px !important; height: 48px !important; }
+
+.public-league-season { display: grid; gap: 8px; width: min(100%, 320px); }
+.public-league-season .lucarne-select-control { min-width: 0; }
+.public-league-season select { width: 100%; min-width: 0; text-overflow: ellipsis; }
+
+.public-league-tabs { display: flex; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--color-border-default); }
+.public-league-tabs > * { padding: 12px 16px; font-size: 14px; line-height: 1.4; }
+.public-league-tabs__active { border-bottom: 3px solid var(--color-action-primary); color: var(--color-text-success); font-weight: 600; }
+.public-league-tabs button { border: 0; background: transparent; color: var(--color-text-secondary); cursor: pointer; }
+.public-league-tabs a { color: var(--color-text-secondary); text-decoration: none; }
+.public-league-tabs a.public-league-tabs__active { color: var(--color-text-success); }
+.public-league-tabs a:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 2px; border-radius: var(--radius-md); }
+
+.public-league-teams { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 0; margin: 0; list-style: none; }
+.public-league-teams li { min-width: 0; }
+.public-league-team { display: flex; align-items: center; gap: 12px; height: 100%; padding: 16px; border: 1px solid var(--color-border-default); border-radius: var(--radius-button); }
+.public-league-team h3 { min-width: 0; margin: 0; font-size: 16px; line-height: 1.5; overflow-wrap: anywhere; }
+
+.public-league-card {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-surface);
+  background: var(--color-bg-surface);
+  box-shadow: var(--shadow-surface);
+  min-width: 0;
+}
+.public-league-card h2 { margin: 0; font-size: 20px; line-height: 1.4; }
+.public-league-card footer { display: flex; justify-content: center; }
+.public-league-card .lucarne-alert { display: grid; gap: 12px; }
+.public-league-card .lucarne-pagination { flex-wrap: wrap; }
+.public-league-card__action { gap: 10px; }
+.public-league-card__action:disabled {
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-default);
+  color: var(--color-text-secondary);
+}
+
+.public-league-matches { display: grid; gap: 12px; padding: 0; margin: 0; list-style: none; }
+.public-league-matches li { min-width: 0; }
+.public-league-match {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 20px 16px;
+  min-height: 94px;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-button);
+  color: var(--color-text-primary);
+  font-size: 14px;
+  text-decoration: none;
+}
+.public-league-match:hover { background: var(--color-bg-subtle); }
+.public-league-match:focus-visible { outline: 3px solid var(--color-focus-ring); outline-offset: 2px; }
+.public-league-match__team { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.public-league-match__team > span:last-child,
+.public-league-match__team--away > span:first-child { overflow-wrap: anywhere; }
+.public-league-match__team--home { grid-column: 1; grid-row: 1; }
+.public-league-match__team--away { grid-column: 3; grid-row: 1; justify-content: flex-end; text-align: right; }
+.public-league-match__schedule { grid-column: 2; grid-row: 1; text-align: center; color: var(--color-text-secondary); font-size: 13px; }
+.public-league-match__score { grid-column: 2; grid-row: 1; font-size: 20px; font-weight: 700; white-space: nowrap; text-align: center; }
+.public-league-match__status { grid-column: 1 / -1; grid-row: 3; color: var(--color-text-secondary); font-size: 12px; text-align: center; }
+.public-league-match--result { min-height: 64px; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; }
+.public-league-match--result .public-league-match__schedule { grid-column: 4; grid-row: 1; text-align: right; font-size: 12px; }
+
+@media (max-width: 900px) {
+  .public-league-match { gap: 12px; }
+  .public-league-match__team { gap: 8px; }
+}
+
+@media (max-width: 600px) {
+  .public-league-page { padding: 24px 16px 32px; gap: 20px; }
+  .public-league-header { gap: 12px; }
+  .public-league-header h1 { font-size: 24px; }
+  .public-league-season { width: 100%; }
+  .public-league-tabs { gap: 4px; padding: 4px; border: 0; border-radius: var(--radius-button); background: var(--color-bg-subtle); }
+  .public-league-tabs > * { flex: 1 1 auto; padding: 10px 8px; text-align: center; }
+  .public-league-tabs__active { border: 0; border-radius: var(--radius-md); background: rgb(0 230 92 / 15%); }
+  .public-league-card { padding: 16px; gap: 16px; }
+  .public-league-card .lucarne-pagination { gap: 8px; }
+  .public-league-card .lucarne-pagination > span { flex-basis: 100%; order: -1; text-align: center; }
+  .public-league-teams { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .public-league-team { padding: 12px; }
+  .public-league-match { padding: 14px 12px; gap: 8px; grid-template-columns: minmax(0, 1fr) minmax(72px, .8fr) minmax(0, 1fr); }
+  .public-league-match__team > span:has(.entity-logo) { display: none; }
+  .public-league-match__schedule { font-size: 12px; overflow-wrap: break-word; }
+  .public-league-match__time { display: block; }
+  .public-league-match--result { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .public-league-match__score { padding: 4px 8px; border-radius: 24px; background: var(--color-bg-subtle); font-size: 18px; }
+  .public-league-match--result .public-league-match__schedule { grid-column: 1 / -1; grid-row: 2; text-align: center; }
+}

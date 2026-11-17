@@ -1,0 +1,4 @@
+{
+  "extends": "@lucarne/typescript-config/vite-node.json",
+  "include": ["vite.config.ts"]
+}
